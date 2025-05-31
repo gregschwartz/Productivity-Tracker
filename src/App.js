@@ -92,7 +92,7 @@ const ToggleButton = styled.button`
 `;
 
 /**
- * Helper function to check if any task triggers Tron theme
+ * Easter Egg Helper function to check if any task triggers Tron theme
  * Checks for: "for the user", "Master Control Program", "mcp", "Kevin" (case insensitive)
  */
 const shouldUseTronTheme = (tasks) => {

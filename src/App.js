@@ -110,6 +110,7 @@ const shouldUseTronTheme = (tasks) => {
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [tasks, setTasks] = useState([]);
+  const [inputMatchesEasterEgg, setInputMatchesEasterEgg] = useState(false);
 
   // Load dark mode preference and tasks from localStorage on mount
   useEffect(() => {
@@ -173,13 +174,23 @@ function App() {
     localStorage.setItem('productivity-dark-mode', isDarkMode.toString());
   }, [isDarkMode]);
 
+  // Handler for live task input changes
+  const handleTaskInputChange = (inputValue) => {
+    const tronKeywords = ['for the user', 'master control program', 'mcp', 'kevin'];
+    const matchesEasterEgg = tronKeywords.some(keyword => (inputValue || '').toLowerCase().includes(keyword));
+    setInputMatchesEasterEgg(matchesEasterEgg);
+  };
+
   // Determine which theme to use
   const getActiveTheme = () => {
+    // If input matches Easter Egg, force Tron theme
+    if (inputMatchesEasterEgg) {
+      return themes.Tron;
+    }
     // Check if any task should trigger Tron theme
     if (shouldUseTronTheme(tasks)) {
       return themes.Tron;
     }
-    
     // Otherwise use Ready/Ready-Dark theme based on user preference
     return isDarkMode ? themes['Ready-Dark'] : themes.Ready;
   };
@@ -202,7 +213,7 @@ function App() {
           {isDarkMode ? 'Light' : 'Dark'}
         </ToggleButton>
       </ThemeToggle>
-      <ProductivityTracker />
+      <ProductivityTracker onTaskInputChange={handleTaskInputChange} />
     </ThemeProvider>
   );
 }

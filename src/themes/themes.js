@@ -1,6 +1,5 @@
 /**
  * Theme definitions with dark mode support
- * Now simplified to just Ready.net theme (light/dark) and Tron theme for special tasks
  */
 
 // Ready theme (light mode based on Ready.net design)

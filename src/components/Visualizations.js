@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { motion } from 'framer-motion';
 import {
@@ -17,7 +17,7 @@ import {
   Legend
 } from 'recharts';
 import { Calendar, TrendingUp, Clock, Focus } from 'lucide-react';
-import { format, subDays, eachDayOfInterval } from 'date-fns';
+import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 
 /**
  * Container for all visualizations
@@ -283,20 +283,132 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 /**
+ * Wrapper component to pass theme to CustomTooltip
+ */
+const ThemedTooltip = styled.div`
+  display: contents;
+`;
+
+/**
+ * Time range selector container
+ */
+const TimeRangeSelector = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+`;
+
+/**
+ * Time range button
+ */
+const TimeRangeButton = styled.button`
+  padding: 8px 16px;
+  border-radius: ${props => props.theme.borderRadius.medium};
+  border: 1px solid ${props => props.theme.colors.border};
+  background: ${props => props.active ? props.theme.colors.primary : props.theme.colors.surface};
+  color: ${props => props.active ? props.theme.colors.primaryText : props.theme.colors.text.primary};
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  ${props => props.theme.name === 'tron' && `
+    font-family: ${props.theme.fonts.mono};
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    ${props.active ? `
+      box-shadow: ${props.theme.glow.small};
+      border-color: ${props.theme.colors.primary};
+    ` : ''}
+  `}
+
+  &:hover {
+    background: ${props => props.active ? props.theme.colors.primary : props.theme.colors.backgroundHover};
+    
+    ${props => props.theme.name === 'tron' && !props.active && `
+      border-color: ${props.theme.colors.primary};
+    `}
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+/**
  * Visualizations component showing productivity analytics
  */
 function Visualizations({ tasks }) {
+  const [timeRange, setTimeRange] = useState('week'); // week, month, quarter, all
+
+  /**
+   * Get date range based on selected time range
+   */
+  const getDateRange = useMemo(() => {
+    const now = new Date();
+    switch (timeRange) {
+      case 'week':
+        return {
+          start: subDays(now, 6),
+          end: now,
+          days: 7
+        };
+      case 'month':
+        return {
+          start: subDays(now, 29),
+          end: now,
+          days: 30
+        };
+      case 'quarter':
+        return {
+          start: subDays(now, 89),
+          end: now,
+          days: 90
+        };
+      case 'all':
+        // Get the earliest task date or 6 months back, whichever is more recent
+        const earliestTask = tasks.length > 0 
+          ? new Date(Math.min(...tasks.map(task => new Date(task.date))))
+          : subDays(now, 179);
+        const startDate = earliestTask < subDays(now, 179) ? subDays(now, 179) : earliestTask;
+        return {
+          start: startDate,
+          end: now,
+          days: Math.ceil((now - startDate) / (1000 * 60 * 60 * 24))
+        };
+      default:
+        return {
+          start: subDays(now, 6),
+          end: now,
+          days: 7
+        };
+    }
+  }, [timeRange, tasks]);
+
+  /**
+   * Filter tasks based on selected time range
+   */
+  const filteredTasks = useMemo(() => {
+    const { start, end } = getDateRange;
+    return tasks.filter(task => {
+      const taskDate = new Date(task.date);
+      return taskDate >= start && taskDate <= end;
+    });
+  }, [tasks, getDateRange]);
+
   /**
    * Calculate productivity statistics
    */
   const stats = useMemo(() => {
-    const totalTasks = tasks.length;
-    const totalHours = tasks.reduce((sum, task) => sum + task.timeSpent, 0);
-    const avgFocus = tasks.length > 0 
-      ? tasks.reduce((sum, task) => {
+    const totalTasks = filteredTasks.length;
+    const totalHours = filteredTasks.reduce((sum, task) => sum + task.timeSpent, 0);
+    const avgFocus = filteredTasks.length > 0 
+      ? filteredTasks.reduce((sum, task) => {
           const focusValues = { low: 1, medium: 2, high: 3 };
           return sum + focusValues[task.focusLevel];
-        }, 0) / tasks.length
+        }, 0) / filteredTasks.length
       : 0;
     
     const focusLabel = avgFocus < 1.5 ? 'Low' : avgFocus < 2.5 ? 'Medium' : 'High';
@@ -307,19 +419,22 @@ function Visualizations({ tasks }) {
       avgFocus: focusLabel,
       productivity: totalTasks > 0 ? (totalHours / totalTasks).toFixed(1) : '0'
     };
-  }, [tasks]);
+  }, [filteredTasks]);
 
   /**
    * Prepare daily productivity data for charts
    */
   const dailyData = useMemo(() => {
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const date = subDays(new Date(), 6 - i);
+    const { start, days } = getDateRange;
+    const displayDays = Math.min(days, timeRange === 'week' ? 7 : timeRange === 'month' ? 30 : 14); // Limit display for readability
+    
+    return Array.from({ length: displayDays }, (_, i) => {
+      const date = subDays(new Date(), displayDays - 1 - i);
       const dateStr = format(date, 'yyyy-MM-dd');
-      const dayTasks = tasks.filter(task => task.date === dateStr);
+      const dayTasks = filteredTasks.filter(task => task.date === dateStr);
       
       return {
-        date: format(date, 'MMM dd'),
+        date: format(date, timeRange === 'week' ? 'MMM dd' : 'MM/dd'),
         tasks: dayTasks.length,
         hours: dayTasks.reduce((sum, task) => sum + task.timeSpent, 0),
         focus: dayTasks.length > 0 
@@ -330,45 +445,34 @@ function Visualizations({ tasks }) {
           : 0
       };
     });
-    
-    return last7Days;
-  }, [tasks]);
+  }, [filteredTasks, getDateRange, timeRange]);
 
   /**
    * Prepare focus level distribution data
    */
   const focusData = useMemo(() => {
     const focusCount = { low: 0, medium: 0, high: 0 };
-    tasks.forEach(task => {
+    filteredTasks.forEach(task => {
       focusCount[task.focusLevel]++;
     });
-    
-    const colors = {
-      low: '#fbbf24',
-      medium: '#f59e0b',
-      high: '#ef4444'
-    };
     
     return Object.entries(focusCount).map(([level, count]) => ({
       name: level.charAt(0).toUpperCase() + level.slice(1),
       value: count,
-      color: colors[level]
+      color: `var(--theme-primary, #6366f1)${level === 'low' ? '60' : level === 'medium' ? 'A0' : 'FF'}`
     }));
-  }, [tasks]);
+  }, [filteredTasks]);
 
   /**
-   * Prepare heatmap data for the last 4 weeks
+   * Prepare heatmap data based on selected time range
    */
   const heatmapData = useMemo(() => {
-    const weeks = 4;
-    const startDate = subDays(new Date(), weeks * 7 - 1);
-    const endDate = new Date();
-    
-    const days = eachDayOfInterval({ start: startDate, end: endDate });
+    const { start, end } = getDateRange;
+    const days = eachDayOfInterval({ start, end });
     
     return days.map(date => {
       const dateStr = format(date, 'yyyy-MM-dd');
-      const dayTasks = tasks.filter(task => task.date === dateStr);
+      const dayTasks = filteredTasks.filter(task => task.date === dateStr);
       const totalHours = dayTasks.reduce((sum, task) => sum + task.timeSpent, 0);
       
       return {
@@ -378,10 +482,39 @@ function Visualizations({ tasks }) {
         tasks: dayTasks.length
       };
     });
-  }, [tasks]);
+  }, [filteredTasks, getDateRange]);
+
+  /**
+   * Get time range label for display
+   */
+  const getTimeRangeLabel = () => {
+    switch (timeRange) {
+      case 'week': return 'Last 7 Days';
+      case 'month': return 'Last 30 Days';
+      case 'all': return 'All Time';
+      default: return 'Last 7 Days';
+    }
+  };
 
   return (
     <VisualizationContainer>
+      {/* Time Range Selector */}
+      <TimeRangeSelector>
+        {[
+          { value: 'week', label: 'Week' },
+          { value: 'month', label: 'Month' },
+          { value: 'all', label: 'All Time' }
+        ].map(option => (
+          <TimeRangeButton
+            key={option.value}
+            active={timeRange === option.value}
+            onClick={() => setTimeRange(option.value)}
+          >
+            {option.label}
+          </TimeRangeButton>
+        ))}
+      </TimeRangeSelector>
+
       {/* Overview Stats */}
       <StatsGrid>
         <StatCard>
@@ -414,7 +547,7 @@ function Visualizations({ tasks }) {
             Daily Productivity Trend
           </SectionTitle>
           <SectionDescription>
-            Track your daily task completion and time spent over the last week
+            Track your daily task completion and time spent over the {getTimeRangeLabel().toLowerCase()}
           </SectionDescription>
         </SectionHeader>
         <ChartContainer>
@@ -454,7 +587,7 @@ function Visualizations({ tasks }) {
             Time Spent Analysis
           </SectionTitle>
           <SectionDescription>
-            Visualize your time investment patterns throughout the week
+            Visualize your time investment patterns over the {getTimeRangeLabel().toLowerCase()}
           </SectionDescription>
         </SectionHeader>
         <ChartContainer>
@@ -534,7 +667,7 @@ function Visualizations({ tasks }) {
             Productivity Heatmap
           </SectionTitle>
           <SectionDescription>
-            Visual overview of your productivity intensity over the last 4 weeks
+            Visual overview of your productivity intensity over the {getTimeRangeLabel().toLowerCase()}
           </SectionDescription>
         </SectionHeader>
         <HeatmapContainer>

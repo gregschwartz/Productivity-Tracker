@@ -6,6 +6,7 @@ import Visualizations from './Visualizations';
 import WeeklySummary from './WeeklySummary';
 import SearchAgent from './SearchAgent';
 import AdminDashboard from './AdminDashboard';
+import { loadSampleDataIfEmpty } from '../utils/sampleData';
 import { BarChart3, Calendar, FileText, Search, Settings } from 'lucide-react';
 
 /**
@@ -132,6 +133,9 @@ function ProductivityTracker({ onTaskInputChange }) {
    * Load data from localStorage on component mount
    */
   useEffect(() => {
+    // Load sample data if no data exists
+    loadSampleDataIfEmpty();
+
     const savedTasks = localStorage.getItem('productivity-tasks');
     const savedSummaries = localStorage.getItem('weekly-summaries');
     

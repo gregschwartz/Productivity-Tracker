@@ -221,16 +221,17 @@ export const generateSampleSummaries = () => {
  * Load sample data into localStorage if no data exists
  */
 export const loadSampleDataIfEmpty = () => {
-  const existingTasks = localStorage.getItem('productivity-tasks');
-  const existingSummaries = localStorage.getItem('weekly-summaries');
+  const existingTasks = JSON.parse(localStorage.getItem('productivity-tasks') || '[]');
+  const existingSummaries = JSON.parse(localStorage.getItem('weekly-summaries') || '[]');
 
-  if (!existingTasks) {
+  if (!existingTasks || existingTasks.length === 0) {
+    console.log('No tasks found, generating sample tasks');
     const sampleTasks = generateSampleTasks();
     localStorage.setItem('productivity-tasks', JSON.stringify(sampleTasks));
     console.log('Sample tasks loaded:', sampleTasks.length, 'tasks');
   }
 
-  if (!existingSummaries) {
+  if (!existingSummaries || existingSummaries.length === 0) {
     const sampleSummaries = generateSampleSummaries();
     localStorage.setItem('weekly-summaries', JSON.stringify(sampleSummaries));
     console.log('Sample summaries loaded:', sampleSummaries.length, 'summaries');

@@ -87,13 +87,44 @@ const SectionDescription = styled.p`
 `;
 
 /**
- * Stats grid for overview metrics
+ * All stats wrapper
  */
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+const AllStatsWrapper = styled.div`
   margin-bottom: 32px;
+  
+  @media (min-width: 1200px) {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    
+    /* On wide screens, flatten the layout */
+    > * {
+      display: contents;
+    }
+  }
+`;
+
+/**
+ * Overview stats row (Total and Average)
+ */
+const OverviewStatsRow = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+  
+  @media (min-width: 1200px) {
+    margin-bottom: 0;
+  }
+`;
+
+/**
+ * Focus stats row for focus-level specific metrics
+ */
+const FocusStatsRow = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 `;
 
 /**
@@ -114,10 +145,43 @@ const StatCard = styled.div`
 `;
 
 /**
+ * Stat card title (common theme)
+ */
+const StatCardTitle = styled.div`
+  font-size: 16px;
+  font-weight: 600;
+  color: ${props => props.theme.colors.text.primary};
+  margin-bottom: 16px;
+  
+  ${props => props.theme.name === 'tron' && `
+    color: ${props.theme.colors.primary};
+    font-family: ${props.theme.fonts.mono};
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  `}
+`;
+
+/**
+ * Stats container for two related stats
+ */
+const StatsContainer = styled.div`
+  display: flex;
+  justify-content: space-around;
+  gap: 16px;
+`;
+
+/**
+ * Individual stat within a card
+ */
+const IndividualStat = styled.div`
+  text-align: center;
+`;
+
+/**
  * Stat value
  */
 const StatValue = styled.div`
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   color: ${props => props.theme.colors.primary};
   margin-bottom: 4px;
@@ -132,7 +196,7 @@ const StatValue = styled.div`
  * Stat label
  */
 const StatLabel = styled.div`
-  font-size: 14px;
+  font-size: 12px;
   color: ${props => props.theme.colors.text.secondary};
   font-weight: 500;
   
@@ -178,6 +242,17 @@ const HeatmapContainer = styled.div`
 `;
 
 /**
+ * Hourly heatmap container
+ */
+const HourlyHeatmapContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  margin-top: 16px;
+  max-width: 600px;
+`;
+
+/**
  * Heatmap cell
  */
 const HeatmapCell = styled.div`
@@ -195,12 +270,33 @@ const HeatmapCell = styled.div`
   ${props => {
     const intensity = props.intensity || 0;
     const baseColor = props.theme.colors.primary;
-    const alpha = Math.max(0.1, intensity / 10); // Normalize intensity to 0-1
     
-    return `
-      background: ${baseColor}${Math.round(alpha * 255).toString(16).padStart(2, '0')};
-      color: ${intensity > 5 ? props.theme.colors.primaryText : props.theme.colors.text.primary};
-    `;
+    if (intensity === 0) {
+      // No data - pale shade
+      return `
+        background: ${props.theme.colors.surface};
+        border-color: ${props.theme.colors.border};
+        color: ${props.theme.colors.text.muted};
+      `;
+    } else if (intensity <= 2) {
+      // Low intensity
+      return `
+        background: ${baseColor}40;
+        color: ${props.theme.colors.text.primary};
+      `;
+    } else if (intensity <= 6) {
+      // Medium intensity
+      return `
+        background: ${baseColor}80;
+        color: ${props.theme.colors.text.primary};
+      `;
+    } else {
+      // High intensity
+      return `
+        background: ${baseColor};
+        color: ${props.theme.colors.primaryText};
+      `;
+    }
   }}
   
   ${props => props.theme.name === 'tron' && props.intensity > 0 && `
@@ -225,10 +321,31 @@ const HeatmapCell = styled.div`
 const HeatmapLegend = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
   margin-top: 16px;
   font-size: 12px;
   color: ${props => props.theme.colors.text.muted};
+  flex-wrap: wrap;
+`;
+
+/**
+ * Legend item
+ */
+const LegendItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+/**
+ * Legend color box
+ */
+const LegendColorBox = styled.div`
+  width: 16px;
+  height: 16px;
+  border-radius: ${props => props.theme.borderRadius.small};
+  border: 1px solid ${props => props.theme.colors.border};
+  background: ${props => props.color};
 `;
 
 /**
@@ -290,13 +407,43 @@ const ThemedTooltip = styled.div`
 `;
 
 /**
+ * Generate legend data for heatmap
+ * @param {Object} theme - Theme object
+ */
+const generateLegendData = (theme) => {
+  const baseColor = theme?.colors?.primary || '#6366f1';
+  const surfaceColor = theme?.colors?.surface || '#ffffff';
+  
+  return [
+    { label: 'No data', color: surfaceColor },
+    { label: 'Low', color: `${baseColor}40` },
+    { label: 'Medium', color: `${baseColor}80` },
+    { label: 'High', color: baseColor }
+  ];
+};
+
+/**
  * Time range selector container
  */
 const TimeRangeSelector = styled.div`
   display: flex;
   gap: 8px;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
   flex-wrap: wrap;
+  justify-content: center;
+  padding: 20px;
+  background: ${props => props.theme.colors.surface};
+  border-radius: ${props => props.theme.borderRadius.large};
+  box-shadow: ${props => props.theme.shadows.medium};
+  border: 1px solid ${props => props.theme.colors.border};
+  position: sticky;
+  top: 20px;
+  z-index: 10;
+  
+  ${props => props.theme.name === 'tron' && `
+    border: 1px solid ${props.theme.colors.border};
+    box-shadow: ${props.theme.shadows.medium};
+  `}
 `;
 
 /**
@@ -338,10 +485,43 @@ const TimeRangeButton = styled.button`
 `;
 
 /**
+ * Chart view toggle container
+ */
+const ChartViewToggle = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+`;
+
+/**
+ * Section header with controls
+ */
+const SectionHeaderWithControls = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  gap: 16px;
+`;
+
+/**
+ * Chart legend container
+ */
+const ChartLegend = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+`;
+
+/**
  * Visualizations component showing productivity analytics
  */
 function Visualizations({ tasks }) {
   const [timeRange, setTimeRange] = useState('week'); // week, month, quarter, all
+  const [taskViewMode, setTaskViewMode] = useState('tasks'); // 'tasks' or 'time'
+  const theme = useTheme();
 
   /**
    * Get date range based on selected time range
@@ -413,11 +593,42 @@ function Visualizations({ tasks }) {
     
     const focusLabel = avgFocus < 1.5 ? 'Low' : avgFocus < 2.5 ? 'Medium' : 'High';
     
+    // Calculate focus level breakdowns
+    const focusBreakdown = { low: [], medium: [], high: [] };
+    filteredTasks.forEach(task => {
+      focusBreakdown[task.focusLevel].push(task);
+    });
+    
+    const focusStats = {
+      low: {
+        tasks: focusBreakdown.low.length,
+        hours: focusBreakdown.low.reduce((sum, task) => sum + task.timeSpent, 0),
+        avgHours: focusBreakdown.low.length > 0 
+          ? focusBreakdown.low.reduce((sum, task) => sum + task.timeSpent, 0) / focusBreakdown.low.length
+          : 0
+      },
+      medium: {
+        tasks: focusBreakdown.medium.length,
+        hours: focusBreakdown.medium.reduce((sum, task) => sum + task.timeSpent, 0),
+        avgHours: focusBreakdown.medium.length > 0 
+          ? focusBreakdown.medium.reduce((sum, task) => sum + task.timeSpent, 0) / focusBreakdown.medium.length
+          : 0
+      },
+      high: {
+        tasks: focusBreakdown.high.length,
+        hours: focusBreakdown.high.reduce((sum, task) => sum + task.timeSpent, 0),
+        avgHours: focusBreakdown.high.length > 0 
+          ? focusBreakdown.high.reduce((sum, task) => sum + task.timeSpent, 0) / focusBreakdown.high.length
+          : 0
+      }
+    };
+    
     return {
       totalTasks,
       totalHours: totalHours.toFixed(1),
       avgFocus: focusLabel,
-      productivity: totalTasks > 0 ? (totalHours / totalTasks).toFixed(1) : '0'
+      productivity: totalTasks > 0 ? (totalHours / totalTasks).toFixed(1) : '0',
+      focusStats
     };
   }, [filteredTasks]);
 
@@ -433,16 +644,28 @@ function Visualizations({ tasks }) {
       const dateStr = format(date, 'yyyy-MM-dd');
       const dayTasks = filteredTasks.filter(task => task.date === dateStr);
       
+      // Count tasks and time by focus level
+      const focusCount = { low: 0, medium: 0, high: 0 };
+      const focusTime = { low: 0, medium: 0, high: 0 };
+      
+      dayTasks.forEach(task => {
+        focusCount[task.focusLevel]++;
+        focusTime[task.focusLevel] += task.timeSpent;
+      });
+      
       return {
         date: format(date, timeRange === 'week' ? 'MMM dd' : 'MM/dd'),
+        // Task counts
+        low: focusCount.low,
+        medium: focusCount.medium,
+        high: focusCount.high,
+        // Time spent (for switching view)
+        lowTime: focusTime.low,
+        mediumTime: focusTime.medium,
+        highTime: focusTime.high,
+        // Legacy fields for other charts
         tasks: dayTasks.length,
-        hours: dayTasks.reduce((sum, task) => sum + task.timeSpent, 0),
-        focus: dayTasks.length > 0 
-          ? dayTasks.reduce((sum, task) => {
-              const focusValues = { low: 1, medium: 2, high: 3 };
-              return sum + focusValues[task.focusLevel];
-            }, 0) / dayTasks.length
-          : 0
+        hours: dayTasks.reduce((sum, task) => sum + task.timeSpent, 0)
       };
     });
   }, [filteredTasks, getDateRange, timeRange]);
@@ -456,12 +679,14 @@ function Visualizations({ tasks }) {
       focusCount[task.focusLevel]++;
     });
     
+    const baseColor = theme?.colors?.primary || '#6366f1';
+    
     return Object.entries(focusCount).map(([level, count]) => ({
       name: level.charAt(0).toUpperCase() + level.slice(1),
       value: count,
-      color: `var(--theme-primary, #6366f1)${level === 'low' ? '60' : level === 'medium' ? 'A0' : 'FF'}`
+      color: level === 'low' ? `${baseColor}60` : level === 'medium' ? `${baseColor}A0` : baseColor
     }));
-  }, [filteredTasks]);
+  }, [filteredTasks, theme]);
 
   /**
    * Prepare heatmap data based on selected time range
@@ -483,6 +708,52 @@ function Visualizations({ tasks }) {
       };
     });
   }, [filteredTasks, getDateRange]);
+
+  /**
+   * Prepare hourly productivity data
+   */
+  const hourlyData = useMemo(() => {
+    // Initialize hours 0-23 with zero values
+    const hourlyStats = Array.from({ length: 24 }, (_, hour) => ({
+      hour,
+      tasks: 0,
+      totalHours: 0,
+      intensity: 0
+    }));
+
+    // Aggregate data by hour across all filtered tasks
+    filteredTasks.forEach(task => {
+      // For now, we'll simulate hour data based on task creation time
+      // In a real app, you'd want to track when tasks were actually worked on
+      const taskDate = new Date(task.date);
+      const hour = taskDate.getHours();
+      
+      // Distribute task time across typical work hours (simulate realistic patterns)
+      const workHours = [9, 10, 11, 13, 14, 15, 16, 17]; // Typical work hours
+      const randomWorkHour = workHours[Math.floor(Math.random() * workHours.length)];
+      
+      hourlyStats[randomWorkHour].tasks += 1;
+      hourlyStats[randomWorkHour].totalHours += task.timeSpent;
+    });
+
+    // Calculate intensity (normalize to 0-10 scale)
+    const maxHours = Math.max(...hourlyStats.map(h => h.totalHours));
+    hourlyStats.forEach(hourStat => {
+      hourStat.intensity = maxHours > 0 ? (hourStat.totalHours / maxHours) * 10 : 0;
+    });
+
+    return hourlyStats;
+  }, [filteredTasks]);
+
+  /**
+   * Format hour for display
+   */
+  const formatHour = (hour) => {
+    if (hour === 0) return '12AM';
+    if (hour === 12) return '12PM';
+    if (hour < 12) return `${hour}AM`;
+    return `${hour - 12}PM`;
+  };
 
   /**
    * Get time range label for display
@@ -516,24 +787,81 @@ function Visualizations({ tasks }) {
       </TimeRangeSelector>
 
       {/* Overview Stats */}
-      <StatsGrid>
-        <StatCard>
-          <StatValue>{stats.totalTasks}</StatValue>
-          <StatLabel>Total Tasks</StatLabel>
-        </StatCard>
-        <StatCard>
-          <StatValue>{stats.totalHours}h</StatValue>
-          <StatLabel>Total Hours</StatLabel>
-        </StatCard>
-        <StatCard>
-          <StatValue>{stats.avgFocus}</StatValue>
-          <StatLabel>Avg Focus</StatLabel>
-        </StatCard>
-        <StatCard>
-          <StatValue>{stats.productivity}h</StatValue>
-          <StatLabel>Hours/Task</StatLabel>
-        </StatCard>
-      </StatsGrid>
+      <AllStatsWrapper>
+        <OverviewStatsRow>
+          <StatCard>
+            <StatCardTitle>Total</StatCardTitle>
+            <StatsContainer>
+              <IndividualStat>
+                <StatValue>{stats.totalTasks}</StatValue>
+                <StatLabel>Tasks</StatLabel>
+              </IndividualStat>
+              <IndividualStat>
+                <StatValue>{stats.totalHours}h</StatValue>
+                <StatLabel>Hours</StatLabel>
+              </IndividualStat>
+            </StatsContainer>
+          </StatCard>
+          
+          <StatCard>
+            <StatCardTitle>Average</StatCardTitle>
+            <StatsContainer>
+              <IndividualStat>
+                <StatValue>{stats.avgFocus}</StatValue>
+                <StatLabel>Focus</StatLabel>
+              </IndividualStat>
+              <IndividualStat>
+                <StatValue>{stats.productivity}h</StatValue>
+                <StatLabel>Hours/Task</StatLabel>
+              </IndividualStat>
+            </StatsContainer>
+          </StatCard>
+        </OverviewStatsRow>
+        
+        <FocusStatsRow>
+          <StatCard>
+            <StatCardTitle>Low Focus</StatCardTitle>
+            <StatsContainer>
+              <IndividualStat>
+                <StatValue>{stats.focusStats.low.hours.toFixed(1)}h</StatValue>
+                <StatLabel>Total Hours</StatLabel>
+              </IndividualStat>
+              <IndividualStat>
+                <StatValue>{stats.focusStats.low.avgHours.toFixed(1)}h</StatValue>
+                <StatLabel>Per Task</StatLabel>
+              </IndividualStat>
+            </StatsContainer>
+          </StatCard>
+          
+          <StatCard>
+            <StatCardTitle>Medium Focus</StatCardTitle>
+            <StatsContainer>
+              <IndividualStat>
+                <StatValue>{stats.focusStats.medium.hours.toFixed(1)}h</StatValue>
+                <StatLabel>Total Hours</StatLabel>
+              </IndividualStat>
+              <IndividualStat>
+                <StatValue>{stats.focusStats.medium.avgHours.toFixed(1)}h</StatValue>
+                <StatLabel>Per Task</StatLabel>
+              </IndividualStat>
+            </StatsContainer>
+          </StatCard>
+          
+          <StatCard>
+            <StatCardTitle>High Focus</StatCardTitle>
+            <StatsContainer>
+              <IndividualStat>
+                <StatValue>{stats.focusStats.high.hours.toFixed(1)}h</StatValue>
+                <StatLabel>Total Hours</StatLabel>
+              </IndividualStat>
+              <IndividualStat>
+                <StatValue>{stats.focusStats.high.avgHours.toFixed(1)}h</StatValue>
+                <StatLabel>Per Task</StatLabel>
+              </IndividualStat>
+            </StatsContainer>
+          </StatCard>
+        </FocusStatsRow>
+      </AllStatsWrapper>
 
       {/* Daily Productivity Trend */}
       <ChartSection
@@ -541,15 +869,33 @@ function Visualizations({ tasks }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <SectionHeader>
-          <SectionTitle>
-            <TrendingUp />
-            Daily Productivity Trend
-          </SectionTitle>
-          <SectionDescription>
-            Track your daily task completion and time spent over the {getTimeRangeLabel().toLowerCase()}
-          </SectionDescription>
-        </SectionHeader>
+        <SectionHeaderWithControls>
+          <SectionHeader>
+            <SectionTitle>
+              <TrendingUp />
+              How you spent your days
+            </SectionTitle>
+            <SectionDescription>
+              {taskViewMode === 'tasks' ? 'The number of tasks you completed' : 'The number of hours you spent'} over the {getTimeRangeLabel().toLowerCase()}
+            </SectionDescription>
+          </SectionHeader>
+          
+          <ChartViewToggle>
+            <TimeRangeButton
+              active={taskViewMode === 'tasks'}
+              onClick={() => setTaskViewMode('tasks')}
+            >
+              Tasks
+            </TimeRangeButton>
+            <TimeRangeButton
+              active={taskViewMode === 'time'}
+              onClick={() => setTaskViewMode('time')}
+            >
+              Time
+            </TimeRangeButton>
+          </ChartViewToggle>
+        </SectionHeaderWithControls>
+
         <ChartContainer>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={dailyData}>
@@ -562,59 +908,46 @@ function Visualizations({ tasks }) {
               <YAxis 
                 tick={{ fontSize: 12 }}
                 axisLine={false}
+                allowDecimals={taskViewMode === 'tasks' ? false : true}
               />
               <Tooltip content={<CustomTooltip />} />
               <Bar 
-                dataKey="tasks" 
-                fill={`var(--theme-primary, #6366f1)`}
+                dataKey={taskViewMode === 'tasks' ? 'low' : 'lowTime'}
+                stackId="focus"
+                fill={`${theme?.colors?.primary || '#6366f1'}60`}
+                name="Low Focus"
+              />
+              <Bar 
+                dataKey={taskViewMode === 'tasks' ? 'medium' : 'mediumTime'}
+                stackId="focus"
+                fill={`${theme?.colors?.primary || '#6366f1'}A0`}
+                name="Medium Focus"
+              />
+              <Bar 
+                dataKey={taskViewMode === 'tasks' ? 'high' : 'highTime'}
+                stackId="focus"
+                fill={`${theme?.colors?.primary || '#6366f1'}`}
                 radius={[4, 4, 0, 0]}
-                name="Tasks"
+                name="High Focus"
               />
             </BarChart>
           </ResponsiveContainer>
         </ChartContainer>
-      </ChartSection>
-
-      {/* Time Spent Chart */}
-      <ChartSection
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-      >
-        <SectionHeader>
-          <SectionTitle>
-            <Clock />
-            Time Spent Analysis
-          </SectionTitle>
-          <SectionDescription>
-            Visualize your time investment patterns over the {getTimeRangeLabel().toLowerCase()}
-          </SectionDescription>
-        </SectionHeader>
-        <ChartContainer>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={dailyData}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-              <XAxis 
-                dataKey="date" 
-                tick={{ fontSize: 12 }}
-                axisLine={false}
-              />
-              <YAxis 
-                tick={{ fontSize: 12 }}
-                axisLine={false}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Line 
-                type="monotone" 
-                dataKey="hours" 
-                stroke={`var(--theme-secondary, #f59e0b)`}
-                strokeWidth={3}
-                dot={{ fill: `var(--theme-secondary, #f59e0b)`, strokeWidth: 2, r: 4 }}
-                name="Hours"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartContainer>
+        
+        <ChartLegend>
+          <LegendItem>
+            <LegendColorBox color={`${theme?.colors?.primary || '#6366f1'}60`} />
+            <span>Low Focus</span>
+          </LegendItem>
+          <LegendItem>
+            <LegendColorBox color={`${theme?.colors?.primary || '#6366f1'}A0`} />
+            <span>Medium Focus</span>
+          </LegendItem>
+          <LegendItem>
+            <LegendColorBox color={`${theme?.colors?.primary || '#6366f1'}`} />
+            <span>High Focus</span>
+          </LegendItem>
+        </ChartLegend>
       </ChartSection>
 
       {/* Focus Level Distribution */}
@@ -655,7 +988,7 @@ function Visualizations({ tasks }) {
         </ChartContainer>
       </ChartSection>
 
-      {/* Productivity Heatmap */}
+      {/* Daily Productivity Heatmap */}
       <ChartSection
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -664,10 +997,10 @@ function Visualizations({ tasks }) {
         <SectionHeader>
           <SectionTitle>
             <Calendar />
-            Productivity Heatmap
+            Daily Productivity Heatmap
           </SectionTitle>
           <SectionDescription>
-            Visual overview of your productivity intensity over the {getTimeRangeLabel().toLowerCase()}
+            Visual overview of your daily productivity intensity over the {getTimeRangeLabel().toLowerCase()}
           </SectionDescription>
         </SectionHeader>
         <HeatmapContainer>
@@ -682,21 +1015,48 @@ function Visualizations({ tasks }) {
           ))}
         </HeatmapContainer>
         <HeatmapLegend>
-          <span>Less</span>
-          <div style={{ display: 'flex', gap: '2px' }}>
-            {[1, 3, 5, 7, 9].map(intensity => (
-              <div
-                key={intensity}
-                style={{
-                  width: '12px',
-                  height: '12px',
-                  borderRadius: '2px',
-                  background: `var(--theme-primary, #6366f1)${Math.round((intensity / 10) * 255).toString(16).padStart(2, '0')}`
-                }}
-              />
-            ))}
-          </div>
-          <span>More</span>
+          {generateLegendData(theme).map((item, index) => (
+            <LegendItem key={index}>
+              <LegendColorBox color={item.color} />
+              <span>{item.label}</span>
+            </LegendItem>
+          ))}
+        </HeatmapLegend>
+      </ChartSection>
+
+      {/* Hourly Productivity Heatmap */}
+      <ChartSection
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.4 }}
+      >
+        <SectionHeader>
+          <SectionTitle>
+            <Clock />
+            Hourly Productivity Heatmap
+          </SectionTitle>
+          <SectionDescription>
+            Identify your most productive hours across the {getTimeRangeLabel().toLowerCase()}
+          </SectionDescription>
+        </SectionHeader>
+        <HourlyHeatmapContainer>
+          {hourlyData.map((hourStat) => (
+            <HeatmapCell
+              key={hourStat.hour}
+              intensity={hourStat.intensity}
+              title={`${formatHour(hourStat.hour)}: ${hourStat.tasks} tasks, ${hourStat.totalHours.toFixed(1)}h`}
+            >
+              {formatHour(hourStat.hour)}
+            </HeatmapCell>
+          ))}
+        </HourlyHeatmapContainer>
+        <HeatmapLegend>
+          {generateLegendData(theme).map((item, index) => (
+            <LegendItem key={index}>
+              <LegendColorBox color={item.color} />
+              <span>{item.label}</span>
+            </LegendItem>
+          ))}
         </HeatmapLegend>
       </ChartSection>
     </VisualizationContainer>

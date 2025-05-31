@@ -38,58 +38,7 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
-/**
- * Styled container for the theme toggle in top nav
- */
-const ThemeToggle = styled.div`
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1000;
-  background: ${props => props.theme.colors.surface};
-  border-radius: ${props => props.theme.borderRadius.medium};
-  box-shadow: ${props => props.theme.shadows.medium};
-  border: 1px solid ${props => props.theme.colors.border};
-`;
 
-/**
- * Dark/Light mode toggle button
- */
-const ToggleButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background: ${props => props.theme.colors.primary};
-  color: ${props => props.theme.colors.primaryText};
-  border-radius: ${props => props.theme.borderRadius.medium};
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-
-  &:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-    
-    ${props => props.theme.name === 'Tron' && `
-      box-shadow: ${props.theme.glow.small};
-    `}
-  }
-
-  svg {
-    width: 16px;
-    height: 16px;
-  }
-  
-  ${props => props.theme.name === 'Tron' && `
-    background: ${props.theme.colors.primary};
-    color: ${props.theme.colors.primaryText};
-    text-shadow: ${props.theme.glow.small};
-    font-family: ${props.theme.fonts.mono};
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  `}
-`;
 
 /**
  * Easter Egg Helper function to check if any task triggers Tron theme
@@ -207,13 +156,11 @@ function App() {
   return (
     <ThemeProvider theme={activeTheme}>
       <GlobalStyle />
-      <ThemeToggle>
-        <ToggleButton onClick={handleDarkModeToggle}>
-          {isDarkMode ? <Sun /> : <Moon />}
-          {isDarkMode ? 'Light' : 'Dark'}
-        </ToggleButton>
-      </ThemeToggle>
-      <ProductivityTracker onTaskInputChange={handleTaskInputChange} />
+      <ProductivityTracker 
+        onTaskInputChange={handleTaskInputChange}
+        isDarkMode={isDarkMode}
+        onDarkModeToggle={handleDarkModeToggle}
+      />
     </ThemeProvider>
   );
 }

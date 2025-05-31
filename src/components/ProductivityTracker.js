@@ -7,7 +7,7 @@ import WeeklySummary from './WeeklySummary';
 import SearchAgent from './SearchAgent';
 import AdminDashboard from './AdminDashboard';
 import { loadSampleDataIfEmpty } from '../utils/sampleData';
-import { BarChart3, Calendar, FileText, Search, Settings } from 'lucide-react';
+import { BarChart3, Calendar, FileText, Search, Settings, Moon, Sun } from 'lucide-react';
 
 /**
  * Main container for the productivity tracker application
@@ -16,7 +16,6 @@ const Container = styled.div`
   min-height: 100vh;
   background: ${props => props.theme.colors.background};
   padding: 20px;
-  padding-top: 80px; // Account for theme selector
 `;
 
 /**
@@ -124,7 +123,7 @@ const PageSubtitle = styled.p`
 /**
  * Main ProductivityTracker component that orchestrates all functionality
  */
-function ProductivityTracker({ onTaskInputChange }) {
+function ProductivityTracker({ onTaskInputChange, isDarkMode, onDarkModeToggle }) {
   const [activeTab, setActiveTab] = useState('tasks');
   const [tasks, setTasks] = useState([]);
   const [summaries, setSummaries] = useState([]);
@@ -297,6 +296,12 @@ function ProductivityTracker({ onTaskInputChange }) {
             {label}
           </NavButton>
         ))}
+        <NavButton
+          onClick={onDarkModeToggle}
+          title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          {isDarkMode ? <Sun /> : <Moon />}
+        </NavButton>
       </Navigation>
 
       <Content>

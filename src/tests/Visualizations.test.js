@@ -85,7 +85,7 @@ Object.defineProperty(window, 'localStorage', {
 });
 
 // Helper function to render component with theme
-const renderWithTheme = (component, theme = themes.elegant) => {
+const renderWithTheme = (component, theme = themes.Ready) => {
   return render(
     <ThemeProvider theme={theme}>
       {component}
@@ -192,7 +192,7 @@ describe('Visualizations Component', () => {
 
   describe('Theme Compatibility', () => {
     test('renders correctly with all themes', () => {
-      const themesToTest = ['elegant', 'ready', 'readyAlt', 'tron'];
+      const themesToTest = ['Ready', 'Ready-Dark', 'Tron'];
 
       themesToTest.forEach(themeName => {
         const { unmount } = renderWithTheme(<Visualizations />, themes[themeName]);

@@ -53,7 +53,7 @@ jest.mock('recharts', () => ({
 }));
 
 // Helper function to render component with theme
-const renderWithTheme = (component, theme = themes.elegant) => {
+const renderWithTheme = (component, theme = themes.Ready) => {
   return render(
     <ThemeProvider theme={theme}>
       {component}
@@ -171,7 +171,7 @@ describe('Responsive Design Tests', () => {
       // Landscape mobile
       setViewport(667, 375);
       rerender(
-        <ThemeProvider theme={themes.elegant}>
+        <ThemeProvider theme={themes.Ready}>
           <Visualizations />
         </ThemeProvider>
       );
@@ -208,7 +208,7 @@ describe('Responsive Design Tests', () => {
       { name: 'Desktop', width: 1024, height: 768 }
     ];
 
-    const testThemes = ['elegant', 'ready', 'tron'];
+    const testThemes = ['Ready', 'Ready-Dark', 'Tron'];
 
     testThemes.forEach(themeName => {
       viewportSizes.forEach(({ name, width, height }) => {
@@ -286,7 +286,7 @@ describe('Responsive Design Tests', () => {
   describe('Dark Mode Responsive Behavior', () => {
     test('Dark theme maintains readability on mobile', () => {
       setViewport(375, 667);
-      renderWithTheme(<TaskManager />, themes['elegant-dark']);
+      renderWithTheme(<TaskManager />, themes['Ready-Dark']);
 
       // Dark theme content should be readable
       expect(screen.getByText(/Mobile responsive task/)).toBeInTheDocument();

@@ -29,7 +29,7 @@ Object.defineProperty(window, 'localStorage', {
 });
 
 // Helper function to render component with theme
-const renderWithTheme = (component, theme = themes.elegant) => {
+const renderWithTheme = (component, theme = themes.Ready) => {
   return render(
     <ThemeProvider theme={theme}>
       {component}
@@ -263,7 +263,7 @@ describe('TaskManager Component', () => {
       }];
 
       // Test with different themes
-      const themesToTest = ['elegant', 'ready', 'readyAlt', 'tron'];
+      const themesToTest = ['Ready', 'Ready-Dark', 'Tron'];
 
       themesToTest.forEach(themeName => {
         const { unmount } = renderWithTheme(<TaskManager tasks={sampleTask} />, themes[themeName]);

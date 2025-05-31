@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { motion } from 'framer-motion';
 import {
@@ -17,7 +17,7 @@ import {
   Legend
 } from 'recharts';
 import { Calendar, TrendingUp, Clock, Focus } from 'lucide-react';
-import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import { format, subDays, eachDayOfInterval } from 'date-fns';
 
 /**
  * Container for all visualizations
@@ -283,18 +283,9 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 /**
- * Wrapper component to pass theme to CustomTooltip
- */
-const ThemedTooltip = styled.div`
-  display: contents;
-`;
-
-/**
  * Visualizations component showing productivity analytics
  */
 function Visualizations({ tasks }) {
-  const [timeRange, setTimeRange] = useState('week'); // week, month, all
-
   /**
    * Calculate productivity statistics
    */

@@ -123,7 +123,7 @@ const PageSubtitle = styled.p`
 /**
  * Main ProductivityTracker component that orchestrates all functionality
  */
-function ProductivityTracker() {
+function ProductivityTracker({ onTaskInputChange }) {
   const [activeTab, setActiveTab] = useState('tasks');
   const [tasks, setTasks] = useState([]);
   const [summaries, setSummaries] = useState([]);
@@ -216,6 +216,15 @@ function ProductivityTracker() {
   ];
 
   /**
+   * Pass input changes up to parent (App)
+   */
+  const handleTaskInputChange = (inputValue) => {
+    if (onTaskInputChange) {
+      onTaskInputChange(inputValue);
+    }
+  };
+
+  /**
    * Render active tab content
    */
   const renderTabContent = () => {
@@ -227,6 +236,7 @@ function ProductivityTracker() {
             onAddTask={addTask}
             onUpdateTask={updateTask}
             onDeleteTask={deleteTask}
+            onTaskInputChange={handleTaskInputChange}
           />
         );
       case 'analytics':

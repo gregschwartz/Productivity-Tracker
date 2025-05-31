@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, Calendar, TrendingUp, Clock, Focus, Sparkles } from 'lucide-react';
+import { Search, Calendar, TrendingUp, Clock, Focus, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 
 /**

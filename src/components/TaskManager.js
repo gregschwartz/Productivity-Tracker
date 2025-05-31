@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Clock, Focus, Edit3, Trash2, Check } from 'lucide-react';
+import { Plus, Clock, Focus, Trash2, Check } from 'lucide-react';
 import { format } from 'date-fns';
 
 /**
@@ -114,37 +114,6 @@ const Input = styled.input`
 
   &::placeholder {
     color: ${props => props.theme.colors.text.muted};
-  }
-`;
-
-/**
- * Select styled component
- */
-const Select = styled.select`
-  padding: 12px 16px;
-  border: 1px solid ${props => props.theme.colors.border};
-  border-radius: ${props => props.theme.borderRadius.medium};
-  background: ${props => props.theme.colors.background};
-  color: ${props => props.theme.colors.text.primary};
-  font-size: 14px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  
-  ${props => props.theme.name === 'tron' && `
-    background: ${props.theme.colors.surface};
-    border: 1px solid ${props.theme.colors.border};
-    color: ${props.theme.colors.text.primary};
-    font-family: ${props.theme.fonts.mono};
-  `}
-
-  &:focus {
-    border-color: ${props => props.theme.colors.primary};
-    box-shadow: 0 0 0 3px ${props => props.theme.colors.primary}20;
-    
-    ${props => props.theme.name === 'tron' && `
-      box-shadow: ${props.theme.glow.small};
-      border-color: ${props.theme.colors.primary};
-    `}
   }
 `;
 
@@ -403,7 +372,8 @@ function TaskManager({
   tasks = [], 
   onAddTask = () => {}, 
   onUpdateTask = () => {}, 
-  onDeleteTask = () => {} 
+  onDeleteTask = () => {},
+  onTaskInputChange = () => {}
 }) {
   const [formData, setFormData] = useState({
     name: '',
@@ -416,7 +386,13 @@ function TaskManager({
    */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
+      if (name === 'name') {
+        onTaskInputChange(updated.name);
+      }
+      return updated;
+    });
   };
 
   /**

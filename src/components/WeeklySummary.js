@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Sparkles, Calendar, Clock, TrendingUp, Copy, Trash2, RefreshCw } from 'lucide-react';
+import { Sparkles, Calendar, Clock, Copy, Trash2, RefreshCw } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, getWeek, getYear } from 'date-fns';
 
 /**
@@ -429,32 +429,31 @@ const generateMockSummary = (tasks, weekStart, weekEnd) => {
  */
 function WeeklySummary({ tasks = [], summaries = [], onAddSummary = () => {} }) {
   const [generating, setGenerating] = useState(false);
-  const [selectedWeek, setSelectedWeek] = useState(new Date());
 
   /**
    * Get tasks for the selected week
    */
   const weekTasks = useMemo(() => {
-    const weekStart = startOfWeek(selectedWeek);
-    const weekEnd = endOfWeek(selectedWeek);
+    const weekStart = startOfWeek(new Date());
+    const weekEnd = endOfWeek(new Date());
     
     return tasks.filter(task => {
       const taskDate = new Date(task.date);
       return taskDate >= weekStart && taskDate <= weekEnd;
     });
-  }, [tasks, selectedWeek]);
+  }, [tasks]);
 
   /**
    * Check if summary exists for current week
    */
   const existingSummary = useMemo(() => {
-    const weekNumber = getWeek(selectedWeek);
-    const year = getYear(selectedWeek);
+    const weekNumber = getWeek(new Date());
+    const year = getYear(new Date());
     
     return summaries.find(summary => 
       summary.week === weekNumber && summary.year === year
     );
-  }, [summaries, selectedWeek]);
+  }, [summaries]);
 
   /**
    * Generate a new weekly summary using GenAI
@@ -538,13 +537,13 @@ Format as JSON with fields: summary, insights (array), recommendations (array)`,
         };
       }
 
-      const weekStart = startOfWeek(selectedWeek);
-      const weekEnd = endOfWeek(selectedWeek);
+      const weekStart = startOfWeek(new Date());
+      const weekEnd = endOfWeek(new Date());
 
       const summary = {
         id: Date.now(),
-        week: getWeek(selectedWeek),
-        year: getYear(selectedWeek),
+        week: getWeek(new Date()),
+        year: getYear(new Date()),
         weekStart: weekStart.toISOString(),
         weekEnd: weekEnd.toISOString(),
         weekRange: `${format(weekStart, 'MMM dd')} - ${format(weekEnd, 'MMM dd, yyyy')}`,
@@ -565,13 +564,13 @@ Format as JSON with fields: summary, insights (array), recommendations (array)`,
       console.error('Error generating AI summary:', error);
       
       // Fallback to local summary if API fails
-      const weekStart = startOfWeek(selectedWeek);
-      const weekEnd = endOfWeek(selectedWeek);
+      const weekStart = startOfWeek(new Date());
+      const weekEnd = endOfWeek(new Date());
       const mockSummary = generateMockSummary(weekTasks, weekStart, weekEnd);
       
       const summary = {
-        week: getWeek(selectedWeek),
-        year: getYear(selectedWeek),
+        week: getWeek(new Date()),
+        year: getYear(new Date()),
         weekStart: weekStart.toISOString(),
         weekEnd: weekEnd.toISOString(),
         ...mockSummary
@@ -599,8 +598,8 @@ Format as JSON with fields: summary, insights (array), recommendations (array)`,
     console.log('Delete summary:', summaryId);
   };
 
-  const weekStart = startOfWeek(selectedWeek);
-  const weekEnd = endOfWeek(selectedWeek);
+  const weekStart = startOfWeek(new Date());
+  const weekEnd = endOfWeek(new Date());
 
   return (
     <SummaryContainer>

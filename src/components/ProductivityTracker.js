@@ -213,7 +213,6 @@ function ProductivityTracker({ onTaskInputChange, isDarkMode, onDarkModeToggle }
   const navigationItems = [
     { key: 'tasks', label: 'Tasks', icon: Calendar },
     { key: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { key: 'summaries', label: 'Summaries', icon: FileText },
     { key: 'search', label: 'Search', icon: Search },
     { key: 'admin', label: 'Admin', icon: Settings }
   ];
@@ -243,15 +242,7 @@ function ProductivityTracker({ onTaskInputChange, isDarkMode, onDarkModeToggle }
           />
         );
       case 'analytics':
-        return <Visualizations tasks={tasks} />;
-      case 'summaries':
-        return (
-          <WeeklySummary
-            tasks={tasks}
-            summaries={summaries}
-            onAddSummary={addSummary}
-          />
-        );
+        return <Visualizations tasks={tasks} summaries={summaries} />;
       case 'search':
         return <SearchAgent summaries={summaries} />;
       case 'admin':
@@ -264,8 +255,7 @@ function ProductivityTracker({ onTaskInputChange, isDarkMode, onDarkModeToggle }
   const getPageTitle = () => {
     switch (activeTab) {
       case 'tasks': return 'Daily Task Tracker';
-      case 'analytics': return 'Productivity Analytics';
-      case 'summaries': return 'Weekly Summaries';
+      case 'analytics': return 'Analytics & Summaries';
       case 'search': return 'Historical Search';
       case 'admin': return 'Admin Dashboard';
       default: return 'Productivity Tracker';
@@ -274,9 +264,8 @@ function ProductivityTracker({ onTaskInputChange, isDarkMode, onDarkModeToggle }
 
   const getPageSubtitle = () => {
     switch (activeTab) {
-      case 'tasks': return 'Track your daily tasks, time spent, and focus levels to understand your productivity patterns.';
-      case 'analytics': return 'Visualize your productivity trends with interactive charts and heatmaps.';
-      case 'summaries': return 'AI-generated weekly summaries with personalized insights and recommendations.';
+      case 'tasks': return 'Track your work to understand your patterns.';
+      case 'analytics': return 'Task analytics and AI recommendations';
       case 'search': return 'Search through your productivity history to find similar patterns and insights.';
       case 'admin': return 'Configure integrations, monitor system health, and manage your data.';
       default: return 'Your personal productivity intelligence platform.';

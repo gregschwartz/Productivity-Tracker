@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Clock, Focus, Trash2, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Clock, Focus, Trash2, Check, ChevronLeft, ChevronRight, Edit2, X } from 'lucide-react';
 import { format, addDays, subDays, parseISO } from 'date-fns';
 
 /**
@@ -430,6 +430,69 @@ const PrimaryButton = styled.button`
 `;
 
 /**
+ * Secondary button for cancel actions
+ */
+const SecondaryButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: transparent;
+  color: ${props => props.theme.colors.text.secondary};
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.borderRadius.medium};
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  
+  ${props => props.theme.name === 'tron' && `
+    border: 1px solid ${props.theme.colors.border};
+    color: ${props.theme.colors.text.primary};
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: ${props.theme.fonts.mono};
+  `}
+
+  &:hover {
+    background: ${props => props.theme.colors.backgroundHover};
+    border-color: ${props => props.theme.colors.primary};
+    color: ${props => props.theme.colors.primary};
+    transform: translateY(-1px);
+    
+    ${props => props.theme.name === 'tron' && `
+      box-shadow: ${props.theme.glow.small};
+    `}
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px ${props => props.theme.colors.primary}40;
+    
+    ${props => props.theme.name === 'tron' && `
+      box-shadow: ${props.theme.glow.small};
+    `}
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+`;
+
+/**
+ * Button group for form actions
+ */
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 12px;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
+/**
  * Task list styled component
  */
 const TaskList = styled.div`
@@ -443,15 +506,23 @@ const TaskList = styled.div`
  */
 const TaskCard = styled(motion.div)`
   background: ${props => props.theme.colors.surface};
-  border: 1px solid ${props => props.theme.colors.border};
+  border: 1px solid ${props => props.isEditing ? props.theme.colors.primary : props.theme.colors.border};
   border-radius: ${props => props.theme.borderRadius.medium};
   padding: 20px;
   box-shadow: ${props => props.theme.shadows.small};
   transition: all 0.2s ease;
   
+  ${props => props.isEditing && `
+    box-shadow: 0 0 0 2px ${props.theme.colors.primary}20;
+  `}
+  
   ${props => props.theme.name === 'tron' && `
-    border: 1px solid ${props.theme.colors.border};
+    border: 1px solid ${props.isEditing ? props.theme.colors.primary : props.theme.colors.border};
     box-shadow: ${props.theme.shadows.small};
+    
+    ${props.isEditing && `
+      box-shadow: ${props.theme.glow.medium};
+    `}
   `}
 
   &:hover {
@@ -599,6 +670,8 @@ function TaskManager({
     focusLevel: 'medium'
   });
 
+  const [editingTask, setEditingTask] = useState(null);
+
   /**
    * Get the current working date (selected date or today)
    */
@@ -679,17 +752,48 @@ function TaskManager({
   };
 
   /**
+   * Start editing a task
+   */
+  const handleEditTask = (task) => {
+    setEditingTask(task);
+    setFormData({
+      name: task.name,
+      timeSpent: task.timeSpent.toString(),
+      focusLevel: task.focusLevel
+    });
+  };
+
+  /**
+   * Cancel editing and return to create mode
+   */
+  const handleCancelEdit = () => {
+    setEditingTask(null);
+    setFormData({ name: '', timeSpent: '', focusLevel: 'medium' });
+  };
+
+  /**
    * Handle form submission
    */
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.timeSpent) return;
 
-    onAddTask({
-      name: formData.name.trim(),
-      timeSpent: parseFloat(formData.timeSpent),
-      focusLevel: formData.focusLevel
-    }, currentDateString);
+    if (editingTask) {
+      // Update existing task
+      onUpdateTask(editingTask.id, {
+        name: formData.name.trim(),
+        timeSpent: parseFloat(formData.timeSpent),
+        focusLevel: formData.focusLevel
+      });
+      setEditingTask(null);
+    } else {
+      // Create new task
+      onAddTask({
+        name: formData.name.trim(),
+        timeSpent: parseFloat(formData.timeSpent),
+        focusLevel: formData.focusLevel
+      }, currentDateString);
+    }
 
     setFormData({ name: '', timeSpent: '', focusLevel: 'medium' });
   };
@@ -786,10 +890,18 @@ function TaskManager({
             </InputGroup>
           </FormFields>
 
-          <PrimaryButton type="submit">
-            <Plus />
-            Log Task
-          </PrimaryButton>
+          <ButtonGroup>
+            <PrimaryButton type="submit">
+              {editingTask ? <Check /> : <Plus />}
+              {editingTask ? 'Update' : 'Log Task'}
+            </PrimaryButton>
+            {editingTask && (
+              <SecondaryButton type="button" onClick={handleCancelEdit}>
+                <X />
+                Cancel
+              </SecondaryButton>
+            )}
+          </ButtonGroup>
         </TaskForm>
       </AddTaskSection>
 
@@ -811,10 +923,17 @@ function TaskManager({
                 data-testid="task-card"
                 data-focus-level={task.focusLevel}
                 data-completed={task.completed}
+                isEditing={editingTask && editingTask.id === task.id}
               >
                 <TaskHeader>
                   <TaskTitle>{task.name}</TaskTitle>
                   <TaskActions>
+                    <IconButton
+                      onClick={() => handleEditTask(task)}
+                      title="Edit task"
+                    >
+                      <Edit2 />
+                    </IconButton>
                     <IconButton
                       onClick={() => onDeleteTask(task.id)}
                       title="Delete task"
@@ -830,12 +949,7 @@ function TaskManager({
                     {task.timeSpent} {task.timeSpent === 1 ? 'hour' : 'hours'}
                   </MetaItem>
                   <MetaItem>
-                    <Focus />
                     {task.focusLevel} focus
-                  </MetaItem>
-                  <MetaItem>
-                    <Check />
-                    {format(new Date(task.timestamp), 'h:mm a')}
                   </MetaItem>
                 </TaskMeta>
               </TaskCard>
@@ -847,4 +961,4 @@ function TaskManager({
   );
 }
 
-export default TaskManager; 
+export default TaskManager;

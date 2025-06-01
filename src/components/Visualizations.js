@@ -340,6 +340,14 @@ const HeatmapCell = styled.div`
       box-shadow: ${props.theme.glow.medium};
     `}
   }
+  
+  ${props => props.clickable && `
+    cursor: pointer;
+    
+    &:active {
+      transform: scale(1.05);
+    }
+  `}
 `;
 
 /**
@@ -1297,11 +1305,11 @@ function Visualizations({ tasks, summaries = [], onNavigateToDate }) {
             Visual overview of your daily productivity intensity over {getTimeRangeLabel().toLowerCase()}
           </SectionDescription>
         </SectionHeader>
-                  <HeatmapContainer>
-            {heatmapData.map((day, index) => (
-              <HeatmapCell
-                key={day.date}
-                intensity={day.intensity}
+                          <HeatmapContainer>
+          {heatmapData.map((day, index) => (
+            <HeatmapCell
+              key={day.date}
+              intensity={day.intensity}
               title={`${day.date}: ${day.tasks} tasks, ${day.intensity.toFixed(1)}h${day.tasks > 0 ? ' - Click to view tasks' : ''}`}
               clickable={day.tasks > 0 && onNavigateToDate}
               onClick={() => {
@@ -1309,12 +1317,12 @@ function Visualizations({ tasks, summaries = [], onNavigateToDate }) {
                   onNavigateToDate(day.date);
                 }
               }}
-              >
-                {day.isFirstOfMonth && day.monthName && <MonthLabel>{day.monthName}</MonthLabel>}
-                <DayNumber>{day.day}</DayNumber>
-              </HeatmapCell>
-            ))}
-          </HeatmapContainer>
+            >
+              {day.isFirstOfMonth && day.monthName && <MonthLabel>{day.monthName}</MonthLabel>}
+              <DayNumber>{day.day}</DayNumber>
+            </HeatmapCell>
+          ))}
+        </HeatmapContainer>
         <HeatmapLegend>
           {generateLegendData(theme).map((item, index) => (
             <LegendItem key={index}>

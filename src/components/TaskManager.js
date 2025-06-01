@@ -322,9 +322,9 @@ const FocusChip = styled.button`
   
   ${props => {
     const focusColors = {
-      low: props.theme.colors.focus?.low || props.theme.colors.status.info,
-      medium: props.theme.colors.focus?.medium || props.theme.colors.secondary,
-      high: props.theme.colors.focus?.high || props.theme.colors.status.error
+      low: `${props.theme.colors.primary}60`,    // 60% opacity for low
+      medium: `${props.theme.colors.primary}A0`, // ~63% opacity for medium  
+      high: props.theme.colors.primary           // Full opacity for high
     };
     
     const color = focusColors[props.level];
@@ -352,6 +352,7 @@ const FocusChip = styled.button`
     ${props => !props.selected && `
       background: ${props.theme.colors.backgroundHover};
       color: ${props.theme.colors.text.primary};
+      transform: translateY(-1px);
     `}
     
     ${props => props.theme.name === 'tron' && !props.selected && `
@@ -361,8 +362,13 @@ const FocusChip = styled.button`
   
   &:focus {
     outline: none;
+    box-shadow: 0 0 0 2px ${props => props.theme.colors.primary}40;
     ${props => !props.selected && `
       background: ${props.theme.colors.backgroundHover};
+    `}
+    
+    ${props => props.theme.name === 'tron' && `
+      box-shadow: ${props.theme.glow.small};
     `}
   }
 `;
@@ -395,6 +401,16 @@ const PrimaryButton = styled.button`
   &:hover {
     transform: translateY(-2px);
     box-shadow: ${props => props.theme.shadows.medium};
+    background: ${props => props.theme.colors.primary}dd;
+    
+    ${props => props.theme.name === 'tron' && `
+      box-shadow: ${props.theme.glow.medium};
+    `}
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px ${props => props.theme.colors.primary}40;
     
     ${props => props.theme.name === 'tron' && `
       box-shadow: ${props.theme.glow.medium};

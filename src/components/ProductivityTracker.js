@@ -218,11 +218,12 @@ function ProductivityTracker({ onTaskInputChange, isDarkMode, onDarkModeToggle }
   /**
    * Add a new task to the task list
    */
-  const addTask = (task) => {
+  const addTask = (task, targetDate = null) => {
+    const dateToUse = targetDate || selectedDate || new Date().toISOString().split('T')[0];
     const newTask = {
       ...task,
       id: Date.now() + Math.random(),
-      date: new Date().toISOString().split('T')[0],
+      date: dateToUse,
       timestamp: new Date().toISOString()
     };
     setTasks(prev => [...prev, newTask]);

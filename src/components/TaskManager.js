@@ -117,27 +117,40 @@ const Input = styled.input`
   }
 `;
 
-/**
- * Focus level selector styled component
- */
 const FocusSelector = styled.div`
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.borderRadius.full};
+  overflow: hidden;
+  background: ${props => props.theme.colors.background};
+  
+  ${props => props.theme.name === 'tron' && `
+    border-color: ${props.theme.colors.primary};
+  `}
 `;
 
 /**
- * Focus level chip styled component
+ * Segment of unified pill Focus Level component
  */
 const FocusChip = styled.button`
   padding: 8px 16px;
-  border-radius: ${props => props.theme.borderRadius.full};
+  border: none;
+  border-right: 1px solid ${props => props.theme.colors.border};
   font-size: 12px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   transition: all 0.2s ease;
-  border: 1px solid;
+  flex: 1;
+  position: relative;
+  
+  &:last-child {
+    border-right: none;
+  }
+  
+  ${props => props.theme.name === 'tron' && `
+    border-right-color: ${props.theme.colors.primary};
+  `}
   
   ${props => {
     const focusColors = {
@@ -150,18 +163,36 @@ const FocusChip = styled.button`
     
     return `
       background: ${props.selected ? color : 'transparent'};
-      border-color: ${color};
-      color: ${props.selected ? (props.theme.name === 'tron' ? '#000' : '#fff') : color};
+      color: ${props.selected 
+        ? '#ffffff' 
+        : props.theme.colors.text.primary
+      };
       
-      ${props.theme.name === 'tron' && props.selected && `
-        box-shadow: ${props.theme.glow.small};
-        text-shadow: none;
+      ${props.theme.name === 'tron' && `
+        color: ${props.selected 
+          ? '#000000' 
+          : props.theme.colors.text.primary
+        };
+        ${props.selected && `
+          box-shadow: inset ${props.theme.glow.small};
+        `}
       `}
     `;
   }}
 
   &:hover {
-    transform: translateY(-1px);
+    ${props => !props.selected && `
+      background: ${props.theme.colors.backgroundHover};
+      color: ${props.theme.colors.text.primary};
+    `}
+    
+    ${props => props.theme.name === 'tron' && !props.selected && `
+      color: ${props.theme.colors.primary};
+    `}
+  }
+  
+  &:focus {
+    outline: none;
     ${props => !props.selected && `
       background: ${props.theme.colors.backgroundHover};
     `}
@@ -431,7 +462,7 @@ function TaskManager({
         <TaskForm onSubmit={handleSubmit}>
           <FormFields>
             <InputGroup>
-              <Label htmlFor="taskName">Task Name</Label>
+              <Label htmlFor="taskName">Describe the Task</Label>
               <Input
                 id="taskName"
                 name="name"
@@ -444,7 +475,7 @@ function TaskManager({
             </InputGroup>
 
             <InputGroup>
-              <Label htmlFor="timeSpent">Time Spent (hours)</Label>
+              <Label htmlFor="timeSpent">Hours Spent</Label>
               <Input
                 id="timeSpent"
                 name="timeSpent"
@@ -479,7 +510,7 @@ function TaskManager({
 
           <PrimaryButton type="submit">
             <Plus />
-            Add Task
+            Log Task
           </PrimaryButton>
         </TaskForm>
       </AddTaskSection>

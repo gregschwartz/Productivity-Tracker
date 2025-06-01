@@ -9,14 +9,12 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
   Legend
 } from 'recharts';
-import { Calendar, TrendingUp, Clock, Focus } from 'lucide-react';
+import { Calendar, TrendingUp, Clock, Focus, FileText, Lightbulb, Target, Plus } from 'lucide-react';
 import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 
 /**
@@ -253,12 +251,40 @@ const HourlyHeatmapContainer = styled.div`
 `;
 
 /**
+ * Month label for heatmap
+ */
+const MonthLabel = styled.div`
+  font-size: 8px;
+  font-weight: 600;
+  color: ${props => props.theme.colors.text.secondary};
+  line-height: 1;
+  margin-bottom: 1px;
+  
+  ${props => props.theme.name === 'tron' && `
+    color: ${props.theme.colors.primary};
+    font-family: ${props.theme.fonts.mono};
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  `}
+`;
+
+/**
+ * Day number in heatmap cell
+ */
+const DayNumber = styled.div`
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+`;
+
+/**
  * Heatmap cell
  */
 const HeatmapCell = styled.div`
   aspect-ratio: 1;
   border-radius: ${props => props.theme.borderRadius.small};
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   font-size: 12px;
@@ -266,6 +292,7 @@ const HeatmapCell = styled.div`
   transition: all 0.2s ease;
   cursor: pointer;
   border: 1px solid ${props => props.theme.colors.border};
+  padding: 2px;
   
   ${props => {
     const intensity = props.intensity || 0;
@@ -434,15 +461,18 @@ const TimeRangeSelector = styled.div`
   padding: 20px;
   background: ${props => props.theme.colors.surface};
   border-radius: ${props => props.theme.borderRadius.large};
-  box-shadow: ${props => props.theme.shadows.medium};
-  border: 1px solid ${props => props.theme.colors.border};
+  box-shadow: ${props => props.theme.shadows.large};
+  border: 2px solid ${props => props.theme.colors.primary};
   position: sticky;
-  top: 20px;
-  z-index: 10;
+  top: 10px;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   
   ${props => props.theme.name === 'tron' && `
-    border: 1px solid ${props.theme.colors.border};
-    box-shadow: ${props.theme.shadows.medium};
+    border: 2px solid ${props.theme.colors.primary};
+    box-shadow: ${props.theme.glow.medium};
+    background: ${props.theme.colors.surface}ee;
   `}
 `;
 
@@ -516,9 +546,160 @@ const ChartLegend = styled.div`
 `;
 
 /**
- * Visualizations component showing productivity analytics
+ * Summaries section container
  */
-function Visualizations({ tasks }) {
+const SummariesSection = styled.div`
+  margin-top: 32px;
+`;
+
+/**
+ * Summary card container
+ */
+const SummaryCard = styled(motion.div)`
+  background: ${props => props.theme.colors.surface};
+  border-radius: ${props => props.theme.borderRadius.large};
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: ${props => props.theme.shadows.medium};
+  border: 1px solid ${props => props.theme.colors.border};
+  
+  ${props => props.theme.name === 'tron' && `
+    border: 1px solid ${props.theme.colors.border};
+    box-shadow: ${props.theme.shadows.medium};
+  `}
+`;
+
+/**
+ * Summary header
+ */
+const SummaryHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid ${props => props.theme.colors.border};
+`;
+
+/**
+ * Summary title
+ */
+const SummaryTitle = styled.h3`
+  font-size: 18px;
+  font-weight: 600;
+  color: ${props => props.theme.colors.text.primary};
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  ${props => props.theme.name === 'tron' && `
+    color: ${props.theme.colors.primary};
+    font-family: ${props.theme.fonts.mono};
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  `}
+`;
+
+/**
+ * Summary date
+ */
+const SummaryDate = styled.span`
+  font-size: 14px;
+  color: ${props => props.theme.colors.text.muted};
+  font-weight: 500;
+`;
+
+/**
+ * Summary content section
+ */
+const SummaryContent = styled.div`
+  display: grid;
+  gap: 8px;
+`;
+
+/**
+ * Summary insight
+ */
+const SummaryInsight = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  background: ${props => props.theme.colors.backgroundHover};
+  border-radius: ${props => props.theme.borderRadius.medium};
+  
+  svg {
+    width: 16px;
+    height: 16px;
+    color: ${props => props.theme.colors.primary};
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+`;
+
+/**
+ * No summaries message
+ */
+const NoSummariesMessage = styled.div`
+  text-align: center;
+  padding: 40px 20px;
+  color: ${props => props.theme.colors.text.muted};
+  font-style: italic;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+`;
+
+/**
+ * Generate summary button
+ */
+const GenerateSummaryButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: ${props => props.theme.colors.primary};
+  color: ${props => props.theme.colors.primaryText};
+  border: none;
+  border-radius: ${props => props.theme.borderRadius.medium};
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  ${props => props.theme.name === 'tron' && `
+    font-family: ${props.theme.fonts.mono};
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: ${props.theme.glow.small};
+  `}
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: ${props => props.theme.shadows.medium};
+    
+    ${props => props.theme.name === 'tron' && `
+      box-shadow: ${props.theme.glow.medium};
+    `}
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+`;
+
+/**
+ * Visualizations component showing productivity analytics and summaries
+ */
+function Visualizations({ tasks, summaries = [] }) {
   const [timeRange, setTimeRange] = useState('week'); // week, month, quarter, all
   const [taskViewMode, setTaskViewMode] = useState('tasks'); // 'tasks' or 'time'
   const theme = useTheme();
@@ -695,14 +876,20 @@ function Visualizations({ tasks }) {
     const { start, end } = getDateRange;
     const days = eachDayOfInterval({ start, end });
     
-    return days.map(date => {
+    return days.map((date, index) => {
       const dateStr = format(date, 'yyyy-MM-dd');
       const dayTasks = filteredTasks.filter(task => task.date === dateStr);
       const totalHours = dayTasks.reduce((sum, task) => sum + task.timeSpent, 0);
       
+      // Check if this is the first day of the month
+      const isFirstOfMonth = date.getDate() === 1;
+      const monthName = isFirstOfMonth ? format(date, 'MMM') : null;
+      
       return {
         date: dateStr,
         day: format(date, 'dd'),
+        monthName,
+        isFirstOfMonth,
         intensity: totalHours,
         tasks: dayTasks.length
       };
@@ -756,14 +943,30 @@ function Visualizations({ tasks }) {
   };
 
   /**
+   * Filter summaries based on selected time range
+   */
+  const filteredSummaries = useMemo(() => {
+    const { start, end } = getDateRange;
+    
+    return summaries.filter(summary => {
+      const summaryDate = new Date(summary.weekStart || summary.timestamp);
+      return summaryDate >= start && summaryDate <= end;
+    }).sort((a, b) => {
+      const dateA = new Date(a.weekStart || a.timestamp);
+      const dateB = new Date(b.weekStart || b.timestamp);
+      return dateB - dateA; // Most recent first
+    });
+  }, [summaries, getDateRange]);
+
+  /**
    * Get time range label for display
    */
   const getTimeRangeLabel = () => {
     switch (timeRange) {
-      case 'week': return 'Last 7 Days';
-      case 'month': return 'Last 30 Days';
-      case 'all': return 'All Time';
-      default: return 'Last 7 Days';
+      case 'week': return 'the last 7 days';
+      case 'month': return 'the last 30 days';
+      case 'all': return 'all time';
+      default: return 'the last 7 days';
     }
   };
 
@@ -863,6 +1066,91 @@ function Visualizations({ tasks }) {
         </FocusStatsRow>
       </AllStatsWrapper>
 
+      {/* Weekly Summaries Section */}
+      <ChartSection
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        <SectionHeader>
+          <SectionTitle>
+            <FileText />
+            Weekly Summaries
+          </SectionTitle>
+          <SectionDescription>
+            AI-generated insights and recommendations for {getTimeRangeLabel()}
+          </SectionDescription>
+        </SectionHeader>
+        
+        {filteredSummaries.length > 0 ? (
+          filteredSummaries.map((summary, index) => (
+            <SummaryCard
+              key={summary.id || index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.05 * index }}
+            >
+              <SummaryHeader>
+                <SummaryTitle>
+                  <Calendar />
+                  Week of {format(new Date(summary.weekStart || summary.timestamp), 'MMM dd, yyyy')}
+                </SummaryTitle>
+                <SummaryDate>
+                  {format(new Date(summary.timestamp), 'MMM dd, yyyy')}
+                </SummaryDate>
+              </SummaryHeader>
+              
+              <SummaryContent>
+                {summary.insights && summary.insights.length > 0 && (
+                  <>
+                    {summary.insights.map((insight, idx) => (
+                      <SummaryInsight key={idx}>
+                        <Lightbulb />
+                        <span>{insight}</span>
+                      </SummaryInsight>
+                    ))}
+                  </>
+                )}
+                
+                {summary.recommendations && summary.recommendations.length > 0 && (
+                  <>
+                    {summary.recommendations.map((recommendation, idx) => (
+                      <SummaryInsight key={idx}>
+                        <Target />
+                        <span>{recommendation}</span>
+                      </SummaryInsight>
+                    ))}
+                  </>
+                )}
+                
+                {summary.summary && (
+                  <SummaryInsight>
+                    <FileText />
+                    <span>{summary.summary}</span>
+                  </SummaryInsight>
+                )}
+              </SummaryContent>
+            </SummaryCard>
+          ))
+        ) : (
+          <NoSummariesMessage>
+            <div>
+              No summaries available for {getTimeRangeLabel()}.
+              {timeRange === 'week' && ' Complete tasks throughout the week to generate insights.'}
+            </div>
+            <GenerateSummaryButton
+              onClick={() => {
+                // TODO: Implement summary generation logic
+                alert('Summary generation feature coming soon!');
+              }}
+            >
+              <Plus />
+              Generate Summary
+            </GenerateSummaryButton>
+          </NoSummariesMessage>
+        )}
+      </ChartSection>
+
       {/* Daily Productivity Trend */}
       <ChartSection
         initial={{ opacity: 0, y: 20 }}
@@ -876,7 +1164,7 @@ function Visualizations({ tasks }) {
               How you spent your days
             </SectionTitle>
             <SectionDescription>
-              {taskViewMode === 'tasks' ? 'The number of tasks you completed' : 'The number of hours you spent'} over the {getTimeRangeLabel().toLowerCase()}
+              {taskViewMode === 'tasks' ? 'The number of tasks you completed' : 'The number of hours you spent'} over {getTimeRangeLabel().toLowerCase()}
             </SectionDescription>
           </SectionHeader>
           
@@ -909,6 +1197,12 @@ function Visualizations({ tasks }) {
                 tick={{ fontSize: 12 }}
                 axisLine={false}
                 allowDecimals={taskViewMode === 'tasks' ? false : true}
+                label={{ 
+                  value: taskViewMode === 'tasks' ? 'Tasks' : 'Hours', 
+                  angle: -90, 
+                  position: 'insideLeft',
+                  style: { textAnchor: 'middle', fontSize: '12px' }
+                }}
               />
               <Tooltip content={<CustomTooltip />} />
               <Bar 
@@ -997,23 +1291,24 @@ function Visualizations({ tasks }) {
         <SectionHeader>
           <SectionTitle>
             <Calendar />
-            Daily Productivity Heatmap
+            Productivity Per Day
           </SectionTitle>
           <SectionDescription>
-            Visual overview of your daily productivity intensity over the {getTimeRangeLabel().toLowerCase()}
+            Visual overview of your daily productivity intensity over {getTimeRangeLabel().toLowerCase()}
           </SectionDescription>
         </SectionHeader>
-        <HeatmapContainer>
-          {heatmapData.map((day, index) => (
-            <HeatmapCell
-              key={day.date}
-              intensity={day.intensity}
-              title={`${day.date}: ${day.tasks} tasks, ${day.intensity.toFixed(1)}h`}
-            >
-              {day.day}
-            </HeatmapCell>
-          ))}
-        </HeatmapContainer>
+                  <HeatmapContainer>
+            {heatmapData.map((day, index) => (
+              <HeatmapCell
+                key={day.date}
+                intensity={day.intensity}
+                title={`${day.date}: ${day.tasks} tasks, ${day.intensity.toFixed(1)}h`}
+              >
+                {day.isFirstOfMonth && day.monthName && <MonthLabel>{day.monthName}</MonthLabel>}
+                <DayNumber>{day.day}</DayNumber>
+              </HeatmapCell>
+            ))}
+          </HeatmapContainer>
         <HeatmapLegend>
           {generateLegendData(theme).map((item, index) => (
             <LegendItem key={index}>
@@ -1033,10 +1328,10 @@ function Visualizations({ tasks }) {
         <SectionHeader>
           <SectionTitle>
             <Clock />
-            Hourly Productivity Heatmap
+            Productivity Per Hour
           </SectionTitle>
           <SectionDescription>
-            Identify your most productive hours across the {getTimeRangeLabel().toLowerCase()}
+            Identify your most productive hours across {getTimeRangeLabel().toLowerCase()}
           </SectionDescription>
         </SectionHeader>
         <HourlyHeatmapContainer>
@@ -1059,6 +1354,7 @@ function Visualizations({ tasks }) {
           ))}
         </HeatmapLegend>
       </ChartSection>
+
     </VisualizationContainer>
   );
 }

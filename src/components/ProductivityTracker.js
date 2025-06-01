@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import TaskManager from './TaskManager';
 import Visualizations from './Visualizations';
 import WeeklySummary from './WeeklySummary';
@@ -124,9 +125,54 @@ const PageSubtitle = styled.p`
  * Main ProductivityTracker component that orchestrates all functionality
  */
 function ProductivityTracker({ onTaskInputChange, isDarkMode, onDarkModeToggle }) {
-  const [activeTab, setActiveTab] = useState('tasks');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  
   const [tasks, setTasks] = useState([]);
   const [summaries, setSummaries] = useState([]);
+  
+  // Get active tab from URL path
+  const getActiveTabFromPath = () => {
+    const path = location.pathname.substring(1); // Remove leading slash
+    return path || 'tasks';
+  };
+  
+  const [activeTab, setActiveTab] = useState(getActiveTabFromPath());
+  
+  // Get selected date from URL parameters
+  const selectedDate = searchParams.get('date');
+
+  // Update document title based on active tab and date
+  useEffect(() => {
+    const getDocumentTitle = () => {
+      const baseTitle = 'Productivity Tracker';
+      switch (activeTab) {
+        case 'tasks':
+          if (selectedDate) {
+            return `Tasks - ${selectedDate} | ${baseTitle}`;
+          }
+          return `Tasks | ${baseTitle}`;
+        case 'analytics':
+          return `Analytics | ${baseTitle}`;
+        case 'search':
+          return `Search | ${baseTitle}`;
+        case 'admin':
+          return `Admin | ${baseTitle}`;
+        default:
+          return baseTitle;
+      }
+    };
+    
+    document.title = getDocumentTitle();
+  }, [activeTab, selectedDate]);
+
+  // Update active tab when URL changes
+  useEffect(() => {
+    const path = location.pathname.substring(1);
+    const tabFromPath = path || 'tasks';
+    setActiveTab(tabFromPath);
+  }, [location.pathname]);
 
   /**
    * Load data from localStorage on component mount
@@ -227,6 +273,31 @@ function ProductivityTracker({ onTaskInputChange, isDarkMode, onDarkModeToggle }
   };
 
   /**
+   * Navigate to a specific tab
+   */
+  const navigateToTab = (tab) => {
+    if (tab === 'tasks' && selectedDate) {
+      navigate(`/${tab}?date=${selectedDate}`);
+    } else {
+      navigate(`/${tab}`);
+    }
+  };
+
+  /**
+   * Navigate to tasks view with specific date filter
+   */
+  const handleNavigateToDate = (date) => {
+    navigate(`/tasks?date=${date}`);
+  };
+
+  /**
+   * Clear date filter and return to today's tasks
+   */
+  const handleClearDateFilter = () => {
+    navigate('/tasks');
+  };
+
+  /**
    * Render active tab content
    */
   const renderTabContent = () => {
@@ -239,10 +310,13 @@ function ProductivityTracker({ onTaskInputChange, isDarkMode, onDarkModeToggle }
             onUpdateTask={updateTask}
             onDeleteTask={deleteTask}
             onTaskInputChange={handleTaskInputChange}
+            selectedDate={selectedDate}
+            onDateChange={handleNavigateToDate}
+            onClearDateFilter={handleClearDateFilter}
           />
         );
       case 'analytics':
-        return <Visualizations tasks={tasks} summaries={summaries} />;
+        return <Visualizations tasks={tasks} summaries={summaries} onNavigateToDate={handleNavigateToDate} />;
       case 'search':
         return <SearchAgent summaries={summaries} />;
       case 'admin':
@@ -279,7 +353,7 @@ function ProductivityTracker({ onTaskInputChange, isDarkMode, onDarkModeToggle }
           <NavButton
             key={key}
             active={activeTab === key}
-            onClick={() => setActiveTab(key)}
+            onClick={() => navigateToTab(key)}
           >
             <Icon />
             {label}

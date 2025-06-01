@@ -699,7 +699,7 @@ const GenerateSummaryButton = styled.button`
 /**
  * Visualizations component showing productivity analytics and summaries
  */
-function Visualizations({ tasks, summaries = [] }) {
+function Visualizations({ tasks, summaries = [], onNavigateToDate }) {
   const [timeRange, setTimeRange] = useState('week'); // week, month, quarter, all
   const [taskViewMode, setTaskViewMode] = useState('tasks'); // 'tasks' or 'time'
   const theme = useTheme();
@@ -1302,7 +1302,13 @@ function Visualizations({ tasks, summaries = [] }) {
               <HeatmapCell
                 key={day.date}
                 intensity={day.intensity}
-                title={`${day.date}: ${day.tasks} tasks, ${day.intensity.toFixed(1)}h`}
+              title={`${day.date}: ${day.tasks} tasks, ${day.intensity.toFixed(1)}h${day.tasks > 0 ? ' - Click to view tasks' : ''}`}
+              clickable={day.tasks > 0 && onNavigateToDate}
+              onClick={() => {
+                if (day.tasks > 0 && onNavigateToDate) {
+                  onNavigateToDate(day.date);
+                }
+              }}
               >
                 {day.isFirstOfMonth && day.monthName && <MonthLabel>{day.monthName}</MonthLabel>}
                 <DayNumber>{day.day}</DayNumber>

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Clock, Focus, Trash2, Check } from 'lucide-react';
-import { format } from 'date-fns';
+import { Plus, Clock, Focus, Trash2, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, addDays, subDays, parseISO } from 'date-fns';
 
 /**
  * Main container for task management
@@ -13,6 +13,174 @@ const TaskContainer = styled.div`
   grid-template-columns: 1fr;
   max-width: 800px;
   margin: 0 auto;
+`;
+
+/**
+ * Date navigation section
+ */
+const DateNavigation = styled.div`
+  background: ${props => props.theme.colors.surface};
+  border-radius: ${props => props.theme.borderRadius.large};
+  padding: 20px;
+  box-shadow: ${props => props.theme.shadows.medium};
+  border: 1px solid ${props => props.theme.colors.border};
+  margin-bottom: 24px;
+  
+  ${props => props.theme.name === 'tron' && `
+    border: 1px solid ${props.theme.colors.border};
+    box-shadow: ${props.theme.shadows.medium};
+  `}
+`;
+
+/**
+ * Date navigation header
+ */
+const DateNavHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+`;
+
+/**
+ * Current date display
+ */
+const CurrentDateDisplay = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: ${props => props.theme.colors.text.primary};
+  margin: 0;
+  
+  ${props => props.theme.name === 'tron' && `
+    color: ${props.theme.colors.primary};
+    font-family: ${props.theme.fonts.mono};
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  `}
+`;
+
+/**
+ * Date navigation controls
+ */
+const DateNavControls = styled.div`
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+`;
+
+/**
+ * Date navigation buttons
+ */
+const DateNavButtons = styled.div`
+  display: flex;
+  gap: 8px;
+`;
+
+/**
+ * Navigation button styled component
+ */
+const NavButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.borderRadius.medium};
+  color: ${props => props.theme.colors.text.secondary};
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  
+  ${props => props.theme.name === 'tron' && `
+    border-color: ${props.theme.colors.primary};
+    color: ${props.theme.colors.text.primary};
+    font-family: ${props.theme.fonts.mono};
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  `}
+
+  &:hover {
+    background: ${props => props.theme.colors.backgroundHover};
+    border-color: ${props => props.theme.colors.primary};
+    color: ${props => props.theme.colors.primary};
+    transform: translateY(-1px);
+    
+    ${props => props.theme.name === 'tron' && `
+      box-shadow: ${props.theme.glow.small};
+    `}
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px ${props => props.theme.colors.primary}40;
+    
+    ${props => props.theme.name === 'tron' && `
+      box-shadow: ${props.theme.glow.small};
+    `}
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+`;
+
+/**
+ * Date picker input styled component
+ */
+const DatePickerInput = styled.input`
+  padding: 10px 12px;
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.borderRadius.medium};
+  background: ${props => props.theme.colors.background};
+  color: ${props => props.theme.colors.text.primary};
+  font-size: 14px;
+  transition: all 0.2s ease;
+  min-width: 140px;
+  
+  ${props => props.theme.name === 'tron' && `
+    background: ${props.theme.colors.surface};
+    border: 1px solid ${props.theme.colors.border};
+    color: ${props.theme.colors.text.primary};
+    font-family: ${props.theme.fonts.mono};
+  `}
+
+  &:focus {
+    border-color: ${props => props.theme.colors.primary};
+    box-shadow: 0 0 0 2px ${props => props.theme.colors.primary}20;
+    
+    ${props => props.theme.name === 'tron' && `
+      box-shadow: ${props.theme.glow.small};
+      border-color: ${props.theme.colors.primary};
+    `}
+  }
+`;
+
+/**
+ * Today button styled component
+ */
+const TodayButton = styled(NavButton)`
+  background: ${props => props.isToday ? props.theme.colors.primary : 'transparent'};
+  color: ${props => props.isToday ? props.theme.colors.primaryText : props.theme.colors.text.secondary};
+  border-color: ${props => props.theme.colors.primary};
+  
+  ${props => props.theme.name === 'tron' && props.isToday && `
+    box-shadow: ${props.theme.glow.small};
+  `}
+  
+  &:hover {
+    background: ${props => props.isToday ? props.theme.colors.primary : props.theme.colors.backgroundHover};
+    color: ${props => props.isToday ? props.theme.colors.primaryText : props.theme.colors.primary};
+  }
 `;
 
 /**
@@ -404,13 +572,74 @@ function TaskManager({
   onAddTask = () => {}, 
   onUpdateTask = () => {}, 
   onDeleteTask = () => {},
-  onTaskInputChange = () => {}
+  onTaskInputChange = () => {},
+  selectedDate = null,
+  onDateChange = () => {},
+  onClearDateFilter = () => {}
 }) {
   const [formData, setFormData] = useState({
     name: '',
     timeSpent: '',
     focusLevel: 'medium'
   });
+
+  /**
+   * Get the current working date (selected date or today)
+   */
+  const getCurrentDate = () => {
+    if (selectedDate) {
+      try {
+        return parseISO(selectedDate);
+      } catch (error) {
+        console.error('Invalid date format:', selectedDate);
+        return new Date();
+      }
+    }
+    return new Date();
+  };
+
+  const currentDate = getCurrentDate();
+  const currentDateString = format(currentDate, 'yyyy-MM-dd');
+  const isToday = currentDateString === format(new Date(), 'yyyy-MM-dd');
+
+  /**
+   * Navigate to previous day
+   */
+  const handlePreviousDay = () => {
+    const previousDay = subDays(currentDate, 1);
+    const dateString = format(previousDay, 'yyyy-MM-dd');
+    onDateChange(dateString);
+  };
+
+  /**
+   * Navigate to next day
+   */
+  const handleNextDay = () => {
+    const nextDay = addDays(currentDate, 1);
+    const dateString = format(nextDay, 'yyyy-MM-dd');
+    onDateChange(dateString);
+  };
+
+  /**
+   * Navigate to today
+   */
+  const handleToday = () => {
+    onClearDateFilter();
+  };
+
+  /**
+   * Handle date picker change
+   */
+  const handleDatePickerChange = (e) => {
+    const selectedDateValue = e.target.value;
+    if (selectedDateValue) {
+      if (selectedDateValue === format(new Date(), 'yyyy-MM-dd')) {
+        onClearDateFilter();
+      } else {
+        onDateChange(selectedDateValue);
+      }
+    }
+  };
 
   /**
    * Handle form input changes
@@ -444,20 +673,52 @@ function TaskManager({
       name: formData.name.trim(),
       timeSpent: parseFloat(formData.timeSpent),
       focusLevel: formData.focusLevel
-    });
+    }, currentDateString);
 
     setFormData({ name: '', timeSpent: '', focusLevel: 'medium' });
   };
 
   /**
-   * Get today's tasks
+   * Get filtered tasks based on selected date or today's tasks
    */
-  const todaysTasks = tasks.filter(task => 
-    task.date === new Date().toISOString().split('T')[0]
-  );
+  const targetDate = selectedDate || new Date().toISOString().split('T')[0];
+  const filteredTasks = tasks.filter(task => task.date === targetDate);
 
   return (
     <TaskContainer>
+      <DateNavigation>
+        <DateNavHeader>
+          <CurrentDateDisplay>
+            {format(currentDate, 'EEEE, MMMM dd, yyyy')}
+          </CurrentDateDisplay>
+          <DateNavControls>
+            <DateNavButtons>
+              <NavButton onClick={handlePreviousDay} title="Previous day">
+                <ChevronLeft />
+                Previous
+              </NavButton>
+              <TodayButton 
+                onClick={handleToday} 
+                isToday={isToday}
+                title="Go to today"
+              >
+                Today
+              </TodayButton>
+              <NavButton onClick={handleNextDay} title="Next day">
+                Next
+                <ChevronRight />
+              </NavButton>
+            </DateNavButtons>
+            <DatePickerInput
+              type="date"
+              value={currentDateString}
+              onChange={handleDatePickerChange}
+              title="Jump to date"
+            />
+          </DateNavControls>
+        </DateNavHeader>
+      </DateNavigation>
+      
       <AddTaskSection>
         <TaskForm onSubmit={handleSubmit}>
           <FormFields>
@@ -518,13 +779,13 @@ function TaskManager({
 
       <TaskList>
         <AnimatePresence>
-          {todaysTasks.length === 0 ? (
+          {filteredTasks.length === 0 ? (
             <EmptyState>
-              <h3>No tasks yet today</h3>
-              <p>Add your first task to start tracking your productivity!</p>
+              <h3>{selectedDate ? 'No tasks for this date' : 'No tasks yet today'}</h3>
+              <p>{selectedDate ? 'No tasks were logged for this date.' : 'Add your first task to start tracking your productivity!'}</p>
             </EmptyState>
           ) : (
-            todaysTasks.map(task => (
+            filteredTasks.map(task => (
               <TaskCard
                 key={task.id}
                 initial={{ opacity: 0, y: 20 }}

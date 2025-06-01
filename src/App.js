@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { createGlobalStyle, ThemeProvider } from 'styled-components';
+import { BrowserRouter as Router } from 'react-router-dom';
 import { Moon, Sun } from 'lucide-react';
 import ProductivityTracker from './components/ProductivityTracker';
 import { themes } from './themes/themes';
@@ -156,11 +157,13 @@ function App() {
   return (
     <ThemeProvider theme={activeTheme}>
       <GlobalStyle />
+      <Router>
       <ProductivityTracker 
         onTaskInputChange={handleTaskInputChange}
         isDarkMode={isDarkMode}
         onDarkModeToggle={handleDarkModeToggle}
       />
+      </Router>
     </ThemeProvider>
   );
 }

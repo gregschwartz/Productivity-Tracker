@@ -1,0 +1,3 @@
+After you finish making changes, always run tests to make sure everything is still working as expected.
+Never change quotes to single quotes or different quotes.
+Always comment code explaining why different strategies were taken, but only include comments explaining things that are not obvious from the literal function calls! e.g. don't say "calling setLabel". You could say "setting label here instead of earlier because the state might have changed by now"

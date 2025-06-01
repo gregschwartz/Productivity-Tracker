@@ -470,6 +470,7 @@ function TaskManager({
                 value={formData.name}
                 onChange={handleInputChange}
                 placeholder="What did you work on?"
+                autoFocus
                 required
               />
             </InputGroup>

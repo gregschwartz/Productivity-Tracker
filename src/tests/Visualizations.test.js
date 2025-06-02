@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { themes } from '../themes/themes';
 import Visualizations from '../components/Visualizations';
@@ -39,35 +39,39 @@ jest.mock('recharts', () => ({
   Legend: () => <div data-testid="legend" />
 }));
 
-// Mock localStorage with sample data
-const mockLocalStorage = (() => {
-  const sampleTasks = [
-    {
-      id: '1',
-      name: 'Code review',
-      timeSpent: { hours: 2, minutes: 30 },
-      focusLevel: 'high',
-      completed: true,
-      createdAt: new Date('2024-01-15T10:00:00Z').toISOString()
-    },
-    {
-      id: '2',
-      name: 'Meeting prep',
-      timeSpent: { hours: 1, minutes: 0 },
-      focusLevel: 'medium',
-      completed: true,
-      createdAt: new Date('2024-01-15T14:00:00Z').toISOString()
-    },
-    {
-      id: '3',
-      name: 'Documentation',
-      timeSpent: { hours: 3, minutes: 0 },
-      focusLevel: 'low',
-      completed: false,
-      createdAt: new Date('2024-01-16T09:00:00Z').toISOString()
-    }
-  ];
+const today_timestamp = new Date().toISOString();
+const today_date = today_timestamp.split('T')[0];
+const sampleTasks = [
+  {
+    id: '1',
+    name: 'Code review',
+    timeSpent: 2.5,
+    focusLevel: 'high',
+    completed: true,
+    date: today_date,
+    timestamp: today_timestamp
+  },
+  {
+    id: '2',
+    name: 'Meeting prep',
+    timeSpent: 1.0,
+    focusLevel: 'medium',
+    completed: true,
+    date: today_date,
+    timestamp: today_timestamp
+  },
+  {
+    id: '3',
+    name: 'Documentation',
+    timeSpent: 3.0,
+    focusLevel: 'low',
+    completed: false,
+    date: today_date,
+    timestamp: today_timestamp
+  }
+];
 
+const mockLocalStorage = (() => {
   let store = {
     'productivity-tasks': JSON.stringify(sampleTasks)
   };
@@ -84,6 +88,28 @@ Object.defineProperty(window, 'localStorage', {
   value: mockLocalStorage
 });
 
+// Mock window.matchMedia for framer-motion
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: jest.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(), // deprecated
+    removeListener: jest.fn(), // deprecated
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
+});
+
+// Mock ResizeObserver for framer-motion
+global.ResizeObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
+}));
+
 // Helper function to render component with theme
 const renderWithTheme = (component, theme = themes.Ready) => {
   return render(
@@ -99,8 +125,8 @@ describe('Visualizations Component', () => {
   });
 
   describe('Chart Rendering', () => {
-    test('renders productivity trends chart with data', async () => {
-      renderWithTheme(<Visualizations />);
+    test('renders daily productivity bar chart with data', async () => {
+      renderWithTheme(<Visualizations tasks={sampleTasks} />);
 
       await waitFor(() => {
         expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
@@ -110,10 +136,16 @@ describe('Visualizations Component', () => {
       const barChart = screen.getByTestId('bar-chart');
       const chartData = JSON.parse(barChart.getAttribute('data-chart-data') || '[]');
       expect(chartData.length).toBeGreaterThan(0);
+      
+      // Check for chart elements
+      expect(screen.getByTestId('cartesian-grid')).toBeInTheDocument();
+      expect(screen.getByTestId('x-axis')).toBeInTheDocument();
+      expect(screen.getByTestId('y-axis')).toBeInTheDocument();
+      expect(screen.getAllByTestId('bar')).toHaveLength(3); // Low, Medium, High focus bars
     });
 
     test('renders focus analysis chart', async () => {
-      renderWithTheme(<Visualizations />);
+      renderWithTheme(<Visualizations tasks={sampleTasks} />);
 
       await waitFor(() => {
         expect(screen.getByTestId('pie-chart')).toBeInTheDocument();
@@ -121,40 +153,44 @@ describe('Visualizations Component', () => {
 
       // Verify pie chart elements
       expect(screen.getByTestId('pie')).toBeInTheDocument();
+      expect(screen.getByTestId('legend')).toBeInTheDocument();
     });
 
-    test('renders time trends line chart', async () => {
-      renderWithTheme(<Visualizations />);
+    test('renders responsive containers for all charts', async () => {
+      renderWithTheme(<Visualizations tasks={sampleTasks} />);
 
-      // Switch to line chart view if available
-      const lineChartTab = screen.queryByText(/time trends/i) || screen.queryByText(/line/i);
-      if (lineChartTab) {
-        lineChartTab.click();
-        
-        await waitFor(() => {
-          expect(screen.getByTestId('line-chart')).toBeInTheDocument();
-        });
-      }
+      await waitFor(() => {
+        const responsiveContainers = screen.getAllByTestId('responsive-container');
+        expect(responsiveContainers.length).toBeGreaterThanOrEqual(2); // Bar chart + Pie chart
+      });
     });
   });
 
-  describe('Data Processing', () => {
-    test('processes tasks data correctly for charts', async () => {
-      renderWithTheme(<Visualizations />);
+  describe('Statistics Cards', () => {
+    test('displays overview statistics', async () => {
+      renderWithTheme(<Visualizations tasks={sampleTasks} />);
 
-      await waitFor(() => {
-        const barChart = screen.getByTestId('bar-chart');
-        const chartData = JSON.parse(barChart.getAttribute('data-chart-data') || '[]');
-        
-        // Should have processed the sample tasks
-        expect(chartData).toBeDefined();
-        expect(Array.isArray(chartData)).toBe(true);
-      });
+      // Check for the actual labels in the component
+      expect(screen.getByText('Total')).toBeInTheDocument();
+      expect(screen.getAllByText('Tasks')).toHaveLength(2); // Stat label + button
+      expect(screen.getByText('Hours')).toBeInTheDocument();
+      expect(screen.getByText('Average')).toBeInTheDocument();
+      expect(screen.getByText('Focus')).toBeInTheDocument();
     });
 
-    test('handles focus level distribution', async () => {
-      renderWithTheme(<Visualizations />);
+    test('displays focus-level statistics', async () => {
+      renderWithTheme(<Visualizations tasks={sampleTasks} />);
 
+      // Check for focus level stats
+      expect(screen.getAllByText(/low focus/i)).toHaveLength(2); // Card title + legend
+      expect(screen.getAllByText(/medium focus/i)).toHaveLength(2); // Card title + legend
+      expect(screen.getAllByText(/high focus/i)).toHaveLength(2); // Card title + legend
+    });
+
+    test('calculates statistics correctly', async () => {
+      renderWithTheme(<Visualizations tasks={sampleTasks} />);
+
+      // With 2 sample tasks (2.5h + 1.0h = 3.5h total)
       await waitFor(() => {
         const pieChart = screen.getByTestId('pie-chart');
         const chartData = JSON.parse(pieChart.getAttribute('data-chart-data') || '[]');
@@ -164,29 +200,101 @@ describe('Visualizations Component', () => {
           const focusLevels = chartData.map(item => item.name || item.focusLevel);
           expect(focusLevels).toContain('high');
         }
+      
+        expect(screen.getByText(sampleTasks.length.toString())).toBeInTheDocument(); // Total tasks
+        expect(screen.getByText((content, element) => {
+          return element?.textContent === `${sampleTasks.reduce((sum, task) => sum + task.timeSpent, 0)}h`;
+        })).toBeInTheDocument(); // Total hours with 'h' suffix
       });
+    });
+  });
+
+  describe('Section Headers', () => {
+    test('renders all section titles', async () => {
+      renderWithTheme(<Visualizations tasks={sampleTasks} />);
+
+      expect(screen.getByText(/daily productivity/i)).toBeInTheDocument();
+      expect(screen.getByText(/focus level distribution/i)).toBeInTheDocument();
+      expect(screen.getByText(/productivity per day/i)).toBeInTheDocument();
+      expect(screen.getByText(/productivity per hour/i)).toBeInTheDocument();
+    });
+
+    test('includes section descriptions', async () => {
+      renderWithTheme(<Visualizations tasks={sampleTasks} />);
+
+      expect(screen.getByText(/the number of tasks you completed/i)).toBeInTheDocument();
+      expect(screen.getByText(/understand your focus patterns/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('Data Processing', () => {
+    test('processes tasks data correctly for charts', async () => {
+      renderWithTheme(<Visualizations tasks={sampleTasks} />);
+
+      const barChart = screen.getByTestId('bar-chart');
+      const chartData = JSON.parse(barChart.getAttribute('data-chart-data') || '[]');
+      
+      // Should have daily data points
+      expect(chartData.length).toBeGreaterThan(0);
+      expect(chartData[0]).toHaveProperty('date');
+      expect(chartData[0]).toHaveProperty('low');
+      expect(chartData[0]).toHaveProperty('medium');
+      expect(chartData[0]).toHaveProperty('high');
+    });
+
+    test('handles focus level distribution correctly', async () => {
+      renderWithTheme(<Visualizations tasks={sampleTasks} />);
+
+      // Should render all focus levels in the pie chart
+      expect(screen.getByTestId('pie-chart')).toBeInTheDocument();
+    });
+  });
+
+  describe('Interactive Controls', () => {
+    test('includes time range controls', async () => {
+      renderWithTheme(<Visualizations tasks={sampleTasks} />);
+
+      expect(screen.getByRole('button', { name: 'Week' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Month' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'All Time' })).toBeInTheDocument();
+    });
+
+    test('includes view toggle for tasks vs time', async () => {
+      renderWithTheme(<Visualizations tasks={sampleTasks} />);
+
+      expect(screen.getByRole('button', { name: 'Tasks' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Time' })).toBeInTheDocument();
+    });
+
+    test('can switch between task and time view modes', async () => {
+      renderWithTheme(<Visualizations tasks={sampleTasks} />);
+
+      const timeButton = screen.getByRole('button', { name: 'Time' });
+      fireEvent.click(timeButton);
+
+      // Should still show the chart after switching
+      expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
     });
   });
 
   describe('Empty State Handling', () => {
     test('handles empty data gracefully', () => {
-      // Clear localStorage to simulate no data
-      mockLocalStorage.getItem.mockReturnValue(null);
-      
-      renderWithTheme(<Visualizations />);
+      renderWithTheme(<Visualizations tasks={[]} />);
 
       // Should render without crashing
-      expect(screen.getByText(/productivity insights/i)).toBeInTheDocument();
+      expect(screen.getByText(/daily productivity/i)).toBeInTheDocument();
+      expect(screen.getByText(/focus level distribution/i)).toBeInTheDocument();
     });
 
-    test('displays empty state message when no tasks', () => {
-      mockLocalStorage.getItem.mockReturnValue('[]');
-      
-      renderWithTheme(<Visualizations />);
+    test('displays correct statistics with no tasks', () => {
+      renderWithTheme(<Visualizations tasks={[]} />);
 
-      // Should show empty state
-      const emptyMessage = screen.queryByText(/no data/i) || screen.queryByText(/track some tasks/i);
-      expect(emptyMessage).toBeInTheDocument();
+      // Should show zero values - use more specific selectors
+      expect(screen.getByText('0')).toBeInTheDocument(); // Total tasks
+      // There are multiple "0.0h" elements, so we just check that at least one exists
+      expect(screen.getAllByText((content, element) => {
+        return element?.textContent === '0.0h';
+      })).toHaveLength(7); // Multiple focus level stats show 0.0h
     });
   });
 
@@ -195,108 +303,55 @@ describe('Visualizations Component', () => {
       const themesToTest = ['Ready', 'Ready-Dark', 'Tron'];
 
       themesToTest.forEach(themeName => {
-        const { unmount } = renderWithTheme(<Visualizations />, themes[themeName]);
+        const { unmount } = renderWithTheme(<Visualizations tasks={sampleTasks} />, themes[themeName]);
         
-        // Should render header
-        expect(screen.getByText(/productivity insights/i)).toBeInTheDocument();
+        // Should render main sections
+        expect(screen.getByText(/daily productivity/i)).toBeInTheDocument();
+        expect(screen.getByText(/focus level distribution/i)).toBeInTheDocument();
         
         unmount();
       });
     });
-
-    test('applies theme-specific colors to charts', async () => {
-      renderWithTheme(<Visualizations />, themes.tron);
-
-      await waitFor(() => {
-        const charts = screen.getAllByTestId(/chart/);
-        expect(charts.length).toBeGreaterThan(0);
-      });
-
-      // Charts should be rendered (specific color testing would require more complex mocking)
-    });
   });
 
-  describe('Responsive Design', () => {
-    test('renders responsive container for charts', async () => {
-      renderWithTheme(<Visualizations />);
+  describe('Heatmap Components', () => {
+    test('renders daily productivity heatmap', async () => {
+      renderWithTheme(<Visualizations tasks={sampleTasks} />);
 
-      await waitFor(() => {
-        expect(screen.getAllByTestId('responsive-container')).toHaveLength(
-          expect.any(Number)
-        );
-      });
-    });
-  });
-
-  describe('Interactive Elements', () => {
-    test('includes tooltip for chart interactions', async () => {
-      renderWithTheme(<Visualizations />);
-
-      await waitFor(() => {
-        const tooltips = screen.getAllByTestId('tooltip');
-        expect(tooltips.length).toBeGreaterThan(0);
-      });
+      expect(screen.getByText(/productivity per day/i)).toBeInTheDocument();
+      expect(screen.getByText(/visual overview of your daily productivity/i)).toBeInTheDocument();
     });
 
-    test('includes legend for chart data', async () => {
-      renderWithTheme(<Visualizations />);
+    test('renders hourly productivity heatmap', async () => {
+      renderWithTheme(<Visualizations tasks={sampleTasks} />);
 
-      await waitFor(() => {
-        // Legend might be present depending on chart type
-        const legends = screen.queryAllByTestId('legend');
-        // No strict expectation as legends are optional
-      });
+      expect(screen.getByText(/productivity per hour/i)).toBeInTheDocument();
+      expect(screen.getByText(/identify your most productive hours/i)).toBeInTheDocument();
     });
   });
 
   describe('Error Handling', () => {
-    test('handles malformed localStorage data', () => {
-      mockLocalStorage.getItem.mockReturnValue('invalid json');
-      
-      // Should not crash
-      expect(() => {
-        renderWithTheme(<Visualizations />);
-      }).not.toThrow();
-    });
-
-    test('handles missing required data fields', () => {
+    test('handles malformed task data', () => {
       const malformedTasks = [
         { id: '1', name: 'Incomplete task' }, // Missing required fields
         { id: '2' } // Minimal data
       ];
-      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(malformedTasks));
       
       // Should not crash
       expect(() => {
-        renderWithTheme(<Visualizations />);
+        renderWithTheme(<Visualizations tasks={malformedTasks} />);
       }).not.toThrow();
     });
-  });
 
-  describe('Performance', () => {
-    test('renders efficiently with large datasets', async () => {
-      // Create large dataset
-      const largeTasks = Array.from({ length: 100 }, (_, i) => ({
-        id: `task-${i}`,
-        name: `Task ${i}`,
-        timeSpent: { hours: Math.floor(Math.random() * 8), minutes: Math.floor(Math.random() * 60) },
-        focusLevel: ['low', 'medium', 'high'][Math.floor(Math.random() * 3)],
-        completed: Math.random() > 0.5,
-        createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
-      }));
-
-      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(largeTasks));
-
-      const startTime = performance.now();
-      renderWithTheme(<Visualizations />);
-      const endTime = performance.now();
-
-      // Should render within reasonable time (< 1000ms)
-      expect(endTime - startTime).toBeLessThan(1000);
-
-      await waitFor(() => {
-        expect(screen.getByText(/productivity insights/i)).toBeInTheDocument();
-      });
+    test('handles invalid focus levels', () => {
+      const invalidTasks = [
+        { ...sampleTasks[0], focusLevel: 'invalid' },
+        { ...sampleTasks[1], focusLevel: null }
+      ];
+      
+      expect(() => {
+        renderWithTheme(<Visualizations tasks={invalidTasks} />);
+      }).not.toThrow();
     });
   });
 }); 

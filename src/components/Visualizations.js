@@ -15,7 +15,7 @@ import {
   Legend
 } from 'recharts';
 import { Calendar, TrendingUp, Clock, Focus, FileText, Lightbulb, Target, Plus } from 'lucide-react';
-import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import { format, subDays, eachDayOfInterval } from 'date-fns';
 
 /**
  * Container for all visualizations
@@ -434,12 +434,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-/**
- * Wrapper component to pass theme to CustomTooltip
- */
-const ThemedTooltip = styled.div`
-  display: contents;
-`;
+
 
 /**
  * Generate legend data for heatmap
@@ -553,12 +548,7 @@ const ChartLegend = styled.div`
   flex-wrap: wrap;
 `;
 
-/**
- * Summaries section container
- */
-const SummariesSection = styled.div`
-  margin-top: 32px;
-`;
+
 
 /**
  * Summary card container
@@ -785,7 +775,9 @@ function Visualizations({ tasks = [], summaries = [], onNavigateToDate }) {
     // Calculate focus level breakdowns
     const focusBreakdown = { low: [], medium: [], high: [] };
     filteredTasks.forEach(task => {
-      focusBreakdown[task.focusLevel].push(task);
+      // Handle invalid focus levels by defaulting to 'medium'
+      const focusLevel = task.focusLevel && focusBreakdown[task.focusLevel] ? task.focusLevel : 'medium';
+      focusBreakdown[focusLevel].push(task);
     });
     
     const focusStats = {
@@ -825,7 +817,7 @@ function Visualizations({ tasks = [], summaries = [], onNavigateToDate }) {
    * Prepare daily productivity data for charts
    */
   const dailyData = useMemo(() => {
-    const { start, days } = getDateRange;
+    const { days } = getDateRange;
     const displayDays = Math.min(days, timeRange === 'week' ? 7 : timeRange === 'month' ? 30 : 14); // Limit display for readability
     
     return Array.from({ length: displayDays }, (_, i) => {
@@ -921,7 +913,6 @@ function Visualizations({ tasks = [], summaries = [], onNavigateToDate }) {
       // For now, we'll simulate hour data based on task creation time
       // In a real app, you'd want to track when tasks were actually worked on
       const taskDate = new Date(task.date);
-      const hour = taskDate.getHours();
       
       // Distribute task time across typical work hours (simulate realistic patterns)
       const workHours = [9, 10, 11, 13, 14, 15, 16, 17]; // Typical work hours

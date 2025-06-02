@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import styled, { createGlobalStyle, ThemeProvider } from 'styled-components';
+import { createGlobalStyle, ThemeProvider } from 'styled-components';
 import { BrowserRouter as Router } from 'react-router-dom';
-import { Moon, Sun } from 'lucide-react';
 import ProductivityTracker from './components/ProductivityTracker';
 import { themes } from './themes/themes';
 import { loadSampleDataIfEmpty } from './utils/sampleData';
@@ -64,9 +63,18 @@ function App() {
 
   // Load dark mode preference and tasks from localStorage on mount
   useEffect(() => {
+    const savedTasks = localStorage.getItem('productivity-tasks');    
+    if (savedTasks) {
+      try {
+        setTasks(JSON.parse(savedTasks));
+      } catch (error) {
+        console.error('Error loading tasks:', error);
+      }
+    }
+    loadSampleDataIfEmpty();
+
+    // Lots of work on dark mode
     const savedDarkMode = localStorage.getItem('productivity-dark-mode');
-    const savedTasks = localStorage.getItem('productivity-tasks');
-    
     // Detect system dark mode preference with proper error handling
     let systemPrefersDark = false;
     try {
@@ -82,17 +90,28 @@ function App() {
       setIsDarkMode(systemPrefersDark);
     }
 
-    // Load tasks for theme detection
-    if (savedTasks) {
-      try {
-        setTasks(JSON.parse(savedTasks));
-      } catch (error) {
-        console.error('Error loading tasks:', error);
-      }
+
+    // Listen for system theme changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemThemeChange = (e) => {
+      // Always follow system preference
+      setIsDarkMode(e.matches);
+    };
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleSystemThemeChange);
+    } else {
+      // Fallback for older browsers
+      mediaQuery.addListener(handleSystemThemeChange);
     }
 
-    // Load sample data if needed
-    loadSampleDataIfEmpty();
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleSystemThemeChange);
+      } else {
+        mediaQuery.removeListener(handleSystemThemeChange);
+      }
+    };
   }, []);
 
   // Listen for tasks changes (from localStorage updates)
@@ -158,11 +177,11 @@ function App() {
     <ThemeProvider theme={activeTheme}>
       <GlobalStyle />
       <Router>
-      <ProductivityTracker 
-        onTaskInputChange={handleTaskInputChange}
-        isDarkMode={isDarkMode}
-        onDarkModeToggle={handleDarkModeToggle}
-      />
+        <ProductivityTracker 
+          onTaskInputChange={handleTaskInputChange}
+          isDarkMode={isDarkMode}
+          onDarkModeToggle={handleDarkModeToggle}
+        />
       </Router>
     </ThemeProvider>
   );

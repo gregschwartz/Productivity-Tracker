@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Clock, Focus, Trash2, Check, ChevronLeft, ChevronRight, Edit2, X } from 'lucide-react';
+import { Plus, Clock, Trash2, Check, ChevronLeft, ChevronRight, Edit2, X, Calendar } from 'lucide-react';
 import { format, addDays, subDays, parseISO } from 'date-fns';
+import ReactCalendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
 
 /**
  * Main container for task management
@@ -16,19 +18,21 @@ const TaskContainer = styled.div`
 `;
 
 /**
- * Date navigation section
+ * Date filter banner
  */
 const DateNavigation = styled.div`
-  background: ${props => props.theme.colors.surface};
+  background: linear-gradient(135deg, ${props => props.theme.colors.primary}08, ${props => props.theme.colors.primary}15);
   border-radius: ${props => props.theme.borderRadius.large};
   padding: 20px;
-  box-shadow: ${props => props.theme.shadows.medium};
-  border: 1px solid ${props => props.theme.colors.border};
+  box-shadow: ${props => props.theme.shadows.large};
+  border: 2px solid ${props => props.theme.colors.primary}30;
   margin-bottom: 24px;
+  position: relative;
   
   ${props => props.theme.name === 'tron' && `
-    border: 1px solid ${props.theme.colors.border};
-    box-shadow: ${props.theme.shadows.medium};
+    border: 2px solid ${props.theme.colors.primary};
+    box-shadow: ${props.theme.glow.medium};
+    background: ${props.theme.colors.surface};
   `}
 `;
 
@@ -134,36 +138,7 @@ const NavButton = styled.button`
   }
 `;
 
-/**
- * Date picker input styled component
- */
-const DatePickerInput = styled.input`
-  padding: 10px 12px;
-  border: 1px solid ${props => props.theme.colors.border};
-  border-radius: ${props => props.theme.borderRadius.medium};
-  background: ${props => props.theme.colors.background};
-  color: ${props => props.theme.colors.text.primary};
-  font-size: 14px;
-  transition: all 0.2s ease;
-  min-width: 140px;
-  
-  ${props => props.theme.name === 'tron' && `
-    background: ${props.theme.colors.surface};
-    border: 1px solid ${props.theme.colors.border};
-    color: ${props.theme.colors.text.primary};
-    font-family: ${props.theme.fonts.mono};
-  `}
 
-  &:focus {
-    border-color: ${props => props.theme.colors.primary};
-    box-shadow: 0 0 0 2px ${props => props.theme.colors.primary}20;
-    
-    ${props => props.theme.name === 'tron' && `
-      box-shadow: ${props.theme.glow.small};
-      border-color: ${props.theme.colors.primary};
-    `}
-  }
-`;
 
 /**
  * Today button styled component
@@ -189,13 +164,25 @@ const TodayButton = styled(NavButton)`
 const AddTaskSection = styled.div`
   background: ${props => props.theme.colors.surface};
   border-radius: ${props => props.theme.borderRadius.large};
-  padding: 24px;
-  box-shadow: ${props => props.theme.shadows.medium};
-  border: 1px solid ${props => props.theme.colors.border};
+  padding: 28px;
+  box-shadow: ${props => props.theme.shadows.large};
+  border: 2px dashed ${props => props.theme.colors.border};
+  margin-bottom: 24px;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    border-color: ${props => props.theme.colors.primary}60;
+    box-shadow: ${props => props.theme.shadows.large};
+  }
   
   ${props => props.theme.name === 'tron' && `
-    border: 1px solid ${props.theme.colors.border};
+    border: 2px dashed ${props.theme.colors.primary}60;
     box-shadow: ${props.theme.shadows.medium};
+    
+    &:hover {
+      border-color: ${props.theme.colors.primary};
+      box-shadow: ${props.theme.glow.medium};
+    }
   `}
 `;
 
@@ -298,19 +285,23 @@ const FocusSelector = styled.div`
 `;
 
 /**
- * Segment of unified pill Focus Level component
+ * Segment of unified pill for Focus Level component
  */
 const FocusChip = styled.button`
-  padding: 8px 16px;
+  padding: 12px 16px;
   border: none;
   border-right: 1px solid ${props => props.theme.colors.border};
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 0.5px;
   transition: all 0.2s ease;
   flex: 1;
   position: relative;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   
   &:last-child {
     border-right: none;
@@ -362,13 +353,15 @@ const FocusChip = styled.button`
   
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 2px ${props => props.theme.colors.primary}40;
+    box-shadow: 0 0 0 3px ${props => props.theme.colors.primary};
+    z-index: 1;
+    position: relative;
     ${props => !props.selected && `
       background: ${props.theme.colors.backgroundHover};
     `}
     
     ${props => props.theme.name === 'tron' && `
-      box-shadow: ${props.theme.glow.small};
+      box-shadow: 0 0 0 3px ${props.theme.colors.primary};
     `}
   }
 `;
@@ -410,10 +403,10 @@ const PrimaryButton = styled.button`
   
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 3px ${props => props.theme.colors.primary}40;
+    box-shadow: 0 0 0 3px ${props => props.theme.colors.primary};
     
     ${props => props.theme.name === 'tron' && `
-      box-shadow: ${props.theme.glow.medium};
+      box-shadow: 0 0 0 3px ${props.theme.colors.primary};
     `}
   }
 
@@ -467,10 +460,10 @@ const SecondaryButton = styled.button`
   
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 2px ${props => props.theme.colors.primary}40;
+    box-shadow: 0 0 0 3px ${props => props.theme.colors.primary};
     
     ${props => props.theme.name === 'tron' && `
-      box-shadow: ${props.theme.glow.small};
+      box-shadow: 0 0 0 3px ${props.theme.colors.primary};
     `}
   }
 
@@ -671,6 +664,7 @@ function TaskManager({
   });
 
   const [editingTask, setEditingTask] = useState(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   /**
    * Get the current working date (selected date or today)
@@ -716,19 +710,7 @@ function TaskManager({
     onClearDateFilter();
   };
 
-  /**
-   * Handle date picker change
-   */
-  const handleDatePickerChange = (e) => {
-    const selectedDateValue = e.target.value;
-    if (selectedDateValue) {
-      if (selectedDateValue === format(new Date(), 'yyyy-MM-dd')) {
-        onClearDateFilter();
-      } else {
-        onDateChange(selectedDateValue);
-      }
-    }
-  };
+
 
   /**
    * Handle form input changes
@@ -749,6 +731,39 @@ function TaskManager({
    */
   const handleFocusLevelChange = (level) => {
     setFormData(prev => ({ ...prev, focusLevel: level }));
+  };
+
+  /**
+   * Handle keyboard navigation for focus level pills
+   */
+  const handleFocusLevelKeyDown = (e, currentLevel) => {
+    const levels = ['low', 'medium', 'high'];
+    const currentIndex = levels.indexOf(currentLevel);
+    
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const newIndex = currentIndex > 0 ? currentIndex - 1 : levels.length - 1;
+      const newLevel = levels[newIndex];
+      handleFocusLevelChange(newLevel);
+      // Focus the new button
+      setTimeout(() => {
+        const newButton = document.querySelector(`button[level="${newLevel}"]`);
+        if (newButton) newButton.focus();
+      }, 0);
+    } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const newIndex = currentIndex < levels.length - 1 ? currentIndex + 1 : 0;
+      const newLevel = levels[newIndex];
+      handleFocusLevelChange(newLevel);
+      // Focus the new button
+      setTimeout(() => {
+        const newButton = document.querySelector(`button[level="${newLevel}"]`);
+        if (newButton) newButton.focus();
+      }, 0);
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleFocusLevelChange(currentLevel);
+    }
   };
 
   /**
@@ -800,9 +815,12 @@ function TaskManager({
 
   /**
    * Get filtered tasks based on selected date or today's tasks
+   * Sort by timestamp (newest first)
    */
   const targetDate = selectedDate || new Date().toISOString().split('T')[0];
-  const filteredTasks = tasks.filter(task => task.date === targetDate);
+  const filteredTasks = tasks
+    .filter(task => task.date === targetDate)
+    .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date));
 
   return (
     <TaskContainer>
@@ -815,7 +833,6 @@ function TaskManager({
             <DateNavButtons>
               <NavButton onClick={handlePreviousDay} title="Previous day">
                 <ChevronLeft />
-                Previous
               </NavButton>
               <TodayButton 
                 onClick={handleToday} 
@@ -825,16 +842,44 @@ function TaskManager({
                 Today
               </TodayButton>
               <NavButton onClick={handleNextDay} title="Next day">
-                Next
                 <ChevronRight />
               </NavButton>
             </DateNavButtons>
-            <DatePickerInput
-              type="date"
-              value={currentDateString}
-              onChange={handleDatePickerChange}
-              title="Jump to date"
-            />
+            <div style={{ position: 'relative' }}>
+              <NavButton 
+                onClick={() => setShowDatePicker(!showDatePicker)}
+                title="Jump to date"
+              >
+                <Calendar />
+              </NavButton>
+              {showDatePicker && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  zIndex: 10,
+                  marginTop: '4px',
+                  background: 'white',
+                  border: '1px solid #ccc',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                }}>
+                  <ReactCalendar
+                    value={currentDate}
+                    onChange={(date) => {
+                      const dateString = format(date, 'yyyy-MM-dd');
+                      if (dateString === format(new Date(), 'yyyy-MM-dd')) {
+                        onClearDateFilter();
+                      } else {
+                        onDateChange(dateString);
+                      }
+                      setShowDatePicker(false);
+                    }}
+                    calendarType="iso8601"
+                  />
+                </div>
+              )}
+            </div>
           </DateNavControls>
         </DateNavHeader>
       </DateNavigation>
@@ -853,6 +898,7 @@ function TaskManager({
                 placeholder="What did you work on?"
                 autoFocus
                 required
+                tabIndex={1}
               />
             </InputGroup>
 
@@ -869,19 +915,23 @@ function TaskManager({
                 onChange={handleInputChange}
                 placeholder="2.5"
                 required
+                tabIndex={2}
               />
             </InputGroup>
 
             <InputGroup>
               <Label>Focus Level</Label>
               <FocusSelector>
-                {['low', 'medium', 'high'].map(level => (
+                {['low', 'medium', 'high'].map((level, index) => (
                   <FocusChip
                     key={level}
                     type="button"
                     level={level}
                     selected={formData.focusLevel === level}
                     onClick={() => handleFocusLevelChange(level)}
+                    onKeyDown={(e) => handleFocusLevelKeyDown(e, level)}
+                    tabIndex={formData.focusLevel === level ? 3 : -1}
+                    aria-pressed={formData.focusLevel === level}
                   >
                     {level}
                   </FocusChip>
@@ -891,12 +941,12 @@ function TaskManager({
           </FormFields>
 
           <ButtonGroup>
-            <PrimaryButton type="submit">
+            <PrimaryButton type="submit" tabIndex={4}>
               {editingTask ? <Check /> : <Plus />}
-              {editingTask ? 'Update' : 'Log Task'}
+              {editingTask ? 'Update' : 'Add Task'}
             </PrimaryButton>
             {editingTask && (
-              <SecondaryButton type="button" onClick={handleCancelEdit}>
+              <SecondaryButton type="button" onClick={handleCancelEdit} tabIndex={5}>
                 <X />
                 Cancel
               </SecondaryButton>
@@ -923,6 +973,7 @@ function TaskManager({
                 data-testid="task-card"
                 data-focus-level={task.focusLevel}
                 data-completed={task.completed}
+                data-editing={editingTask && editingTask.id === task.id}
                 isEditing={editingTask && editingTask.id === task.id}
               >
                 <TaskHeader>

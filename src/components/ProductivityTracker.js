@@ -4,11 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import TaskManager from './TaskManager';
 import Visualizations from './Visualizations';
-import WeeklySummary from './WeeklySummary';
 import SearchAgent from './SearchAgent';
 import AdminDashboard from './AdminDashboard';
 import { loadSampleDataIfEmpty } from '../utils/sampleData';
-import { BarChart3, Calendar, FileText, Search, Settings, Moon, Sun } from 'lucide-react';
+import { BarChart3, Calendar, Search, Settings, Moon, Sun } from 'lucide-react';
 
 /**
  * Main container for the productivity tracker application
@@ -245,17 +244,7 @@ function ProductivityTracker({ onTaskInputChange, isDarkMode, onDarkModeToggle }
     setTasks(prev => prev.filter(task => task.id !== taskId));
   };
 
-  /**
-   * Add a new weekly summary
-   */
-  const addSummary = (summary) => {
-    const newSummary = {
-      ...summary,
-      id: Date.now() + Math.random(),
-      timestamp: new Date().toISOString()
-    };
-    setSummaries(prev => [...prev, newSummary]);
-  };
+
 
   const navigationItems = [
     { key: 'tasks', label: 'Tasks', icon: Calendar },

@@ -707,7 +707,7 @@ const GenerateSummaryButton = styled.button`
 /**
  * Visualizations component showing productivity analytics and summaries
  */
-function Visualizations({ tasks, summaries = [], onNavigateToDate }) {
+function Visualizations({ tasks = [], summaries = [], onNavigateToDate }) {
   const [timeRange, setTimeRange] = useState('week'); // week, month, quarter, all
   const [taskViewMode, setTaskViewMode] = useState('tasks'); // 'tasks' or 'time'
   const theme = useTheme();

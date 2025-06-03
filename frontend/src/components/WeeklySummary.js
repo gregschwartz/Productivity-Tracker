@@ -370,78 +370,28 @@ const EmptyState = styled.div`
   }
 `;
 
-/**
- * Generate a mock AI summary (simulates API call)
- */
-const generateMockSummary = (tasks, weekStart, weekEnd) => {
-  const totalTasks = tasks.length;
-  const totalHours = tasks.reduce((sum, task) => sum + task.timeSpent, 0);
-  const focusDistribution = tasks.reduce((acc, task) => {
-    acc[task.focusLevel] = (acc[task.focusLevel] || 0) + 1;
-    return acc;
-  }, {});
-  
-  const avgFocus = tasks.length > 0 
-    ? tasks.reduce((sum, task) => {
-        const focusValues = { low: 1, medium: 2, high: 3 };
-        return sum + focusValues[task.focusLevel];
-      }, 0) / tasks.length
-    : 0;
 
-  // Simulate AI-generated insights
-  const insights = [
-    totalHours > 25 ? "High productivity week with excellent time investment." : 
-    totalHours > 15 ? "Good productivity levels maintained throughout the week." :
-    "Lower activity week - consider setting more structured goals.",
-    
-    avgFocus > 2.3 ? "Excellent focus levels maintained across tasks." :
-    avgFocus > 1.7 ? "Moderate focus levels - room for improvement in deep work." :
-    "Focus levels could be enhanced with better time management.",
-    
-    totalTasks > 15 ? "High task completion rate shows strong momentum." :
-    totalTasks > 8 ? "Steady task completion pace maintained." :
-    "Consider breaking larger tasks into smaller, manageable chunks."
-  ];
-
-  const recommendations = [
-    totalHours < 20 ? "Try time-blocking to increase focused work sessions" : "Maintain current time investment patterns",
-    avgFocus < 2 ? "Schedule deep work blocks during your peak energy hours" : "Continue leveraging your high-focus periods",
-    totalTasks < 10 ? "Set daily micro-goals to build momentum" : "Consider task batching for similar activities"
-  ];
-
-  return {
-    weekRange: `${format(weekStart, 'MMM dd')} - ${format(weekEnd, 'MMM dd, yyyy')}`,
-    stats: {
-      totalTasks,
-      totalHours: totalHours.toFixed(1),
-      avgFocus: avgFocus.toFixed(1),
-      topFocus: Object.keys(focusDistribution).reduce((a, b) => 
-        focusDistribution[a] > focusDistribution[b] ? a : b, 'medium')
-    },
-    summary: `This week you completed ${totalTasks} tasks with a total time investment of ${totalHours.toFixed(1)} hours. Your focus levels averaged ${avgFocus.toFixed(1)}/3, with most tasks falling in the '${Object.keys(focusDistribution).reduce((a, b) => focusDistribution[a] > focusDistribution[b] ? a : b, 'medium')}' focus category.`,
-    insights,
-    recommendations
-  };
-};
 
 /**
  * WeeklySummary component for AI-generated productivity insights
  */
 function WeeklySummary({ tasks = [], summaries = [], onAddSummary = () => {} }) {
   const [generating, setGenerating] = useState(false);
+  const [selectedWeek] = useState(new Date());
+  const [error, setError] = useState(null);
 
   /**
    * Get tasks for the selected week
    */
   const weekTasks = useMemo(() => {
-    const weekStart = startOfWeek(new Date());
-    const weekEnd = endOfWeek(new Date());
+    const weekStart = startOfWeek(selectedWeek);
+    const weekEnd = endOfWeek(selectedWeek);
     
     return tasks.filter(task => {
       const taskDate = new Date(task.date);
       return taskDate >= weekStart && taskDate <= weekEnd;
     });
-  }, [tasks]);
+  }, [tasks, selectedWeek]);
 
   /**
    * Check if summary exists for current week
@@ -462,6 +412,7 @@ function WeeklySummary({ tasks = [], summaries = [], onAddSummary = () => {} }) 
     if (weekTasks.length === 0) return;
     
     setGenerating(true);
+    setError(null);
     
     try {
       // Prepare task data for AI analysis
@@ -473,48 +424,19 @@ function WeeklySummary({ tasks = [], summaries = [], onAddSummary = () => {} }) 
         date: task.date
       }));
 
-      // Calculate basic metrics
-      const totalHours = weekTasks.reduce((sum, task) => sum + (task.timeSpent || 0), 0);
-      const completedTasks = weekTasks.filter(task => task.completed).length;
-      const avgFocus = weekTasks.length > 0 
-        ? weekTasks.reduce((sum, task) => {
-            const focusValues = { low: 1, medium: 2, high: 3 };
-            return sum + (focusValues[task.focusLevel] || 1);
-          }, 0) / weekTasks.length
-        : 0;
+      // Calculate basic metrics (these are used by the backend API call)
 
-      // Call GenAI API
-      const response = await fetch('https://ai.pydantic.dev/', {
+      // Call backend API
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/generate-summary`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4',
-          prompt: `Analyze this week's productivity data and provide insights. Generate a summary paragraph and actionable recommendations.
-
-Weekly Data:
-- Total tasks: ${weekTasks.length}
-- Completed tasks: ${completedTasks}
-- Total hours: ${totalHours.toFixed(1)}
-- Average focus level: ${avgFocus.toFixed(1)}/3
-
-Tasks:
-${taskData.map(task => `- ${task.name} (${task.timeSpent}h, ${task.focusLevel} focus, ${task.completed ? 'completed' : 'pending'})`).join('\n')}
-
-Please provide:
-1. A one-paragraph summary of productivity patterns
-2. 3-5 specific insights about work habits
-3. 3-5 actionable recommendations for next week
-
-Format as JSON with fields: summary, insights (array), recommendations (array)`,
           tasks: taskData,
-          metrics: {
-            totalTasks: weekTasks.length,
-            completedTasks,
-            totalHours: totalHours.toFixed(1),
-            avgFocus: avgFocus.toFixed(1)
-          }
+          weekStart: weekStart.toISOString().split('T')[0],
+          weekEnd: weekEnd.toISOString().split('T')[0],
+          context: `Weekly productivity analysis for ${format(weekStart, 'MMM dd')} - ${format(weekEnd, 'MMM dd, yyyy')}`
         })
       });
 
@@ -524,59 +446,27 @@ Format as JSON with fields: summary, insights (array), recommendations (array)`,
 
       const aiResult = await response.json();
       
-      // Parse AI response
-      let aiSummary;
-      try {
-        aiSummary = typeof aiResult === 'string' ? JSON.parse(aiResult) : aiResult;
-      } catch {
-        // Fallback if JSON parsing fails
-        aiSummary = {
-          summary: aiResult.summary || `This week you completed ${completedTasks} out of ${weekTasks.length} tasks, spending ${totalHours.toFixed(1)} hours on productivity work.`,
-          insights: aiResult.insights || ['Focus levels varied throughout the week'],
-          recommendations: aiResult.recommendations || ['Continue tracking tasks for better insights']
-        };
-      }
-
-      const weekStart = startOfWeek(new Date());
-      const weekEnd = endOfWeek(new Date());
-
+      // The backend returns a properly formatted SummaryResponse
       const summary = {
         id: Date.now(),
-        week: getWeek(new Date()),
-        year: getYear(new Date()),
+        week: getWeek(selectedWeek),
+        year: getYear(selectedWeek),
         weekStart: weekStart.toISOString(),
         weekEnd: weekEnd.toISOString(),
         weekRange: `${format(weekStart, 'MMM dd')} - ${format(weekEnd, 'MMM dd, yyyy')}`,
-        stats: {
-          totalTasks: weekTasks.length,
-          totalHours: totalHours.toFixed(1),
-          avgFocus: avgFocus.toFixed(1),
-          topFocus: avgFocus >= 2.5 ? 'high' : avgFocus >= 1.5 ? 'medium' : 'low'
-        },
-        summary: aiSummary.summary,
-        insights: Array.isArray(aiSummary.insights) ? aiSummary.insights : [aiSummary.insights || 'AI analysis completed'],
-        recommendations: Array.isArray(aiSummary.recommendations) ? aiSummary.recommendations : [aiSummary.recommendations || 'Continue current productivity practices'],
-        timestamp: new Date().toISOString()
+        stats: aiResult.stats,
+        summary: aiResult.summary,
+        insights: aiResult.insights,
+        recommendations: aiResult.recommendations,
+        timestamp: new Date().toISOString(),
+        confidence: aiResult.confidence,
+        generation_time: aiResult.generation_time
       };
 
       onAddSummary(summary);
     } catch (error) {
       console.error('Error generating AI summary:', error);
-      
-      // Fallback to local summary if API fails
-      const weekStart = startOfWeek(new Date());
-      const weekEnd = endOfWeek(new Date());
-      const mockSummary = generateMockSummary(weekTasks, weekStart, weekEnd);
-      
-      const summary = {
-        week: getWeek(new Date()),
-        year: getYear(new Date()),
-        weekStart: weekStart.toISOString(),
-        weekEnd: weekEnd.toISOString(),
-        ...mockSummary
-      };
-
-      onAddSummary(summary);
+      setError('Failed to generate summary. Please try again.');
     } finally {
       setGenerating(false);
     }
@@ -586,7 +476,7 @@ Format as JSON with fields: summary, insights (array), recommendations (array)`,
    * Copy summary to clipboard
    */
   const handleCopySummary = (summary) => {
-    const text = `Week ${summary.weekRange}\n\n${summary.summary}\n\nInsights:\n${summary.insights.map(i => `• ${i}`).join('\n')}\n\nRecommendations:\n${summary.recommendations.map(r => `• ${r}`).join('\n')}`;
+    const text = summary.summary;
     navigator.clipboard.writeText(text);
   };
 
@@ -598,8 +488,8 @@ Format as JSON with fields: summary, insights (array), recommendations (array)`,
     console.log('Delete summary:', summaryId);
   };
 
-  const weekStart = startOfWeek(new Date());
-  const weekEnd = endOfWeek(new Date());
+  const weekStart = startOfWeek(selectedWeek);
+  const weekEnd = endOfWeek(selectedWeek);
 
   return (
     <SummaryContainer>
@@ -635,6 +525,20 @@ Format as JSON with fields: summary, insights (array), recommendations (array)`,
            existingSummary ? 'Summary Already Generated' :
            weekTasks.length === 0 ? 'No Tasks This Week' : 'Generate AI Summary'}
         </GenerateButton>
+
+        {error && (
+          <div style={{ 
+            marginTop: '16px', 
+            padding: '12px', 
+            backgroundColor: '#fee2e2', 
+            border: '1px solid #f87171', 
+            borderRadius: '6px', 
+            color: '#991b1b',
+            fontSize: '14px'
+          }}>
+            {error}
+          </div>
+        )}
       </GenerationSection>
 
       <SummaryList>
@@ -688,12 +592,8 @@ Format as JSON with fields: summary, insights (array), recommendations (array)`,
                       <StatLabel>Hours</StatLabel>
                     </StatItem>
                     <StatItem>
-                      <StatValue>{summary.stats.avgFocus}/3</StatValue>
+                      <StatValue>{summary.stats.avgFocus}</StatValue>
                       <StatLabel>Avg Focus</StatLabel>
-                    </StatItem>
-                    <StatItem>
-                      <StatValue>{summary.stats.topFocus}</StatValue>
-                      <StatLabel>Top Focus</StatLabel>
                     </StatItem>
                   </SummaryStats>
 

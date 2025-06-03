@@ -2,6 +2,9 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { themes } from '../themes/themes';
+
+// matchMedia is already mocked in setupTests.js
+
 import Visualizations from '../components/Visualizations';
 
 // Mock Recharts components
@@ -88,35 +91,33 @@ Object.defineProperty(window, 'localStorage', {
   value: mockLocalStorage
 });
 
-// Mock window.matchMedia for framer-motion
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: jest.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: jest.fn(), // deprecated
-    removeListener: jest.fn(), // deprecated
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  })),
-});
-
-// Mock ResizeObserver for framer-motion
-global.ResizeObserver = jest.fn().mockImplementation(() => ({
-  observe: jest.fn(),
-  unobserve: jest.fn(),
-  disconnect: jest.fn(),
-}));
+// matchMedia and ResizeObserver are already mocked in setupTests.js
 
 // Helper function to render component with theme
 const renderWithTheme = (component, theme = themes.Ready) => {
-  return render(
+  // Ensure matchMedia is properly mocked for this specific render call
+  const originalMatchMedia = window.matchMedia;
+  window.matchMedia = jest.fn().mockImplementation(query => ({
+    matches: query === '(prefers-reduced-motion: reduce)' ? false : false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  }));
+
+  const result = render(
     <ThemeProvider theme={theme}>
       {component}
     </ThemeProvider>
   );
+
+  // Restore original
+  window.matchMedia = originalMatchMedia;
+  
+  return result;
 };
 
 describe('Visualizations Component', () => {

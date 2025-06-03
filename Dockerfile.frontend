@@ -5,14 +5,14 @@ FROM node:18-alpine as build
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY frontend/package*.json ./
 
 # Install dependencies
 RUN npm ci --only=production
 
 # Copy source code
-COPY src/ src/
-COPY public/ public/
+COPY frontend/src/ src/
+COPY frontend/public/ public/
 
 # Build the application
 RUN npm run build
@@ -38,14 +38,14 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY frontend/package*.json ./
 
 # Install dependencies
 RUN npm install
 
 # Copy source code
-COPY src/ ./src/
-COPY public/ ./public/
+COPY frontend/src/ ./src/
+COPY frontend/public/ ./public/
 
 # Expose port
 EXPOSE 3000

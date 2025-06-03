@@ -5,12 +5,12 @@ FROM node:18-alpine AS frontend-build
 WORKDIR /app/frontend
 
 # Copy package files
-COPY package*.json ./
+COPY frontend/package*.json ./
 RUN npm ci --only=production
 
 # Copy source code and build
-COPY src/ ./src/
-COPY public/ ./public/
+COPY frontend/src/ ./src/
+COPY frontend/public/ ./public/
 RUN npm run build
 
 # Backend stage

@@ -195,8 +195,7 @@ export const generateSampleSummaries = () => {
     const totalTasks = 8 + Math.floor(Math.random() * 12); // 8-20 tasks per week
     const totalHours = (totalTasks * (1.5 + Math.random() * 2)).toFixed(1); // 1.5-3.5 hours per task
     const avgFocusValue = 1.5 + Math.random() * 1.5; // 1.5-3.0 focus level
-    const avgFocus = avgFocusValue.toFixed(1);
-    const topFocus = avgFocusValue < 2 ? "low" : avgFocusValue < 2.5 ? "medium" : "high";
+    const avgFocus = avgFocusValue < 2 ? "low" : avgFocusValue < 2.5 ? "medium" : "high";
 
     sampleSummaries.push({
       id: summaryId++,
@@ -208,8 +207,7 @@ export const generateSampleSummaries = () => {
       stats: {
         totalTasks,
         totalHours,
-        avgFocus,
-        topFocus
+        avgFocus
       },
       summary: template.summary,
       insights: template.insights,

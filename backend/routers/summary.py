@@ -21,16 +21,7 @@ async def generate_weekly_summary(request: SummaryRequest):
                 status_code=400,
                 detail="No tasks provided for summary generation"
             )
-        
-        # Log the request
-        weave.log({
-            "endpoint": "generate_summary",
-            "task_count": len(request.tasks),
-            "week_start": request.weekStart,
-            "week_end": request.weekEnd,
-            "has_context": bool(request.context)
-        })
-        
+                
         # Generate summary using AI service
         summary = await ai_service.generate_weekly_summary(
             tasks=request.tasks,
@@ -77,7 +68,6 @@ async def enhance_summary(
         return {"enhanced_summary": enhanced_summary}
         
     except Exception as e:
-        weave.log({"summary_enhancement_error": str(e)})
         raise HTTPException(
             status_code=500,
             detail=f"Failed to enhance summary: {str(e)}"
@@ -103,7 +93,6 @@ async def get_similar_tasks(
         return {"similar_tasks": similar_tasks}
         
     except Exception as e:
-        weave.log({"similar_tasks_error": str(e)})
         raise HTTPException(
             status_code=500,
             detail=f"Failed to find similar tasks: {str(e)}"
@@ -148,17 +137,11 @@ async def analyze_productivity_patterns(tasks: List[TaskData]):
             "most_productive_focus": max(time_by_focus, key=time_by_focus.get)
         }
         
-        weave.log({
-            "productivity_analysis": analysis,
-            "task_count": len(tasks)
-        })
-        
         return analysis
         
     except HTTPException:
         raise
     except Exception as e:
-        weave.log({"productivity_analysis_error": str(e)})
         raise HTTPException(
             status_code=500,
             detail=f"Failed to analyze productivity: {str(e)}"

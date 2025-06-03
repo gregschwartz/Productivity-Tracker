@@ -81,7 +81,6 @@ async def ask_productivity_question(
     except HTTPException:
         raise
     except Exception as e:
-        weave.log({"ask_question_error": str(e)})
         raise HTTPException(
             status_code=500,
             detail=f"Failed to process question: {str(e)}"
@@ -104,12 +103,10 @@ async def get_knowledge_base_stats():
             "collections": ["productivity_tips", "historical_tasks"]
         }
         
-        weave.log({"knowledge_base_stats": stats})
         
         return stats
         
     except Exception as e:
-        weave.log({"stats_error": str(e)})
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get knowledge base stats: {str(e)}"
@@ -153,13 +150,6 @@ async def add_knowledge_document(
             ids=[doc_id]
         )
         
-        weave.log({
-            "knowledge_added": True,
-            "doc_id": doc_id,
-            "category": category,
-            "source": source
-        })
-        
         return {
             "message": "Knowledge document added successfully",
             "document_id": doc_id
@@ -168,7 +158,6 @@ async def add_knowledge_document(
     except HTTPException:
         raise
     except Exception as e:
-        weave.log({"add_knowledge_error": str(e)})
         raise HTTPException(
             status_code=500,
             detail=f"Failed to add knowledge document: {str(e)}"
@@ -196,7 +185,6 @@ async def get_knowledge_categories():
         return {"categories": categories}
         
     except Exception as e:
-        weave.log({"categories_error": str(e)})
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get categories: {str(e)}"

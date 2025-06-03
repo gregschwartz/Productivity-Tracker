@@ -22,19 +22,24 @@ class AIService:
         total_tasks = len(tasks)
         total_hours = sum(task.timeSpent for task in tasks)
         
-        # Calculate focus distribution
-        focus_counts = {"low": 0, "medium": 0, "high": 0}
+        if total_tasks == 0 or total_hours == 0:
+            return SummaryResponse(
+                summary="No tasks completed this week.",
+                insights=[],
+                recommendations=[],
+                stats=WeeklyStats(totalTasks=0, totalHours="0.0", avgFocus=FocusLevel.no_tasks)
+            )
+
+        # Calculate focus distribution by time spent
+        focus_time = {"low": 0, "medium": 0, "high": 0}
         for task in tasks:
-            focus_counts[task.focusLevel] += 1
+            focus_time[task.focusLevel] += task.timeSpent
         
         # Get average focus level
         focus_values = {"low": 1, "medium": 2, "high": 3}
         total_focus_score = sum(focus_values[task.focusLevel] for task in tasks)
         avg_focus = total_focus_score / total_tasks if total_tasks > 0 else 0
-        avg_focus_label = "Low" if avg_focus < 1.5 else "Medium" if avg_focus < 2.5 else "High"
-        
-        # Most common focus level
-        top_focus = max(focus_counts, key=focus_counts.get) if total_tasks > 0 else "medium"
+        avg_focus_label = FocusLevel.low if avg_focus < 1.5 else FocusLevel.medium if avg_focus < 2.5 else FocusLevel.high
         
         # Create task summary
         task_summary = "\n".join([
@@ -45,8 +50,7 @@ class AIService:
         stats = WeeklyStats(
             totalTasks=total_tasks,
             totalHours=f"{total_hours:.1f}",
-            avgFocus=avg_focus_label,
-            topFocus=FocusLevel(top_focus)
+            avgFocus=avg_focus_label
         )
         
         
@@ -76,7 +80,7 @@ class AIService:
         """
         
         # Log the request with Weave
-        weave.log({
+        print({
             "prompt_length": len(prompt),
             "task_count": total_tasks,
             "total_hours": total_hours,
@@ -99,7 +103,7 @@ class AIService:
             
         except Exception as e:
             # Fallback response
-            weave.log({"summary_generation_error": str(e)})
+            print({"summary_generation_error": str(e)})
             return SummaryResponse(
                 summary="Unable to generate AI summary. Please try again later.",
                 insights=[],
@@ -107,7 +111,7 @@ class AIService:
                 stats=stats
             )
         
-        weave.log({
+        print({
                 "success": True,
                 "insights": ai_response.get("insights", []),
                 "insights_count": len(ai_response.get("insights", [])),
@@ -162,5 +166,5 @@ class AIService:
             return response.choices[0].message.content.strip()
             
         except Exception as e:
-            weave.log({"enhancement_error": str(e)})
+            print({"enhancement_error": str(e)})
             return summary  # Return original if enhancement fails 

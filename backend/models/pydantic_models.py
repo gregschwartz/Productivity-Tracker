@@ -7,6 +7,7 @@ class FocusLevel(str, Enum):
     low = "low"
     medium = "medium"
     high = "high"
+    no_tasks = "no_tasks"
 
 class TaskData(BaseModel):
     id: str
@@ -18,8 +19,7 @@ class TaskData(BaseModel):
 class WeeklyStats(BaseModel):
     totalTasks: int
     totalHours: str
-    avgFocus: str
-    topFocus: FocusLevel
+    avgFocus: FocusLevel
 
 class SummaryRequest(BaseModel):
     tasks: List[TaskData]

@@ -1,3 +1,4 @@
 After you finish making changes, always run tests to make sure everything is still working as expected.
 Never change quotes to single quotes or different quotes.
 Always comment code explaining why different strategies were taken, but only include comments explaining things that are not obvious from the literal function calls! e.g. don't say "calling setLabel". You could say "setting label here instead of earlier because the state might have changed by now"
+If a test is failing, you are never ever allowed to simply disable the test or to remove the functionality from the test so that it passes. You must fix the test.

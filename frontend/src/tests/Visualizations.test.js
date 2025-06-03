@@ -2,9 +2,6 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { themes } from '../themes/themes';
-
-// matchMedia is already mocked in setupTests.js
-
 import Visualizations from '../components/Visualizations';
 
 // Mock Recharts components
@@ -90,8 +87,6 @@ const mockLocalStorage = (() => {
 Object.defineProperty(window, 'localStorage', {
   value: mockLocalStorage
 });
-
-// matchMedia and ResizeObserver are already mocked in setupTests.js
 
 // Helper function to render component with theme
 const renderWithTheme = (component, theme = themes.Ready) => {

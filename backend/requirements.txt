@@ -4,7 +4,7 @@ pydantic==2.10.3
 openai>=1.6.1
 python-multipart==0.0.12
 python-dotenv==1.0.1
-weave==0.50.1
+weave
 chromadb==0.5.23
 pytest==8.3.4
 pytest-asyncio==0.24.0 

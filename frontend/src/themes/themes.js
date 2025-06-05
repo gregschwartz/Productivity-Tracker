@@ -80,9 +80,9 @@ const readyDarkTheme = {
       info: '#3b82f6'
     },
     focus: {
-      low: '#312e81',
+      low: '#6366f1',
       medium: '#4338ca',
-      high: '#6366f1'
+      high: '#312e81'
     },
     accent: '#f472b6',
     chart: {

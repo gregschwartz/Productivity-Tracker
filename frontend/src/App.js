@@ -56,10 +56,17 @@ const shouldUseTronTheme = (tasks) => {
 /**
  * Main App component
  */
+// TRON mode states enum
+const TRON_STATE = {
+  NEVER_TURNED_ON: 'never_turned_on',
+  TURNED_ON: 'turned_on', 
+  TURNED_OFF: 'turned_off'
+};
+
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [tronState, setTronState] = useState(TRON_STATE.NEVER_TURNED_ON);
   const [tasks, setTasks] = useState([]);
-  const [inputMatchesEasterEgg, setInputMatchesEasterEgg] = useState(false);
 
   // Load dark mode preference and tasks from localStorage on mount
   useEffect(() => {
@@ -143,34 +150,32 @@ function App() {
     localStorage.setItem('productivity-dark-mode', isDarkMode.toString());
   }, [isDarkMode]);
 
-  // Handler for live task input changes
-  const handleTaskInputChange = (inputValue) => {
-    const tronKeywords = ['for the user', 'master control program', 'mcp', 'kevin'];
-    const matchesEasterEgg = tronKeywords.some(keyword => (inputValue || '').toLowerCase().includes(keyword));
-    setInputMatchesEasterEgg(matchesEasterEgg);
-  };
+  useEffect(() => {
+    // Check if any task should trigger TRON theme, only enable if state is NEVER_TURNED_ON
+    if (tronState === TRON_STATE.NEVER_TURNED_ON && shouldUseTronTheme(tasks)) {
+      setTronState(TRON_STATE.TURNED_ON);
+    }
+  }, [tasks, tronState]);
 
   // Determine which theme to use
   const getActiveTheme = () => {
-    // If input matches Easter Egg, force Tron theme
-    if (inputMatchesEasterEgg) {
+    if (tronState === TRON_STATE.TURNED_ON) {
       return themes.Tron;
     }
-    // Check if any task should trigger Tron theme
-    if (shouldUseTronTheme(tasks)) {
-      return themes.Tron;
-    }
-    // Otherwise use Ready/Ready-Dark theme based on user preference
     return isDarkMode ? themes['Ready-Dark'] : themes.Ready;
   };
 
   const activeTheme = getActiveTheme();
 
   /**
-   * Handle dark mode toggle
+   * Handle theme toggle
    */
-  const handleDarkModeToggle = () => {
-    setIsDarkMode(!isDarkMode);
+  const handleThemeToggle = (event) => {
+    if (tronState === TRON_STATE.TURNED_ON) {
+      setTronState(TRON_STATE.TURNED_OFF);
+    } else {
+      setIsDarkMode(!isDarkMode);
+    }
   };
 
   return (
@@ -178,9 +183,8 @@ function App() {
       <GlobalStyle />
       <Router>
         <ProductivityTracker 
-          onTaskInputChange={handleTaskInputChange}
           isDarkMode={isDarkMode}
-          onDarkModeToggle={handleDarkModeToggle}
+          onThemeToggle={handleThemeToggle}
         />
       </Router>
     </ThemeProvider>

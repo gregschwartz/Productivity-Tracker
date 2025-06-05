@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import TaskManager from './TaskManager';
@@ -29,9 +29,9 @@ const Navigation = styled.nav`
   border-radius: ${props => props.theme.borderRadius.large};
   padding: 12px;
   box-shadow: ${props => props.theme.shadows.medium};
-  border: ${props => props.theme.name === 'tron' ? `1px solid ${props.theme.colors.border}` : `1px solid ${props.theme.colors.border}`};
+  border: ${props => props.theme.name === 'Tron' ? `1px solid ${props.theme.colors.border}` : `1px solid ${props.theme.colors.border}`};
   
-  ${props => props.theme.name === 'tron' && `
+  ${props => props.theme.name === 'Tron' && `
     box-shadow: ${props.theme.shadows.medium};
     background: ${props.theme.colors.surface};
   `}
@@ -52,9 +52,9 @@ const NavButton = styled.button`
   transition: all 0.2s ease;
   background: ${props => props.active ? props.theme.colors.primary : 'transparent'};
   color: ${props => props.active ? props.theme.colors.primaryText : props.theme.colors.text.secondary};
-  border: ${props => props.theme.name === 'tron' && props.active ? `1px solid ${props.theme.colors.primary}` : 'none'};
+  border: ${props => props.theme.name === 'Tron' && props.active ? `1px solid ${props.theme.colors.primary}` : 'none'};
   
-  ${props => props.theme.name === 'tron' && `
+  ${props => props.theme.name === 'Tron' && `
     text-shadow: ${props.active ? props.theme.glow.small : 'none'};
     box-shadow: ${props.active ? props.theme.glow.small : 'none'};
   `}
@@ -63,7 +63,7 @@ const NavButton = styled.button`
     background: ${props => props.active ? props.theme.colors.primary : props.theme.colors.backgroundHover};
     transform: translateY(-1px);
     
-    ${props => props.theme.name === 'tron' && !props.active && `
+    ${props => props.theme.name === 'Tron' && !props.active && `
       color: ${props.theme.colors.primary};
       text-shadow: ${props.theme.glow.small};
     `}
@@ -100,7 +100,7 @@ const PageTitle = styled.h1`
   color: ${props => props.theme.colors.text.primary};
   margin-bottom: 8px;
   
-  ${props => props.theme.name === 'tron' && `
+  ${props => props.theme.name === 'Tron' && `
     color: ${props.theme.colors.primary};
     text-shadow: ${props.theme.glow.medium};
     font-family: ${props.theme.fonts.mono};
@@ -120,13 +120,28 @@ const PageSubtitle = styled.p`
   line-height: 1.6;
 `;
 
+const TronLogo = styled.img`
+  aspect-ratio: 5.106382979;
+  height: 50px;
+  transition: all 0.2s ease;
+  
+  ${props => `
+    drop-shadow: ${props.theme.glow.small};
+    
+    &:hover {
+      drop-shadow: ${props.theme.glow.medium};
+    }
+  `}
+`;
+
 /**
  * Main ProductivityTracker component that orchestrates all functionality
  */
-function ProductivityTracker({ onTaskInputChange, isDarkMode, onDarkModeToggle }) {
+function ProductivityTracker({ isDarkMode, onThemeToggle }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const theme = useTheme();
   
   const [tasks, setTasks] = useState([]);
   const [summaries, setSummaries] = useState([]);
@@ -254,15 +269,6 @@ function ProductivityTracker({ onTaskInputChange, isDarkMode, onDarkModeToggle }
   ];
 
   /**
-   * Pass input changes up to parent (App)
-   */
-  const handleTaskInputChange = (inputValue) => {
-    if (onTaskInputChange) {
-      onTaskInputChange(inputValue);
-    }
-  };
-
-  /**
    * Navigate to a specific tab
    */
   const navigateToTab = (tab) => {
@@ -299,7 +305,6 @@ function ProductivityTracker({ onTaskInputChange, isDarkMode, onDarkModeToggle }
             onAddTask={addTask}
             onUpdateTask={updateTask}
             onDeleteTask={deleteTask}
-            onTaskInputChange={handleTaskInputChange}
             selectedDate={selectedDate}
             onDateChange={handleNavigateToDate}
             onClearDateFilter={handleClearDateFilter}
@@ -350,10 +355,14 @@ function ProductivityTracker({ onTaskInputChange, isDarkMode, onDarkModeToggle }
           </NavButton>
         ))}
         <NavButton
-          onClick={onDarkModeToggle}
-          title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          onClick={onThemeToggle}
+          title={theme.name === 'Tron' ? 'Exit TRON Mode' : (isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode (Shift+Click for TRON)')}
         >
-          {isDarkMode ? <Sun /> : <Moon />}
+          {theme.name === 'Tron' ? (
+            <TronLogo src="/tron-light-cycle.gif" alt="Theme: TRON" />
+          ) : (
+            isDarkMode ? <Sun /> : <Moon />
+          )}
         </NavButton>
       </Navigation>
 

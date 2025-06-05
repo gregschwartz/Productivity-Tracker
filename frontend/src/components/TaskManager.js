@@ -819,7 +819,7 @@ function TaskManager({
    * Get filtered tasks based on selected date or today's tasks
    * Sort by timestamp (newest first)
    */
-  const targetDate = selectedDate || new Date().toISOString().split('T')[0];
+  const targetDate = selectedDate || currentDateString;
   const filteredTasks = tasks
     .filter(task => task.date === targetDate)
     .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date));

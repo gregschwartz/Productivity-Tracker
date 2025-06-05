@@ -50,20 +50,20 @@ const NavButton = styled.button`
   font-weight: 500;
   font-size: 14px;
   transition: all 0.2s ease;
-  background: ${props => props.active ? props.theme.colors.primary : 'transparent'};
-  color: ${props => props.active ? props.theme.colors.primaryText : props.theme.colors.text.secondary};
-  border: ${props => props.theme.name === 'Tron' && props.active ? `1px solid ${props.theme.colors.primary}` : 'none'};
+  background: ${props => props.$active ? props.theme.colors.primary : 'transparent'};
+  color: ${props => props.$active ? props.theme.colors.primaryText : props.theme.colors.text.secondary};
+  border: ${props => props.theme.name === 'Tron' && props.$active ? `1px solid ${props.theme.colors.primary}` : 'none'};
   
   ${props => props.theme.name === 'Tron' && `
-    text-shadow: ${props.active ? props.theme.glow.small : 'none'};
-    box-shadow: ${props.active ? props.theme.glow.small : 'none'};
+    text-shadow: ${props.$active ? props.theme.glow.small : 'none'};
+    box-shadow: ${props.$active ? props.theme.glow.small : 'none'};
   `}
 
   &:hover {
-    background: ${props => props.active ? props.theme.colors.primary : props.theme.colors.backgroundHover};
+    background: ${props => props.$active ? props.theme.colors.primary : props.theme.colors.backgroundHover};
     transform: translateY(-1px);
     
-    ${props => props.theme.name === 'Tron' && !props.active && `
+    ${props => props.theme.name === 'Tron' && !props.$active && `
       color: ${props.theme.colors.primary};
       text-shadow: ${props.theme.glow.small};
     `}
@@ -347,7 +347,7 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
         {navigationItems.map(({ key, label, icon: Icon }) => (
           <NavButton
             key={key}
-            active={activeTab === key}
+            $active={activeTab === key}
             onClick={() => navigateToTab(key)}
           >
             <Icon />

@@ -486,8 +486,8 @@ const TimeRangeButton = styled.button`
   padding: 8px 16px;
   border-radius: ${props => props.theme.borderRadius.medium};
   border: 1px solid ${props => props.theme.colors.border};
-  background: ${props => props.active ? props.theme.colors.primary : props.theme.colors.surface};
-  color: ${props => props.active ? props.theme.colors.primaryText : props.theme.colors.text.primary};
+  background: ${props => props.$active ? props.theme.colors.primary : props.theme.colors.surface};
+  color: ${props => props.$active ? props.theme.colors.primaryText : props.theme.colors.text.primary};
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -497,16 +497,16 @@ const TimeRangeButton = styled.button`
     font-family: ${props.theme.fonts.mono};
     text-transform: uppercase;
     letter-spacing: 1px;
-    ${props.active ? `
+    ${props.$active ? `
       box-shadow: ${props.theme.glow.small};
       border-color: ${props.theme.colors.primary};
     ` : ''}
   `}
 
   &:hover {
-    background: ${props => props.active ? props.theme.colors.primary : props.theme.colors.backgroundHover};
+    background: ${props => props.$active ? props.theme.colors.primary : props.theme.colors.backgroundHover};
     
-    ${props => props.theme.name === 'tron' && !props.active && `
+    ${props => props.theme.name === 'tron' && !props.$active && `
       border-color: ${props.theme.colors.primary};
     `}
   }
@@ -980,7 +980,7 @@ function Visualizations({ tasks = [], summaries = [], onNavigateToDate }) {
         ].map(option => (
           <TimeRangeButton
             key={option.value}
-            active={timeRange === option.value}
+            $active={timeRange === option.value}
             onClick={() => setTimeRange(option.value)}
           >
             {option.label}
@@ -1169,13 +1169,13 @@ function Visualizations({ tasks = [], summaries = [], onNavigateToDate }) {
           
           <ChartViewToggle>
             <TimeRangeButton
-              active={taskViewMode === 'tasks'}
+              $active={taskViewMode === 'tasks'}
               onClick={() => setTaskViewMode('tasks')}
             >
               Tasks
             </TimeRangeButton>
             <TimeRangeButton
-              active={taskViewMode === 'time'}
+              $active={taskViewMode === 'time'}
               onClick={() => setTaskViewMode('time')}
             >
               Time

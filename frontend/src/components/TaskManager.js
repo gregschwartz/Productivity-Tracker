@@ -144,17 +144,17 @@ const NavButton = styled.button`
  * Today button styled component
  */
 const TodayButton = styled(NavButton)`
-  background: ${props => props.isToday ? props.theme.colors.primary : 'transparent'};
-  color: ${props => props.isToday ? props.theme.colors.primaryText : props.theme.colors.text.secondary};
+  background: ${props => props.$isToday ? props.theme.colors.primary : 'transparent'};
+  color: ${props => props.$isToday ? props.theme.colors.primaryText : props.theme.colors.text.secondary};
   border-color: ${props => props.theme.colors.primary};
   
-  ${props => props.theme.name === 'tron' && props.isToday && `
+  ${props => props.theme.name === 'tron' && props.$isToday && `
     box-shadow: ${props.theme.glow.small};
   `}
   
   &:hover {
-    background: ${props => props.isToday ? props.theme.colors.primary : props.theme.colors.backgroundHover};
-    color: ${props => props.isToday ? props.theme.colors.primaryText : props.theme.colors.primary};
+    background: ${props => props.$isToday ? props.theme.colors.primary : props.theme.colors.backgroundHover};
+    color: ${props => props.$isToday ? props.theme.colors.primaryText : props.theme.colors.primary};
   }
 `;
 
@@ -498,22 +498,31 @@ const TaskList = styled.div`
  * Task card styled component
  */
 const TaskCard = styled(motion.div)`
-  background: ${props => props.theme.colors.surface};
-  border: 1px solid ${props => props.isEditing ? props.theme.colors.primary : props.theme.colors.border};
+  background: ${props => {
+    // Get focus level background colors
+    const focusColors = {
+      low: props.theme.colors.focus.low,
+      medium: props.theme.colors.focus.medium,
+      high: props.theme.colors.focus.high
+    };
+    
+    return focusColors[props.$focusLevel] || props.theme.colors.surface;
+  }};
+  border: 1px solid ${props => props.$isEditing ? props.theme.colors.primary : props.theme.colors.border};
   border-radius: ${props => props.theme.borderRadius.medium};
   padding: 20px;
   box-shadow: ${props => props.theme.shadows.small};
   transition: all 0.2s ease;
   
-  ${props => props.isEditing && `
+  ${props => props.$isEditing && `
     box-shadow: 0 0 0 2px ${props.theme.colors.primary}20;
   `}
   
   ${props => props.theme.name === 'tron' && `
-    border: 1px solid ${props.isEditing ? props.theme.colors.primary : props.theme.colors.border};
+    border: 1px solid ${props.$isEditing ? props.theme.colors.primary : props.theme.colors.border};
     box-shadow: ${props.theme.shadows.small};
     
-    ${props.isEditing && `
+    ${props.$isEditing && `
       box-shadow: ${props.theme.glow.medium};
     `}
   `}
@@ -652,7 +661,6 @@ function TaskManager({
   onAddTask = () => {}, 
   onUpdateTask = () => {}, 
   onDeleteTask = () => {},
-  onTaskInputChange = () => {},
   selectedDate = null,
   onDateChange = () => {},
   onClearDateFilter = () => {}
@@ -717,13 +725,7 @@ function TaskManager({
    */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => {
-      const updated = { ...prev, [name]: value };
-      if (name === 'name') {
-        onTaskInputChange(updated.name);
-      }
-      return updated;
-    });
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   /**
@@ -836,7 +838,7 @@ function TaskManager({
               </NavButton>
               <TodayButton 
                 onClick={handleToday} 
-                isToday={isToday}
+                $isToday={isToday}
                 title="Go to today"
               >
                 Today
@@ -974,7 +976,8 @@ function TaskManager({
                 data-focus-level={task.focusLevel}
                 data-completed={task.completed}
                 data-editing={editingTask && editingTask.id === task.id}
-                isEditing={editingTask && editingTask.id === task.id}
+                $isEditing={editingTask && editingTask.id === task.id}
+                $focusLevel={task.focusLevel}
               >
                 <TaskHeader>
                   <TaskTitle>{task.name}</TaskTitle>

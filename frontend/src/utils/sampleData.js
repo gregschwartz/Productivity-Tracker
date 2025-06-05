@@ -10,6 +10,11 @@ import { format, subDays } from 'date-fns';
 export const generateSampleTasks = () => {
   // timeMinMax is [minHours, maxHours] - used to generate random time spent within this range
   const taskTemplates = [
+    // Today's tasks
+    { name: "Get a beverage", timeMinMax: [0.25, 0.25], focusLevel: "low" },
+    { name: "Test Greg's app", timeMinMax: [0.5, 0.5], focusLevel: "medium" },
+    { name: "Request to hire Greg ;)", timeMinMax: [1, 1], focusLevel: "high" },
+    
     // Development tasks
     { name: "Frontend component development", timeMinMax: [2, 6], focusLevel: "high" },
     { name: "Backend API implementation", timeMinMax: [3, 5], focusLevel: "high" },
@@ -67,17 +72,22 @@ export const generateSampleTasks = () => {
     // Determine number of tasks for this day
     let taskCount;
     if (dayOffset === 0) {
-      taskCount = Math.floor(Math.random() * 3) + 1; // 1-3 tasks for today
+      taskCount = 3;
     } else {
       const isWeekend = date.getDay() === 0 || date.getDay() === 6;
       taskCount = isWeekend 
         ? Math.floor(Math.random() * 2) // 0-1 tasks on weekends
-        : Math.floor(Math.random() * 5) + 1; // 1-5 tasks on weekdays
+        : Math.floor(Math.random() * 5) + 3; // 1-5 tasks on weekdays
     }
     
     // Generate tasks for this day
     for (let i = 0; i < taskCount; i++) {
-      const template = taskTemplates[Math.floor(Math.random() * taskTemplates.length)];
+      let templateIndex = Math.floor(Math.random() * taskTemplates.length);
+      if (dayOffset === 0 && i < taskTemplates.length) {
+        // Use the first three to make sure that each focus level is represented
+        templateIndex = i;
+      }
+      const template = taskTemplates[templateIndex];
 
       // Generate random time spent within the task's min and max hour range
       const timeSpent = template.timeMinMax[0] + 

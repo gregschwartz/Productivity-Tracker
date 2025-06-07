@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Calendar, Clock, Copy, Trash2, RefreshCw } from 'lucide-react';
+import { Sparkles, Calendar, Clock, RefreshCw } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, getWeek, getYear } from 'date-fns';
 
 /**
@@ -234,43 +234,6 @@ const SummaryTimestamp = styled.p`
 `;
 
 /**
- * Summary actions
- */
-const SummaryActions = styled.div`
-  display: flex;
-  gap: 8px;
-`;
-
-/**
- * Icon button for actions
- */
-const IconButton = styled.button`
-  padding: 8px;
-  border: none;
-  border-radius: ${props => props.theme.borderRadius.small};
-  background: transparent;
-  color: ${props => props.theme.colors.text.muted};
-  transition: all 0.2s ease;
-  cursor: pointer;
-
-  &:hover {
-    background: ${props => props.theme.colors.backgroundHover};
-    color: ${props => props.theme.colors.text.secondary};
-    transform: scale(1.1);
-    
-    ${props => props.theme.name === 'tron' && `
-      color: ${props.theme.colors.primary};
-      text-shadow: ${props.theme.glow.small};
-    `}
-  }
-
-  svg {
-    width: 16px;
-    height: 16px;
-  }
-`;
-
-/**
  * Summary stats grid
  */
 const SummaryStats = styled.div`
@@ -370,61 +333,39 @@ const EmptyState = styled.div`
   }
 `;
 
-
-
 /**
- * WeeklySummary component for AI-generated productivity insights
+ * Display AI-generated productivity insights from a single week
  */
-function WeeklySummary({ tasks = [], summaries = [], onAddSummary = () => {} }) {
+function WeekSummary({ tasks = [], summary = null, timeRange, onAddSummary = () => {} }) {
+  const { startDate, endDate } = timeRange;
   const [generating, setGenerating] = useState(false);
-  const [selectedWeek] = useState(new Date());
   const [error, setError] = useState(null);
 
-  /**
-   * Get tasks for the selected week
-   */
-  const weekTasks = useMemo(() => {
-    const weekStart = startOfWeek(selectedWeek);
-    const weekEnd = endOfWeek(selectedWeek);
-    
-    return tasks.filter(task => {
-      const taskDate = new Date(task.date);
-      return taskDate >= weekStart && taskDate <= weekEnd;
-    });
-  }, [tasks, selectedWeek]);
-
-  /**
-   * Check if summary exists for current week
-   */
-  const existingSummary = useMemo(() => {
-    const weekNumber = getWeek(new Date());
-    const year = getYear(new Date());
-    
-    return summaries.find(summary => 
-      summary.week === weekNumber && summary.year === year
-    );
-  }, [summaries]);
 
   /**
    * Generate a new weekly summary using GenAI
    */
   const handleGenerateSummary = async () => {
-    if (weekTasks.length === 0) return;
+    if (tasks.length === 0) return;
     
     setGenerating(true);
     setError(null);
     
     try {
       // Prepare task data for AI analysis
-      const taskData = weekTasks.map(task => ({
+      const taskData = tasks.map(task => ({
         name: task.name,
         timeSpent: task.timeSpent,
         focusLevel: task.focusLevel,
-        completed: task.completed || false,
         date: task.date
       }));
 
       // Calculate basic metrics (these are used by the backend API call)
+      const weekStats = {
+        totalTasks: tasks.length,
+        totalHours: tasks.reduce((sum, task) => sum + task.timeSpent, 0).toFixed(1),
+        avgFocus: tasks.reduce((sum, task) => sum + task.focusLevel, 0) / tasks.length
+      };
 
       // Call backend API
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/generate-summary`, {
@@ -434,9 +375,9 @@ function WeeklySummary({ tasks = [], summaries = [], onAddSummary = () => {} }) 
         },
         body: JSON.stringify({
           tasks: taskData,
-          weekStart: weekStart.toISOString().split('T')[0],
-          weekEnd: weekEnd.toISOString().split('T')[0],
-          context: `Weekly productivity analysis for ${format(weekStart, 'MMM dd')} - ${format(weekEnd, 'MMM dd, yyyy')}`
+          weekStart: startDate.toISOString().split('T')[0],
+          weekEnd: endDate.toISOString().split('T')[0],
+          weekStats: weekStats
         })
       });
 
@@ -446,21 +387,15 @@ function WeeklySummary({ tasks = [], summaries = [], onAddSummary = () => {} }) 
 
       const aiResult = await response.json();
       
-      // The backend returns a properly formatted SummaryResponse
-      const summary = {
-        id: Date.now(),
-        week: getWeek(selectedWeek),
-        year: getYear(selectedWeek),
-        weekStart: weekStart.toISOString(),
-        weekEnd: weekEnd.toISOString(),
-        weekRange: `${format(weekStart, 'MMM dd')} - ${format(weekEnd, 'MMM dd, yyyy')}`,
-        stats: aiResult.stats,
+      summary = {
+        week: getWeek(startDate),
+        year: getYear(startDate),
+        weekStart: startDate.toISOString(),
+        weekEnd: endDate.toISOString(),
+        weekRange: `${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd, yyyy')}`,
+        stats: weekStats,
         summary: aiResult.summary,
-        insights: aiResult.insights,
-        recommendations: aiResult.recommendations,
-        timestamp: new Date().toISOString(),
-        confidence: aiResult.confidence,
-        generation_time: aiResult.generation_time
+        recommendations: aiResult.recommendations
       };
 
       onAddSummary(summary);
@@ -472,58 +407,36 @@ function WeeklySummary({ tasks = [], summaries = [], onAddSummary = () => {} }) 
     }
   };
 
-  /**
-   * Copy summary to clipboard
-   */
-  const handleCopySummary = (summary) => {
-    const text = summary.summary;
-    navigator.clipboard.writeText(text);
-  };
-
-  /**
-   * Delete a summary
-   */
-  const handleDeleteSummary = (summaryId) => {
-    // Implementation would remove from summaries array
-    console.log('Delete summary:', summaryId);
-  };
-
-  const weekStart = startOfWeek(selectedWeek);
-  const weekEnd = endOfWeek(selectedWeek);
-
   return (
     <SummaryContainer>
       <GenerationSection>
         <SectionHeader>
           <SectionTitle>
-            <Sparkles />
-            Generate Weekly Summary
+          <Calendar style={{ display: 'inline', marginRight: '8px', width: '14px', height: '14px' }} />
+          {format(startDate, 'MMM dd')} - {format(endDate, 'MMM dd, yyyy')}
+
           </SectionTitle>
           <SectionDescription>
-            AI-powered insights and recommendations based on your productivity patterns
+            Generate AI-powered insights and recommendations based on your weekly productivity patterns.
           </SectionDescription>
         </SectionHeader>
 
         <WeekSelector>
           <WeekInfo>
-            <Calendar style={{ display: 'inline', marginRight: '8px', width: '14px', height: '14px' }} />
-            {format(weekStart, 'MMM dd')} - {format(weekEnd, 'MMM dd, yyyy')}
-          </WeekInfo>
-          <WeekInfo>
             <Clock style={{ display: 'inline', marginRight: '8px', width: '14px', height: '14px' }} />
-            {weekTasks.length} tasks • {weekTasks.reduce((sum, task) => sum + task.timeSpent, 0).toFixed(1)}h total
+            {tasks.length} tasks • {tasks.reduce((sum, task) => sum + task.timeSpent, 0).toFixed(1)}h total
           </WeekInfo>
         </WeekSelector>
 
         <GenerateButton
           onClick={handleGenerateSummary}
-          disabled={generating || weekTasks.length === 0 || existingSummary}
+          disabled={generating || tasks.length === 0 || summary}
           generating={generating}
         >
           {generating ? <RefreshCw /> : <Sparkles />}
           {generating ? 'Generating...' : 
-           existingSummary ? 'Summary Already Generated' :
-           weekTasks.length === 0 ? 'No Tasks This Week' : 'Generate AI Summary'}
+           summary ? 'Summary Already Generated' :
+           tasks.length === 0 ? 'No Tasks This Week' : 'Generate AI Summary'}
         </GenerateButton>
 
         {error && (
@@ -541,86 +454,48 @@ function WeeklySummary({ tasks = [], summaries = [], onAddSummary = () => {} }) 
         )}
       </GenerationSection>
 
-      <SummaryList>
-        <AnimatePresence>
-          {summaries.length === 0 ? (
-            <EmptyState>
-              <h3>No summaries yet</h3>
-              <p>Complete some tasks and generate your first weekly summary!</p>
-            </EmptyState>
-          ) : (
-            summaries
-              .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-              .map(summary => (
-                <SummaryCard
-                  key={summary.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <SummaryHeader>
-                    <SummaryMeta>
-                      <SummaryWeekRange>{summary.weekRange}</SummaryWeekRange>
-                      <SummaryTimestamp>
-                        Generated {format(new Date(summary.timestamp), 'MMM dd, yyyy')}
-                      </SummaryTimestamp>
-                    </SummaryMeta>
-                    <SummaryActions>
-                      <IconButton
-                        onClick={() => handleCopySummary(summary)}
-                        title="Copy summary"
-                      >
-                        <Copy />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => handleDeleteSummary(summary.id)}
-                        title="Delete summary"
-                      >
-                        <Trash2 />
-                      </IconButton>
-                    </SummaryActions>
-                  </SummaryHeader>
+      {summary && (
+        <SummaryList>
+          <SummaryCard
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <SummaryHeader>
+              <SummaryMeta>
+                <SummaryWeekRange>{summary.weekRange}</SummaryWeekRange>
+                <SummaryTimestamp>
+                  Generated {format(new Date(summary.timestamp), 'MMM dd, yyyy')}
+                </SummaryTimestamp>
+              </SummaryMeta>
+            </SummaryHeader>
 
-                  <SummaryStats>
-                    <StatItem>
-                      <StatValue>{summary.stats.totalTasks}</StatValue>
-                      <StatLabel>Tasks</StatLabel>
-                    </StatItem>
-                    <StatItem>
-                      <StatValue>{summary.stats.totalHours}h</StatValue>
-                      <StatLabel>Hours</StatLabel>
-                    </StatItem>
-                    <StatItem>
-                      <StatValue>{summary.stats.avgFocus}</StatValue>
-                      <StatLabel>Avg Focus</StatLabel>
-                    </StatItem>
-                  </SummaryStats>
+            <SummaryContent>
+              <p>{summary.summary}</p>
+              
+              {summary.recommendations && summary.recommendations.length > 0 && (
+                <>
+                  <h4>Recommendations for next week</h4>
+                  <ul>
+                    {summary.recommendations.map((rec, index) => (
+                      <li key={index}>{rec}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </SummaryContent>
+          </SummaryCard>
+        </SummaryList>
+      )}
 
-                  <SummaryContent>
-                    <p>{summary.summary}</p>
-                    
-                    <h4>Key Insights</h4>
-                    <ul>
-                      {summary.insights.map((insight, index) => (
-                        <li key={index}>{insight}</li>
-                      ))}
-                    </ul>
-                    
-                    <h4>Recommendations</h4>
-                    <ul>
-                      {summary.recommendations.map((rec, index) => (
-                        <li key={index}>{rec}</li>
-                      ))}
-                    </ul>
-                  </SummaryContent>
-                </SummaryCard>
-              ))
-          )}
-        </AnimatePresence>
-      </SummaryList>
+      {!summary && tasks.length === 0 && (
+        <EmptyState>
+          <h3>No tasks for this week</h3>
+          <p>Add some tasks and then we can generate a weekly summary</p>
+        </EmptyState>
+      )}
     </SummaryContainer>
   );
 }
 
-export default WeeklySummary; 
+export default WeekSummary; 

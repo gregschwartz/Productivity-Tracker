@@ -28,7 +28,8 @@ async def generate_weekly_summary(request: SummaryRequest):
             tasks=request.tasks,
             week_start=request.weekStart,
             week_end=request.weekEnd,
-            week_stats=request.weekStats
+            week_stats=request.weekStats,
+            context_summaries=request.contextSummaries
         )
         
         if summary.summary == "" or summary.recommendations == []:

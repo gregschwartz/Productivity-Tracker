@@ -10,69 +10,23 @@ const focusValues = { low: 1, medium: 2, high: 3 };
  * Container for weekly summary section
  */
 const SummaryContainer = styled.div`
-  max-width: 900px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 24px;
+  padding: 0 24px;
+  
+  @media (min-width: 768px) {
+    padding: 0 48px;
+  }
 `;
 
 /**
  * Summary generation section
  */
 const GenerationSection = styled.div`
-  background: ${props => props.theme.colors.surface};
-  border-radius: ${props => props.theme.borderRadius.large};
-  padding: 24px;
-  box-shadow: ${props => props.theme.shadows.medium};
-  border: 1px solid ${props => props.theme.colors.border};
-  
-  ${props => props.theme.name === 'tron' && `
-    border: 1px solid ${props.theme.colors.border};
-    box-shadow: ${props.theme.shadows.medium};
-  `}
+  padding: 0 0;
 `;
 
-/**
- * Section header
- */
-const SectionHeader = styled.div`
-  margin-bottom: 20px;
-`;
-
-/**
- * Section title
- */
-const SectionTitle = styled.h2`
-  font-size: 20px;
-  font-weight: 600;
-  color: ${props => props.theme.colors.text.primary};
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  
-  ${props => props.theme.name === 'tron' && `
-    color: ${props.theme.colors.primary};
-    font-family: ${props.theme.fonts.mono};
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  `}
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-`;
-
-/**
- * Section description
- */
-const SectionDescription = styled.p`
-  color: ${props => props.theme.colors.text.secondary};
-  font-size: 14px;
-  line-height: 1.5;
-`;
 
 /**
  * Week selector styled component
@@ -83,16 +37,13 @@ const WeekSelector = styled.div`
   align-items: center;
   margin-bottom: 20px;
   flex-wrap: wrap;
+  justify-content: flex-start;
 `;
 
 /**
  * Week info display
  */
 const WeekInfo = styled.div`
-  background: ${props => props.theme.colors.backgroundHover};
-  padding: 12px 16px;
-  border-radius: ${props => props.theme.borderRadius.medium};
-  border: 1px solid ${props => props.theme.colors.border};
   font-size: 14px;
   color: ${props => props.theme.colors.text.secondary};
   
@@ -171,6 +122,17 @@ const SummaryCard = styled(motion.div)`
   padding: 24px;
   box-shadow: ${props => props.theme.shadows.small};
   transition: all 0.2s ease;
+  width: 100%;
+  max-width: 100%;
+  
+  @media (min-width: 768px) {
+    width: 95%;
+    margin: 0 auto;
+  }
+  
+  @media (min-width: 1024px) {
+    width: 90%;
+  }
   
   ${props => props.theme.name === 'tron' && `
     border: 1px solid ${props.theme.colors.border};
@@ -203,8 +165,9 @@ const SummaryHeader = styled.div`
  */
 const SummaryMeta = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
 `;
 
 /**
@@ -338,7 +301,7 @@ const EmptyState = styled.div`
 /**
  * Display AI-generated productivity insights from a single week
  */
-function WeekSummary({ tasks = [], summary = null, timeRange, onAddSummary = () => {} }) {
+function WeekSummary({ tasks = [], summary = null, contextSummaries = { before: [], after: [] }, timeRange, onAddSummary = () => {} }) {
   const { startDate, endDate } = timeRange;
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
@@ -365,9 +328,8 @@ function WeekSummary({ tasks = [], summary = null, timeRange, onAddSummary = () 
     );
   }
 
-
   /**
-   * Generate a new weekly summary using GenAI
+   * Summarize the week and provide recommendations to improve the next week
    */
   const handleGenerateSummary = async () => {
     if (tasks.length === 0) return;
@@ -406,7 +368,8 @@ function WeekSummary({ tasks = [], summary = null, timeRange, onAddSummary = () 
           tasks: taskData,
           weekStart: startDate.toISOString().split('T')[0],
           weekEnd: endDate.toISOString().split('T')[0],
-          weekStats: weekStats
+          weekStats: weekStats,
+          contextSummaries: contextSummaries
         })
       });
 
@@ -439,22 +402,29 @@ function WeekSummary({ tasks = [], summary = null, timeRange, onAddSummary = () 
 
   return (
     <SummaryContainer>
-      {summary ? (
-        <SummaryList>
-          <SummaryCard
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
+      <SummaryList>
+        <SummaryCard
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
           >
-            <SummaryHeader>
-              <SummaryMeta>
-                <SummaryWeekRange>{summary.weekRange}</SummaryWeekRange>
+          <SummaryHeader>
+            <SummaryMeta>
+              <SummaryWeekRange>
+                <Calendar style={{ display: 'inline', marginRight: '8px', width: '14px', height: '14px' }} />
+                {summary 
+                ? summary.weekRange 
+                : `${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd, yyyy')}`}
+              </SummaryWeekRange>
+              { summary && summary.timestamp && (
                 <SummaryTimestamp>
                   Generated {summary.timestamp ? format(new Date(summary.timestamp), 'MMM dd, yyyy') : 'Recently'}
                 </SummaryTimestamp>
-              </SummaryMeta>
-            </SummaryHeader>
+              )}
+            </SummaryMeta>
+          </SummaryHeader>
 
+          {summary ? (
             <SummaryContent>
               <p>{summary.summary}</p>
               
@@ -463,60 +433,49 @@ function WeekSummary({ tasks = [], summary = null, timeRange, onAddSummary = () 
                   <h4>Recommendations for next week</h4>
                   <ul>
                     {summary.recommendations.map((rec, index) => (
-                      <li key={index}>{rec}</li>
+                      <li key={index} dangerouslySetInnerHTML={{ __html: rec }}></li>
                     ))}
                   </ul>
                 </>
               )}
             </SummaryContent>
-          </SummaryCard>
-        </SummaryList>
-      ) : (
-        <GenerationSection>
-        <SectionHeader>
-          <SectionTitle>
-          <Calendar style={{ display: 'inline', marginRight: '8px', width: '14px', height: '14px' }} />
-          {format(startDate, 'MMM dd')} - {format(endDate, 'MMM dd, yyyy')}
+          ) : (
+            <GenerationSection>
+              <WeekSelector>
 
-          </SectionTitle>
-          <SectionDescription>
-            Generate AI-powered insights and recommendations based on your weekly productivity patterns.
-          </SectionDescription>
-        </SectionHeader>
+                <GenerateButton
+                  onClick={handleGenerateSummary}
+                  disabled={generating || tasks.length === 0 || summary}
+                  generating={generating}
+                >
+                  {generating ? <RefreshCw /> : <Sparkles />}
+                  {generating ? 'Generating...' : 
+                  summary ? 'Summary Already Generated' :
+                  tasks.length === 0 ? 'No Tasks This Week' : 'Generate AI Summary'}
+                </GenerateButton>
+                <WeekInfo>
+                  <Clock style={{ display: 'inline', marginRight: '8px', width: '14px', height: '14px' }} />
+                  {tasks.length} tasks • {tasks.reduce((sum, task) => sum + task.timeSpent, 0).toFixed(1)}h total
+                </WeekInfo>
+              </WeekSelector>
 
-        <WeekSelector>
-          <WeekInfo>
-            <Clock style={{ display: 'inline', marginRight: '8px', width: '14px', height: '14px' }} />
-            {tasks.length} tasks • {tasks.reduce((sum, task) => sum + task.timeSpent, 0).toFixed(1)}h total
-          </WeekInfo>
-        </WeekSelector>
-
-        <GenerateButton
-          onClick={handleGenerateSummary}
-          disabled={generating || tasks.length === 0 || summary}
-          generating={generating}
-        >
-          {generating ? <RefreshCw /> : <Sparkles />}
-          {generating ? 'Generating...' : 
-           summary ? 'Summary Already Generated' :
-           tasks.length === 0 ? 'No Tasks This Week' : 'Generate AI Summary'}
-        </GenerateButton>
-
-        {error && (
-          <div style={{ 
-            marginTop: '16px', 
-            padding: '12px', 
-            backgroundColor: '#fee2e2', 
-            border: '1px solid #f87171', 
-            borderRadius: '6px', 
-            color: '#991b1b',
-            fontSize: '14px'
-          }}>
-            {error}
-          </div>
-        )}
-      </GenerationSection>
-      )}
+              {error && (
+                <div style={{ 
+                  marginTop: '16px', 
+                  padding: '12px', 
+                  backgroundColor: '#fee2e2', 
+                  border: '1px solid #f87171', 
+                  borderRadius: '6px', 
+                  color: '#991b1b',
+                  fontSize: '14px'
+                }}>
+                  {error}
+                </div>
+              )}
+            </GenerationSection>
+          )}
+        </SummaryCard>
+      </SummaryList>
 
       {!summary && tasks.length === 0 && (
         <EmptyState>

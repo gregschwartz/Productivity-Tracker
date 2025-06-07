@@ -25,6 +25,7 @@ class SummaryRequest(BaseModel):
     weekStart: str = Field(..., description="Week start date in YYYY-MM-DD format")
     weekEnd: str = Field(..., description="Week end date in YYYY-MM-DD format")
     weekStats: WeeklyStats = Field(..., description="Weekly statistics")
+    contextSummaries: Optional[Dict[str, Any]] = Field(None, description="Surrounding week summaries for context")
 
 class SummaryResponse(BaseModel):
     summary: str = Field(..., description="Summary report of the tasks and productivity metrics collected over the week")

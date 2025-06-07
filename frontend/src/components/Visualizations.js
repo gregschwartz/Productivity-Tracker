@@ -1,21 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { motion } from 'framer-motion';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { Calendar, TrendingUp, Clock, Focus, FileText, Lightbulb, Target, Plus } from 'lucide-react';
-import { format, subDays, eachDayOfInterval } from 'date-fns';
+import { Calendar, TrendingUp, Clock, Focus, FileText } from 'lucide-react';
+import WeeklySummaries from './WeeklySummaries';
+import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, addDays } from 'date-fns';
 
 /**
  * Container for all visualizations
@@ -551,153 +541,9 @@ const ChartLegend = styled.div`
 
 
 /**
- * Summary card container
+ * Visualizations tab showing productivity analytics
  */
-const SummaryCard = styled(motion.div)`
-  background: ${props => props.theme.colors.surface};
-  border-radius: ${props => props.theme.borderRadius.large};
-  padding: 20px;
-  margin-bottom: 16px;
-  box-shadow: ${props => props.theme.shadows.medium};
-  border: 1px solid ${props => props.theme.colors.border};
-  
-  ${props => props.theme.name === 'tron' && `
-    border: 1px solid ${props.theme.colors.border};
-    box-shadow: ${props.theme.shadows.medium};
-  `}
-`;
-
-/**
- * Summary header
- */
-const SummaryHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid ${props => props.theme.colors.border};
-`;
-
-/**
- * Summary title
- */
-const SummaryTitle = styled.h3`
-  font-size: 18px;
-  font-weight: 600;
-  color: ${props => props.theme.colors.text.primary};
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  
-  ${props => props.theme.name === 'tron' && `
-    color: ${props.theme.colors.primary};
-    font-family: ${props.theme.fonts.mono};
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  `}
-`;
-
-/**
- * Summary date
- */
-const SummaryDate = styled.span`
-  font-size: 14px;
-  color: ${props => props.theme.colors.text.muted};
-  font-weight: 500;
-`;
-
-/**
- * Summary content section
- */
-const SummaryContent = styled.div`
-  display: grid;
-  gap: 8px;
-`;
-
-/**
- * Summary insight
- */
-const SummaryInsight = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px;
-  background: ${props => props.theme.colors.backgroundHover};
-  border-radius: ${props => props.theme.borderRadius.medium};
-  
-  svg {
-    width: 16px;
-    height: 16px;
-    color: ${props => props.theme.colors.primary};
-    margin-top: 2px;
-    flex-shrink: 0;
-  }
-`;
-
-/**
- * No summaries message
- */
-const NoSummariesMessage = styled.div`
-  text-align: center;
-  padding: 40px 20px;
-  color: ${props => props.theme.colors.text.muted};
-  font-style: italic;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-`;
-
-/**
- * Generate summary button
- */
-const GenerateSummaryButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: ${props => props.theme.colors.primary};
-  color: ${props => props.theme.colors.primaryText};
-  border: none;
-  border-radius: ${props => props.theme.borderRadius.medium};
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  ${props => props.theme.name === 'tron' && `
-    font-family: ${props.theme.fonts.mono};
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    box-shadow: ${props.theme.glow.small};
-  `}
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: ${props => props.theme.shadows.medium};
-    
-    ${props => props.theme.name === 'tron' && `
-      box-shadow: ${props.theme.glow.medium};
-    `}
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  svg {
-    width: 16px;
-    height: 16px;
-  }
-`;
-
-/**
- * Visualizations component showing productivity analytics and summaries
- */
-function Visualizations({ tasks = [], summaries = [], onNavigateToDate }) {
+function Visualizations({ tasks = [], summaries = [], onNavigateToDate, onAddSummary}) {
   const [timeRange, setTimeRange] = useState('week'); // week, month, quarter, all
   const [taskViewMode, setTaskViewMode] = useState('tasks'); // 'tasks' or 'time'
   const theme = useTheme();
@@ -709,38 +555,63 @@ function Visualizations({ tasks = [], summaries = [], onNavigateToDate }) {
     const now = new Date();
     switch (timeRange) {
       case 'week':
+        // Current week (Sunday to Saturday)
         return {
-          start: subDays(now, 6),
-          end: now,
+          startDate: startOfWeek(now),
+          endDate: endOfWeek(now),
           days: 7
         };
       case 'month':
+        // Show complete weeks for the current month
+        const monthStartDate = startOfMonth(now);
+        const monthEndDate = endOfMonth(now);
+        
+        // Start from the beginning of the first week that contains the start of the month
+        const monthStartWeek = startOfWeek(monthStartDate);
+        
+        // Find the last Sunday that falls within the month
+        let lastSundayInMonth = monthStartDate;
+        let currentSunday = startOfWeek(monthStartDate);
+        
+        // Iterate through Sundays in the month
+        while (currentSunday <= monthEndDate) {
+          if (currentSunday >= monthStartDate && currentSunday <= monthEndDate) {
+            lastSundayInMonth = currentSunday;
+          }
+          currentSunday = addDays(currentSunday, 7);
+        }
+        
+        // End at the last day of the week that starts with the last Sunday in the month
+        const monthEndWeek = endOfWeek(lastSundayInMonth);
+        
         return {
-          start: subDays(now, 29),
-          end: now,
-          days: 30
+          startDate: monthStartWeek,
+          endDate: monthEndWeek,
+          days: Math.ceil((monthEndWeek - monthStartWeek) / (1000 * 60 * 60 * 24))
         };
       case 'quarter':
+        // Last 12-13 complete weeks (about a quarter)
+        const quarterStart = startOfWeek(subWeeks(now, 12));
         return {
-          start: subDays(now, 89),
-          end: now,
-          days: 90
+          startDate: quarterStart,
+          endDate: endOfWeek(now),
+          days: Math.ceil((endOfWeek(now) - quarterStart) / (1000 * 60 * 60 * 24))
         };
       case 'all':
         // Get the earliest task date or 6 months back, whichever is more recent
         const earliestTask = tasks.length > 0 
           ? new Date(Math.min(...tasks.map(task => new Date(task.date))))
-          : subDays(now, 179);
-        const startDate = earliestTask < subDays(now, 179) ? subDays(now, 179) : earliestTask;
+          : subWeeks(now, 26); // 6 months back
+        const allStart = startOfWeek(earliestTask < subWeeks(now, 26) ? subWeeks(now, 26) : earliestTask);
         return {
-          start: startDate,
-          end: now,
-          days: Math.ceil((now - startDate) / (1000 * 60 * 60 * 24))
+          startDate: allStart,
+          endDate: endOfWeek(now),
+          days: Math.ceil((endOfWeek(now) - allStart) / (1000 * 60 * 60 * 24))
         };
       default:
         return {
-          start: subDays(now, 6),
-          end: now,
+          startDate: startOfWeek(now),
+          endDate: endOfWeek(now),
           days: 7
         };
     }
@@ -750,10 +621,10 @@ function Visualizations({ tasks = [], summaries = [], onNavigateToDate }) {
    * Filter tasks based on selected time range
    */
   const filteredTasks = useMemo(() => {
-    const { start, end } = getDateRange;
+    const { startDate, endDate } = getDateRange;
     return tasks.filter(task => {
       const taskDate = new Date(task.date);
-      return taskDate >= start && taskDate <= end;
+      return taskDate >= startDate && taskDate <= endDate;
     });
   }, [tasks, getDateRange]);
 
@@ -873,8 +744,8 @@ function Visualizations({ tasks = [], summaries = [], onNavigateToDate }) {
    * Prepare heatmap data based on selected time range
    */
   const heatmapData = useMemo(() => {
-    const { start, end } = getDateRange;
-    const days = eachDayOfInterval({ start, end });
+    const { startDate, endDate } = getDateRange;
+    const days = eachDayOfInterval({ start: startDate, end: endDate });
     
     return days.map((date, index) => {
       const dateStr = format(date, 'yyyy-MM-dd');
@@ -945,11 +816,11 @@ function Visualizations({ tasks = [], summaries = [], onNavigateToDate }) {
    * Filter summaries based on selected time range
    */
   const filteredSummaries = useMemo(() => {
-    const { start, end } = getDateRange;
+    const { startDate, endDate } = getDateRange;
     
     return summaries.filter(summary => {
       const summaryDate = new Date(summary.weekStart || summary.timestamp);
-      return summaryDate >= start && summaryDate <= end;
+      return summaryDate >= startDate && summaryDate <= endDate;
     }).sort((a, b) => {
       const dateA = new Date(a.weekStart || a.timestamp);
       const dateB = new Date(b.weekStart || b.timestamp);
@@ -1073,81 +944,18 @@ function Visualizations({ tasks = [], summaries = [], onNavigateToDate }) {
       >
         <SectionHeader>
           <SectionTitle>
-            <FileText />
-            Weekly Summaries
+            Summary
           </SectionTitle>
           <SectionDescription>
-            AI-generated insights and recommendations for {getTimeRangeLabel()}
           </SectionDescription>
         </SectionHeader>
         
-        {filteredSummaries.length > 0 ? (
-          filteredSummaries.map((summary, index) => (
-            <SummaryCard
-              key={summary.id || index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.05 * index }}
-            >
-              <SummaryHeader>
-                <SummaryTitle>
-                  <Calendar />
-                  Week of {format(new Date(summary.weekStart || summary.timestamp), 'MMM dd, yyyy')}
-                </SummaryTitle>
-                <SummaryDate>
-                  {format(new Date(summary.timestamp), 'MMM dd, yyyy')}
-                </SummaryDate>
-              </SummaryHeader>
-              
-              <SummaryContent>
-                {summary.insights && summary.insights.length > 0 && (
-                  <>
-                    {summary.insights.map((insight, idx) => (
-                      <SummaryInsight key={idx}>
-                        <Lightbulb />
-                        <span>{insight}</span>
-                      </SummaryInsight>
-                    ))}
-                  </>
-                )}
-                
-                {summary.recommendations && summary.recommendations.length > 0 && (
-                  <>
-                    {summary.recommendations.map((recommendation, idx) => (
-                      <SummaryInsight key={idx}>
-                        <Target />
-                        <span>{recommendation}</span>
-                      </SummaryInsight>
-                    ))}
-                  </>
-                )}
-                
-                {summary.summary && (
-                  <SummaryInsight>
-                    <FileText />
-                    <span>{summary.summary}</span>
-                  </SummaryInsight>
-                )}
-              </SummaryContent>
-            </SummaryCard>
-          ))
-        ) : (
-          <NoSummariesMessage>
-            <div>
-              No summaries available for {getTimeRangeLabel()}.
-              {timeRange === 'week' && ' Complete tasks throughout the week to generate insights.'}
-            </div>
-            <GenerateSummaryButton
-              onClick={() => {
-                // TODO: Implement summary generation logic
-                alert('Summary generation feature coming soon!');
-              }}
-            >
-              <Plus />
-              Generate Summary
-            </GenerateSummaryButton>
-          </NoSummariesMessage>
-        )}
+        <WeeklySummaries 
+          tasks={tasks} 
+          summaries={summaries} 
+          timeRange={getDateRange}
+          onAddSummary={onAddSummary}
+        />
       </ChartSection>
 
       {/* Daily Productivity Trend */}

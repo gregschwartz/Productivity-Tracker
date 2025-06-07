@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Calendar, Clock, RefreshCw } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, getWeek, getYear } from 'date-fns';
 
+const focusValues = { low: 1, medium: 2, high: 3 };
+
 /**
  * Container for weekly summary section
  */
@@ -341,6 +343,28 @@ function WeekSummary({ tasks = [], summary = null, timeRange, onAddSummary = () 
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
 
+  // Show error if invalid dates are passed
+  if (!startDate || !endDate || !(startDate instanceof Date) || !(endDate instanceof Date) || isNaN(startDate) || isNaN(endDate)) {
+    return (
+      <SummaryContainer>
+        <div style={{ 
+          padding: '24px', 
+          backgroundColor: '#fee2e2', 
+          border: '1px solid #f87171', 
+          borderRadius: '6px', 
+          color: '#991b1b' 
+        }}>
+          <h3>Invalid Date Range</h3>
+          <p>WeekSummary received invalid dates:</p>
+          <ul>
+            <li>startDate: {String(startDate)} (type: {typeof startDate})</li>
+            <li>endDate: {String(endDate)} (type: {typeof endDate})</li>
+          </ul>
+        </div>
+      </SummaryContainer>
+    );
+  }
+
 
   /**
    * Generate a new weekly summary using GenAI
@@ -360,11 +384,16 @@ function WeekSummary({ tasks = [], summary = null, timeRange, onAddSummary = () 
         date: task.date
       }));
 
-      // Calculate basic metrics (these are used by the backend API call)
+      // Calculate average focus score
+      const avgFocusScoreRaw = tasks.reduce((sum, task) => sum + focusValues[task.focusLevel], 0) / tasks.length;
+      const avgFocusScore = Math.round(avgFocusScoreRaw);
+      const avgFocusLabel = Object.keys(focusValues).find(key => focusValues[key] === avgFocusScore);
+      console.log(avgFocusScoreRaw, avgFocusScore, avgFocusLabel);
+
       const weekStats = {
         totalTasks: tasks.length,
         totalHours: tasks.reduce((sum, task) => sum + task.timeSpent, 0).toFixed(1),
-        avgFocus: tasks.reduce((sum, task) => sum + task.focusLevel, 0) / tasks.length
+        avgFocus: avgFocusLabel
       };
 
       // Call backend API
@@ -387,7 +416,7 @@ function WeekSummary({ tasks = [], summary = null, timeRange, onAddSummary = () 
 
       const aiResult = await response.json();
       
-      summary = {
+      const generatedSummary = {
         week: getWeek(startDate),
         year: getYear(startDate),
         weekStart: startDate.toISOString(),
@@ -395,10 +424,11 @@ function WeekSummary({ tasks = [], summary = null, timeRange, onAddSummary = () 
         weekRange: `${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd, yyyy')}`,
         stats: weekStats,
         summary: aiResult.summary,
-        recommendations: aiResult.recommendations
+        recommendations: aiResult.recommendations,
+        timestamp: new Date().toISOString()
       };
 
-      onAddSummary(summary);
+      onAddSummary(generatedSummary);
     } catch (error) {
       console.error('Error generating AI summary:', error);
       setError('Failed to generate summary. Please try again.');
@@ -409,7 +439,40 @@ function WeekSummary({ tasks = [], summary = null, timeRange, onAddSummary = () 
 
   return (
     <SummaryContainer>
-      <GenerationSection>
+      {summary ? (
+        <SummaryList>
+          <SummaryCard
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <SummaryHeader>
+              <SummaryMeta>
+                <SummaryWeekRange>{summary.weekRange}</SummaryWeekRange>
+                <SummaryTimestamp>
+                  Generated {summary.timestamp ? format(new Date(summary.timestamp), 'MMM dd, yyyy') : 'Recently'}
+                </SummaryTimestamp>
+              </SummaryMeta>
+            </SummaryHeader>
+
+            <SummaryContent>
+              <p>{summary.summary}</p>
+              
+              {summary.recommendations && summary.recommendations.length > 0 && (
+                <>
+                  <h4>Recommendations for next week</h4>
+                  <ul>
+                    {summary.recommendations.map((rec, index) => (
+                      <li key={index}>{rec}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </SummaryContent>
+          </SummaryCard>
+        </SummaryList>
+      ) : (
+        <GenerationSection>
         <SectionHeader>
           <SectionTitle>
           <Calendar style={{ display: 'inline', marginRight: '8px', width: '14px', height: '14px' }} />
@@ -453,39 +516,6 @@ function WeekSummary({ tasks = [], summary = null, timeRange, onAddSummary = () 
           </div>
         )}
       </GenerationSection>
-
-      {summary && (
-        <SummaryList>
-          <SummaryCard
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <SummaryHeader>
-              <SummaryMeta>
-                <SummaryWeekRange>{summary.weekRange}</SummaryWeekRange>
-                <SummaryTimestamp>
-                  Generated {format(new Date(summary.timestamp), 'MMM dd, yyyy')}
-                </SummaryTimestamp>
-              </SummaryMeta>
-            </SummaryHeader>
-
-            <SummaryContent>
-              <p>{summary.summary}</p>
-              
-              {summary.recommendations && summary.recommendations.length > 0 && (
-                <>
-                  <h4>Recommendations for next week</h4>
-                  <ul>
-                    {summary.recommendations.map((rec, index) => (
-                      <li key={index}>{rec}</li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </SummaryContent>
-          </SummaryCard>
-        </SummaryList>
       )}
 
       {!summary && tasks.length === 0 && (

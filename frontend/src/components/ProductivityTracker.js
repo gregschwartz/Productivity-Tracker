@@ -259,7 +259,12 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
     setTasks(prev => prev.filter(task => task.id !== taskId));
   };
 
-
+  /**
+   * Add a new summary to the summaries list
+   */
+  const addSummary = (summary) => {
+    setSummaries(prev => [...prev, summary]);
+  };
 
   const navigationItems = [
     { key: 'tasks', label: 'Tasks', icon: Calendar },
@@ -311,7 +316,7 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
           />
         );
       case 'analytics':
-        return <Visualizations tasks={tasks} summaries={summaries} onNavigateToDate={handleNavigateToDate} />;
+        return <Visualizations tasks={tasks} summaries={summaries} onNavigateToDate={handleNavigateToDate} onAddSummary={addSummary} />;
       case 'search':
         return <SearchAgent summaries={summaries} />;
       case 'admin':

@@ -198,55 +198,6 @@ const SummaryTimestamp = styled.p`
   `}
 `;
 
-/**
- * Summary stats grid
- */
-const SummaryStats = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 16px;
-  margin-bottom: 16px;
-  padding: 16px;
-  background: ${props => props.theme.colors.backgroundHover};
-  border-radius: ${props => props.theme.borderRadius.medium};
-  border: 1px solid ${props => props.theme.colors.border};
-`;
-
-/**
- * Individual stat item
- */
-const StatItem = styled.div`
-  text-align: center;
-`;
-
-/**
- * Stat value
- */
-const StatValue = styled.div`
-  font-size: 20px;
-  font-weight: 600;
-  color: ${props => props.theme.colors.primary};
-  
-  ${props => props.theme.name === 'tron' && `
-    font-family: ${props.theme.fonts.mono};
-    text-shadow: ${props.theme.glow.small};
-  `}
-`;
-
-/**
- * Stat label
- */
-const StatLabel = styled.div`
-  font-size: 12px;
-  color: ${props => props.theme.colors.text.muted};
-  margin-top: 4px;
-  
-  ${props => props.theme.name === 'tron' && `
-    font-family: ${props.theme.fonts.mono};
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  `}
-`;
 
 /**
  * Summary content

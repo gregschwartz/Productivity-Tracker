@@ -10,10 +10,9 @@ class FocusLevel(str, Enum):
     no_tasks = "no_tasks"
 
 class TaskData(BaseModel):
-    id: str
     name: str
     timeSpent: float = Field(..., description="Time spent in hours")
-    focusLevel: FocusLevel
+    focusLevel: FocusLevel = Field(..., description="Focus level of the task, used to help understand how well you worked on it")
     date: str = Field(..., description="Date in YYYY-MM-DD format")
 
 class WeeklyStats(BaseModel):
@@ -25,12 +24,11 @@ class SummaryRequest(BaseModel):
     tasks: List[TaskData]
     weekStart: str = Field(..., description="Week start date in YYYY-MM-DD format")
     weekEnd: str = Field(..., description="Week end date in YYYY-MM-DD format")
+    weekStats: WeeklyStats = Field(..., description="Weekly statistics")
 
 class SummaryResponse(BaseModel):
-    summary: str = Field(..., description="AI-generated weekly summary")
-    insights: List[str] = Field(..., description="Key insights from the week")
-    recommendations: List[str] = Field(..., description="Recommendations for improvement")
-    stats: WeeklyStats
+    summary: str = Field(..., description="Summary report of the tasks and productivity metrics collected over the week")
+    recommendations: List[str] = Field(..., description="Recommendations to improve efficiency or focus for the next week")
 
 class RAGQuery(BaseModel):
     query: str = Field(..., description="User query for searching productivity history")
@@ -49,8 +47,3 @@ class RAGResponse(BaseModel):
 class ErrorResponse(BaseModel):
     error: str = Field(..., description="Error message")
     detail: Optional[str] = Field(None, description="Additional error details")
-    
-class HealthResponse(BaseModel):
-    status: str = Field(..., description="Health status")
-    timestamp: datetime = Field(default_factory=datetime.now)
-    version: str = Field("1.0.0", description="API version") 

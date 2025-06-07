@@ -15,28 +15,34 @@ rag_service = RAGService()
 @weave.op()
 async def generate_weekly_summary(request: SummaryRequest):
     """Generate a weekly productivity summary using AI."""
+    print("starting")
     try:
         if not request.tasks:
             raise HTTPException(
                 status_code=400,
                 detail="No tasks provided for summary generation"
             )
-                
+  
         # Generate summary using AI service
         summary = await ai_service.generate_weekly_summary(
             tasks=request.tasks,
             week_start=request.weekStart,
-            week_end=request.weekEnd
+            week_end=request.weekEnd,
+            week_stats=request.weekStats
         )
+        
+        if summary.summary == "" or summary.recommendations == []:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to generate summary, AI response is empty"
+            )
         
         # Store the summary in vector database for future searches
         summary_data = {
             "week_start": request.weekStart,
             "week_end": request.weekEnd,
             "summary": summary.summary,
-            "insights": summary.insights,
-            "recommendations": summary.recommendations,
-            "stats": summary.stats.dict()
+            "recommendations": summary.recommendations
         }
         rag_service.store_weekly_summary(summary_data)
         
@@ -50,28 +56,6 @@ async def generate_weekly_summary(request: SummaryRequest):
             detail=f"Failed to generate summary: {str(e)}"
         )
 
-@router.post("/enhance-summary")
-@weave.op()
-async def enhance_summary(
-    original_summary: str,
-    additional_context: str
-):
-    """
-    Enhance an existing summary with additional context.
-    """
-    try:
-        enhanced_summary = await ai_service.enhance_summary_with_context(
-            summary=original_summary,
-            additional_context=additional_context
-        )
-        
-        return {"enhanced_summary": enhanced_summary}
-        
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to enhance summary: {str(e)}"
-        )
 
 @router.get("/similar-tasks/{task_name}")
 @weave.op()

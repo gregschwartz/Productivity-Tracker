@@ -82,12 +82,20 @@ const AllStatsWrapper = styled.div`
   
   @media (min-width: 1200px) {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: 2fr 3fr;
     gap: 16px;
     
-    /* On wide screens, flatten the layout */
-    > * {
-      display: contents;
+    /* First row takes 2 columns, second row takes 3 columns */
+    > div:first-child {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    
+    > div:last-child {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
     }
   }
 `;

@@ -11,7 +11,8 @@ class RAGService:
         self.client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         
         # Initialize ChromaDB
-        self.chroma_client = chromadb.PersistentClient(path="./chromadb")
+        chroma_path = os.getenv("CHROMA_PERSIST_DIRECTORY", "./chromadb_data")
+        self.chroma_client = chromadb.PersistentClient(path=chroma_path)
         
         # Create collection for weekly summaries
         try:

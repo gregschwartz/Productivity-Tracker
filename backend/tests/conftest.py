@@ -149,4 +149,24 @@ def mock_chroma_client(mock_chroma_collection):
     mock_client = MagicMock()
     mock_client.get_collection.return_value = mock_chroma_collection
     mock_client.create_collection.return_value = mock_chroma_collection
-    return mock_client 
+    return mock_client
+
+import tempfile
+import shutil
+
+@pytest.fixture(scope="session")
+def temp_chromadb_dir():
+    temp_dir = tempfile.mkdtemp(prefix="chroma_test_")
+    original_env_var = os.environ.get("CHROMA_PERSIST_DIRECTORY")
+    os.environ["CHROMA_PERSIST_DIRECTORY"] = temp_dir
+    print(f"ChromaDB persistence directory set to: {temp_dir}")
+
+    yield temp_dir
+
+    shutil.rmtree(temp_dir)
+    if original_env_var is not None:
+        os.environ["CHROMA_PERSIST_DIRECTORY"] = original_env_var
+    else:
+        if "CHROMA_PERSIST_DIRECTORY" in os.environ: # Ensure key exists before deleting
+            del os.environ["CHROMA_PERSIST_DIRECTORY"]
+    print(f"ChromaDB persistence directory {temp_dir} removed.")

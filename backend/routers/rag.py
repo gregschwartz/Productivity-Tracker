@@ -62,7 +62,7 @@ async def ask_productivity_question(
         )
         
         # Search knowledge base
-        result = await rag_service.search_knowledge(rag_query)
+        result = await rag_service.search_similar_weeks(rag_query)
         
         return {
             "question": question,
@@ -74,8 +74,7 @@ async def ask_productivity_question(
                     "relevance": round(r.relevance_score, 2)
                 }
                 for r in result.results[:3]  # Top 3 sources
-            ],
-            "query_time": result.query_time
+            ]
         }
         
     except HTTPException:

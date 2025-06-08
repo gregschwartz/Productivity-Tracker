@@ -32,17 +32,14 @@ const Navigation = styled.nav`
  */
 const NavButton = styled.button.attrs(props => ({
   className: `
-    flex items-center gap-2 px-5 py-3 mx-1 rounded-lg font-medium text-sm
-    transition-all duration-200 hover:-translate-y-0.5
-    border border-border bg-surface shadow-theme-md
+  flex items-center gap-2 px-5 py-3 mx-1 rounded-lg font-medium text-sm
+  transition-all duration-200 hover:-translate-y-0.5 border
+  shadow-md hover:shadow-lg active:translate-y-0
     ${props.$active 
-      ? 'bg-primary text-primary-text' 
-      : 'bg-transparent text-text-secondary hover:bg-background-hover hover:text-primary'
+      ? 'bg-primary text-primary-text border-primary' 
+      : 'bg-transparent text-text-secondary hover:bg-background-hover hover:text-primary hover:border-primary/50 border-border'
     }
-    ${props.$theme === 'Tron'
-      ? (props.$active ? 'border-primary glow-sm' : 'hover:text-glow') 
-      : ''
-    }
+    ${props.$theme === 'Tron' && props.$active ? 'border-primary glow-sm' : ''}
   `
 }))`
   svg {

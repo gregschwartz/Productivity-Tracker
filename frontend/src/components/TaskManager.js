@@ -162,28 +162,38 @@ const FocusChip = styled.button.attrs(props => ({
     px-4 py-3 border-none text-sm font-medium capitalize tracking-wide 
     transition-all duration-200 flex-1 relative h-11 flex items-center justify-center
     border-r border-border last:border-r-0
-    ${props.selected 
-      ? 'text-white' 
-      : 'text-text-primary hover:bg-background-hover hover:text-text-primary hover:-translate-y-0.5'
-    }
     ${props.$theme === 'Tron' ? 'border-r-primary' : ''}
-    ${props.$theme === 'Tron' && !props.selected ? 'hover:text-primary' : ''}
   `
 }))`
   ${props => {
     const focusColors = {
-      low: `var(--color-primary)60`,
-      medium: `var(--color-primary)A0`, 
-      high: `var(--color-primary)`
+      low: props.theme.colors.focus.low,
+      medium: props.theme.colors.focus.medium, 
+      high: props.theme.colors.primary
+    };
+    
+    const focusTextColors = {
+      low: props.theme.colors.text.primary,
+      medium: props.theme.colors.text.primary,
+      high: props.theme.colors.primaryText
     };
     
     const color = focusColors[props.level];
+    const textColor = focusTextColors[props.level];
+    const hoverBg = props.theme.colors.backgroundHover;
     
     return props.selected ? `
       background: ${color};
+      color: ${textColor};
+      font-weight: 600;
       ${props.$theme === 'Tron' ? 'box-shadow: inset 0 0 5px currentColor;' : ''}
       ${props.$theme === 'Tron' ? 'color: #000000;' : ''}
-    ` : '';
+    ` : `
+      color: ${props.theme.colors.text.secondary};
+      &:hover {
+        background: ${hoverBg};
+        color: ${props.theme.colors.primary};
+      }`;
   }}
 
   &:focus {

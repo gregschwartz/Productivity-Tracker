@@ -69,7 +69,7 @@ function App() {
   const [tronState, setTronState] = useState(TRON_STATE.NEVER_TURNED_ON);
   const [tasks, setTasks] = useState([]);
 
-  // Load dark mode preference and tasks from localStorage on mount
+  // Load tasks from localStorage on mount
   useEffect(() => {
     const savedTasks = localStorage.getItem('productivity-tasks');    
     if (savedTasks) {
@@ -81,23 +81,16 @@ function App() {
     }
     loadSampleDataIfEmpty();
 
-    // Lots of work on dark mode
-    const savedDarkMode = localStorage.getItem('productivity-dark-mode');
-    // Detect system dark mode preference with proper error handling
-    let systemPrefersDark = false;
-    try {
-      systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    } catch (error) {
-      console.warn('Could not detect system dark mode preference:', error);
-    }
+    const detectSystemTheme = () => {
+      try {
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      } catch (error) {
+        console.warn('Could not detect system dark mode preference:', error);
+        return false;
+      }
+    };
     
-    // Use saved preference, or fall back to system preference
-    if (savedDarkMode !== null) {
-      setIsDarkMode(savedDarkMode === 'true');
-    } else {
-      setIsDarkMode(systemPrefersDark);
-    }
-
+    setIsDarkMode(detectSystemTheme());
 
     // Listen for system theme changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -145,11 +138,6 @@ function App() {
       clearInterval(interval);
     };
   }, []);
-
-  // Save dark mode preference to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem('productivity-dark-mode', isDarkMode.toString());
-  }, [isDarkMode]);
 
   useEffect(() => {
     // Check if any task should trigger TRON theme, only enable if state is NEVER_TURNED_ON

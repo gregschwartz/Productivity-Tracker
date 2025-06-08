@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Calendar, Clock, RefreshCw } from 'lucide-react';
-import { format, startOfWeek, endOfWeek, getWeek, getYear, addWeeks, differenceInWeeks } from 'date-fns';
+import { startOfWeek, endOfWeek, getWeek, getYear, addWeeks } from 'date-fns';
 import WeekSummary from './WeekSummary';
 
 /**

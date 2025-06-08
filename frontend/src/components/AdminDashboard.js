@@ -19,50 +19,36 @@ import {
 /**
  * Container for admin dashboard
  */
-const AdminContainer = styled.div`
-  max-width: 1000px;
-  margin: 0 auto;
-  display: grid;
-  gap: 24px;
-  grid-template-columns: 1fr;
-`;
+const AdminContainer = styled.div.attrs(() => ({
+  className: 'max-w-4xl mx-auto grid gap-6 grid-cols-1'
+}))``;
 
 /**
  * Dashboard section card
  */
-const DashboardSection = styled(motion.div)`
+const DashboardSection = styled(motion.div).attrs(() => ({
+  className: 'p-6 rounded-xl shadow-lg border'
+}))`
   background: ${props => props.theme.colors.surface};
-  border-radius: ${props => props.theme.borderRadius.large};
-  padding: 24px;
-  box-shadow: ${props => props.theme.shadows.medium};
-  border: 1px solid ${props => props.theme.colors.border};
-  
-  ${props => props.theme.name === 'tron' && `
-    border: 1px solid ${props.theme.colors.border};
-    box-shadow: ${props.theme.shadows.medium};
-  `}
+  border-color: ${props => props.theme.colors.border};
 `;
 
 /**
  * Section header
  */
-const SectionHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid ${props => props.theme.colors.border};
+const SectionHeader = styled.div.attrs(() => ({
+  className: 'flex items-center gap-3 mb-5 pb-3 border-b'
+}))`
+  border-color: ${props => props.theme.colors.border};
 `;
 
 /**
  * Section title
  */
-const SectionTitle = styled.h2`
-  font-size: 18px;
-  font-weight: 600;
+const SectionTitle = styled.h2.attrs(() => ({
+  className: 'text-lg font-semibold m-0'
+}))`
   color: ${props => props.theme.colors.text.primary};
-  margin: 0;
   
   ${props => props.theme.name === 'tron' && `
     color: ${props.theme.colors.primary};
@@ -80,19 +66,17 @@ const SectionTitle = styled.h2`
 /**
  * Form group for inputs
  */
-const FormGroup = styled.div`
-  margin-bottom: 20px;
-`;
+const FormGroup = styled.div.attrs(() => ({
+  className: 'mb-5'
+}))``;
 
 /**
  * Form label
  */
-const Label = styled.label`
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
+const Label = styled.label.attrs(() => ({
+  className: 'block text-sm font-medium mb-2'
+}))`
   color: ${props => props.theme.colors.text.secondary};
-  margin-bottom: 8px;
   
   ${props => props.theme.name === 'tron' && `
     color: ${props.theme.colors.primary};
@@ -105,31 +89,23 @@ const Label = styled.label`
 /**
  * Input field
  */
-const Input = styled.input`
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid ${props => props.theme.colors.border};
-  border-radius: ${props => props.theme.borderRadius.medium};
+const Input = styled.input.attrs(() => ({
+  className: 'w-full px-4 py-3 border rounded-lg text-sm transition-all duration-200 outline-none'
+}))`
   background: ${props => props.theme.colors.background};
+  border-color: ${props => props.theme.colors.border};
   color: ${props => props.theme.colors.text.primary};
-  font-size: 14px;
-  transition: all 0.2s ease;
   
   ${props => props.theme.name === 'tron' && `
     background: ${props.theme.colors.surface};
-    border: 1px solid ${props.theme.colors.border};
-    color: ${props.theme.colors.text.primary};
     font-family: ${props.theme.fonts.mono};
   `}
 
   &:focus {
     border-color: ${props => props.theme.colors.primary};
-    box-shadow: 0 0 0 3px ${props => props.theme.colors.primary}20;
-    outline: none;
     
     ${props => props.theme.name === 'tron' && `
       box-shadow: ${props.theme.glow.small};
-      border-color: ${props.theme.colors.primary};
     `}
   }
 
@@ -141,41 +117,26 @@ const Input = styled.input`
 /**
  * Button styles
  */
-const Button = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border: 1px solid ${props => props.variant === 'primary' ? props.theme.colors.primary : props.theme.colors.border};
-  border-radius: ${props => props.theme.borderRadius.medium};
+const Button = styled.button.attrs(props => ({
+  className: `flex items-center gap-2 px-4 py-2.5 border rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer hover:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`
+}))`
+  border-color: ${props => props.variant === 'primary' ? props.theme.colors.primary : props.theme.colors.border};
   background: ${props => props.variant === 'primary' ? props.theme.colors.primary : 'transparent'};
   color: ${props => props.variant === 'primary' ? props.theme.colors.primaryText : props.theme.colors.text.secondary};
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  cursor: pointer;
   
   ${props => props.theme.name === 'tron' && props.variant === 'primary' && `
-    border: 1px solid ${props.theme.colors.primary};
     box-shadow: ${props.theme.glow.small};
     text-transform: uppercase;
     letter-spacing: 1px;
     font-family: ${props.theme.fonts.mono};
   `}
 
-  &:hover {
-    transform: translateY(-1px);
+  &:hover:not(:disabled) {
     background: ${props => props.variant === 'primary' ? props.theme.colors.primary : props.theme.colors.backgroundHover};
     
     ${props => props.theme.name === 'tron' && props.variant === 'primary' && `
       box-shadow: ${props.theme.glow.medium};
     `}
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
   }
 
   svg {
@@ -229,32 +190,27 @@ const StatusIndicator = styled.div`
 /**
  * Metrics grid
  */
-const MetricsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
-`;
+const MetricsGrid = styled.div.attrs(() => ({
+  className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5'
+}))``;
 
 /**
  * Metric card
  */
-const MetricCard = styled.div`
+const MetricCard = styled.div.attrs(() => ({
+  className: 'p-4 border rounded-lg text-center'
+}))`
   background: ${props => props.theme.colors.backgroundHover};
-  border: 1px solid ${props => props.theme.colors.border};
-  border-radius: ${props => props.theme.borderRadius.medium};
-  padding: 16px;
-  text-align: center;
+  border-color: ${props => props.theme.colors.border};
 `;
 
 /**
  * Metric value
  */
-const MetricValue = styled.div`
-  font-size: 24px;
-  font-weight: 700;
+const MetricValue = styled.div.attrs(() => ({
+  className: 'text-2xl font-bold mb-1'
+}))`
   color: ${props => props.theme.colors.primary};
-  margin-bottom: 4px;
   
   ${props => props.theme.name === 'tron' && `
     font-family: ${props.theme.fonts.mono};
@@ -265,10 +221,10 @@ const MetricValue = styled.div`
 /**
  * Metric label
  */
-const MetricLabel = styled.div`
-  font-size: 12px;
+const MetricLabel = styled.div.attrs(() => ({
+  className: 'text-xs font-medium'
+}))`
   color: ${props => props.theme.colors.text.muted};
-  font-weight: 500;
   
   ${props => props.theme.name === 'tron' && `
     font-family: ${props.theme.fonts.mono};
@@ -280,39 +236,33 @@ const MetricLabel = styled.div`
 /**
  * Service list
  */
-const ServiceList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-`;
+const ServiceList = styled.div.attrs(() => ({
+  className: 'flex flex-col gap-3'
+}))``;
 
 /**
  * Service item
  */
-const ServiceItem = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
+const ServiceItem = styled.div.attrs(() => ({
+  className: 'flex justify-between items-center px-4 py-3 border rounded-lg'
+}))`
   background: ${props => props.theme.colors.backgroundHover};
-  border: 1px solid ${props => props.theme.colors.border};
-  border-radius: ${props => props.theme.borderRadius.medium};
+  border-color: ${props => props.theme.colors.border};
 `;
 
 /**
  * Service info
  */
-const ServiceInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-`;
+const ServiceInfo = styled.div.attrs(() => ({
+  className: 'flex flex-col gap-1'
+}))``;
 
 /**
  * Service name
  */
-const ServiceName = styled.div`
-  font-weight: 600;
+const ServiceName = styled.div.attrs(() => ({
+  className: 'font-semibold'
+}))`
   color: ${props => props.theme.colors.text.primary};
   
   ${props => props.theme.name === 'tron' && `
@@ -324,8 +274,9 @@ const ServiceName = styled.div`
 /**
  * Service description
  */
-const ServiceDescription = styled.div`
-  font-size: 12px;
+const ServiceDescription = styled.div.attrs(() => ({
+  className: 'text-xs'
+}))`
   color: ${props => props.theme.colors.text.muted};
 `;
 
@@ -343,6 +294,8 @@ function AdminDashboard({ tasks, summaries }) {
     chatgpt: null,
     chroma: null
   });
+
+
 
   /**
    * Handle configuration input changes

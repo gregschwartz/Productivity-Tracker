@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ready Theme (Light) */
+[data-theme="Ready"] {
+  --color-primary: #7c3aed;
+  --color-primary-text: #ffffff;
+  --color-secondary: #0ea5e9;
+  --color-background: #f8fafc;
+  --color-background-hover: #f1f5f9;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8fafc;
+  --color-border: #e2e8f0;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748b;
+  --color-status-success: #059669;
+  --color-status-warning: #d97706;
+  --color-status-error: #dc2626;
+  --color-status-info: #0284c7;
+  --color-focus-low: #e0e7ff;
+  --color-focus-medium: #c7d2fe;
+  --color-focus-high: #a5b4fc;
+  --color-accent: #ec4899;
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --shadow-small: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-large: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Ready-Dark Theme */
+[data-theme="Ready-Dark"] {
+  --color-primary: #a855f7;
+  --color-primary-text: #ffffff;
+  --color-secondary: #38bdf8;
+  --color-background: #0f172a;
+  --color-background-hover: #1e293b;
+  --color-surface: #1e293b;
+  --color-surface-hover: #334155;
+  --color-border: #475569;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #cbd5e1;
+  --color-text-muted: #94a3b8;
+  --color-status-success: #10b981;
+  --color-status-warning: #f59e0b;
+  --color-status-error: #ef4444;
+  --color-status-info: #3b82f6;
+  --color-focus-low: #6366f1;
+  --color-focus-medium: #4338ca;
+  --color-focus-high: #312e81;
+  --color-accent: #f472b6;
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --shadow-small: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-large: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+/* Tron Theme */
+[data-theme="Tron"] {
+  --color-primary: #00ffff;
+  --color-primary-text: #000000;
+  --color-secondary: #ff6600;
+  --color-background: #000011;
+  --color-background-hover: #001122;
+  --color-surface: #001122;
+  --color-surface-hover: #002233;
+  --color-border: #00ffff;
+  --color-text-primary: #00ffff;
+  --color-text-secondary: #66ccff;
+  --color-text-muted: #4499cc;
+  --color-status-success: #00ff00;
+  --color-status-warning: #ffff00;
+  --color-status-error: #ff0000;
+  --color-status-info: #00ffff;
+  --color-focus-low: #003333;
+  --color-focus-medium: #004444;
+  --color-focus-high: #006666;
+  --color-accent: #ff6600;
+  --font-primary: 'Orbitron', 'JetBrains Mono', monospace;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --shadow-small: 0 0 5px rgba(0, 255, 255, 0.3);
+  --shadow-medium: 0 0 10px rgba(0, 255, 255, 0.4), 0 0 20px rgba(0, 255, 255, 0.2);
+  --shadow-large: 0 0 20px rgba(0, 255, 255, 0.5), 0 0 40px rgba(0, 255, 255, 0.3);
+}
+
+/* Global styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-primary);
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  outline: none;
+}
+
+/* Tron-specific glow effects */
+[data-theme="Tron"] .glow-sm {
+  box-shadow: 0 0 5px currentColor;
+}
+
+[data-theme="Tron"] .glow-md {
+  box-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+}
+
+[data-theme="Tron"] .glow-lg {
+  box-shadow: 0 0 20px currentColor, 0 0 40px currentColor, 0 0 60px currentColor;
+}
+
+[data-theme="Tron"] .text-glow {
+  text-shadow: 0 0 5px currentColor;
+} 

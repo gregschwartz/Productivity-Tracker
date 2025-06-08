@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled, { useTheme } from 'styled-components';
+import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import TaskManager from './TaskManager';
@@ -14,7 +14,6 @@ import { BarChart3, Calendar, Search, Settings, Moon, Sun } from 'lucide-react';
  */
 const Container = styled.div`
   min-height: 100vh;
-  background: ${props => props.theme.colors.background};
   padding: 20px;
 `;
 
@@ -25,50 +24,27 @@ const Navigation = styled.nav`
   display: flex;
   justify-content: center;
   margin-bottom: 40px;
-  background: ${props => props.theme.colors.surface};
-  border-radius: ${props => props.theme.borderRadius.large};
   padding: 12px;
-  box-shadow: ${props => props.theme.shadows.medium};
-  border: ${props => props.theme.name === 'Tron' ? `1px solid ${props.theme.colors.border}` : `1px solid ${props.theme.colors.border}`};
-  
-  ${props => props.theme.name === 'Tron' && `
-    box-shadow: ${props.theme.shadows.medium};
-    background: ${props.theme.colors.surface};
-  `}
 `;
 
 /**
  * Navigation button styled component
  */
-const NavButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  margin: 0 4px;
-  border-radius: ${props => props.theme.borderRadius.medium};
-  font-weight: 500;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  background: ${props => props.$active ? props.theme.colors.primary : 'transparent'};
-  color: ${props => props.$active ? props.theme.colors.primaryText : props.theme.colors.text.secondary};
-  border: ${props => props.theme.name === 'Tron' && props.$active ? `1px solid ${props.theme.colors.primary}` : 'none'};
-  
-  ${props => props.theme.name === 'Tron' && `
-    text-shadow: ${props.$active ? props.theme.glow.small : 'none'};
-    box-shadow: ${props.$active ? props.theme.glow.small : 'none'};
-  `}
-
-  &:hover {
-    background: ${props => props.$active ? props.theme.colors.primary : props.theme.colors.backgroundHover};
-    transform: translateY(-1px);
-    
-    ${props => props.theme.name === 'Tron' && !props.$active && `
-      color: ${props.theme.colors.primary};
-      text-shadow: ${props.theme.glow.small};
-    `}
-  }
-
+const NavButton = styled.button.attrs(props => ({
+  className: `
+    flex items-center gap-2 px-5 py-3 mx-1 rounded-lg font-medium text-sm
+    transition-all duration-200 hover:-translate-y-0.5
+    border border-border bg-surface shadow-theme-md
+    ${props.$active 
+      ? 'bg-primary text-primary-text' 
+      : 'bg-transparent text-text-secondary hover:bg-background-hover hover:text-primary'
+    }
+    ${props.$theme === 'Tron'
+      ? (props.$active ? 'border-primary glow-sm' : 'hover:text-glow') 
+      : ''
+    }
+  `
+}))`
   svg {
     width: 18px;
     height: 18px;
@@ -78,60 +54,38 @@ const NavButton = styled.button`
 /**
  * Content area styled component
  */
-const Content = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-`;
+const Content = styled.div.attrs({
+  className: 'max-w-6xl mx-auto'
+})``;
 
 /**
  * Page header styled component
  */
-const PageHeader = styled.div`
-  margin-bottom: 32px;
-  text-align: center;
-`;
+const PageHeader = styled.div.attrs({
+  className: 'mb-8 text-center'
+})``;
 
 /**
  * Page title styled component
  */
-const PageTitle = styled.h1`
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: ${props => props.theme.colors.text.primary};
-  margin-bottom: 8px;
-  
-  ${props => props.theme.name === 'Tron' && `
-    color: ${props.theme.colors.primary};
-    text-shadow: ${props.theme.glow.medium};
-    font-family: ${props.theme.fonts.mono};
-    text-transform: uppercase;
-    letter-spacing: 2px;
-  `}
-`;
+const PageTitle = styled.h1.attrs(props => ({
+  className: `
+    text-4xl font-bold text-text-primary mb-2
+    ${props.$theme === 'Tron' ? 'text-primary text-glow font-mono uppercase tracking-wider' : ''}
+  `
+}))``;
 
 /**
  * Page subtitle styled component
  */
-const PageSubtitle = styled.p`
-  font-size: 1.1rem;
-  color: ${props => props.theme.colors.text.secondary};
-  max-width: 600px;
-  margin: 0 auto;
-  line-height: 1.6;
-`;
+const PageSubtitle = styled.p.attrs({
+  className: 'text-lg text-text-secondary max-w-2xl mx-auto leading-relaxed'
+})``;
 
-const TronLogo = styled.img`
+const TronLogo = styled.img.attrs({
+  className: 'h-12 transition-all duration-200 hover:glow-md'
+})`
   aspect-ratio: 5.106382979;
-  height: 50px;
-  transition: all 0.2s ease;
-  
-  ${props => `
-    drop-shadow: ${props.theme.glow.small};
-    
-    &:hover {
-      drop-shadow: ${props.theme.glow.medium};
-    }
-  `}
 `;
 
 /**
@@ -141,7 +95,27 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const theme = useTheme();
+  
+  // Get current theme name from data attribute
+  const [currentTheme, setCurrentTheme] = useState('Ready');
+  
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const themeName = document.documentElement.getAttribute('data-theme');
+      if (themeName) setCurrentTheme(themeName);
+    });
+    
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
+    
+    // Set initial theme
+    const initialTheme = document.documentElement.getAttribute('data-theme');
+    if (initialTheme) setCurrentTheme(initialTheme);
+    
+    return () => observer.disconnect();
+  }, []);
   
   const [tasks, setTasks] = useState([]);
   const [summaries, setSummaries] = useState([]);
@@ -347,12 +321,13 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
   };
 
   return (
-    <Container>
-      <Navigation>
+    <Container className="bg-background">
+      <Navigation className="bg-surface rounded-xl shadow-theme-md border border-border">
         {navigationItems.map(({ key, label, icon: Icon }) => (
           <NavButton
             key={key}
             $active={activeTab === key}
+            $theme={currentTheme}
             onClick={() => navigateToTab(key)}
           >
             <Icon />
@@ -361,9 +336,10 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
         ))}
         <NavButton
           onClick={onThemeToggle}
-          title={theme.name === 'Tron' ? 'Exit TRON Mode' : (isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode (Shift+Click for TRON)')}
+          title={currentTheme === 'Tron' ? 'Exit TRON Mode' : (isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode (Shift+Click for TRON)')}
+          $theme={currentTheme}
         >
-          {theme.name === 'Tron' ? (
+          {currentTheme === 'Tron' ? (
             <TronLogo src="/tron-light-cycle.gif" alt="Theme: TRON" />
           ) : (
             isDarkMode ? <Sun /> : <Moon />
@@ -373,7 +349,7 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
 
       <Content>
         <PageHeader>
-          <PageTitle>{getPageTitle()}</PageTitle>
+          <PageTitle $theme={currentTheme}>{getPageTitle()}</PageTitle>
           <PageSubtitle>{getPageSubtitle()}</PageSubtitle>
         </PageHeader>
 

@@ -5,6 +5,7 @@ import ProductivityTracker from './components/ProductivityTracker';
 import { themes } from './themes/themes';
 import { loadSampleDataIfEmpty } from './utils/sampleData';
 
+
 /**
  * Global styles that apply to all design themes
  */
@@ -166,6 +167,11 @@ function App() {
   };
 
   const activeTheme = getActiveTheme();
+
+  // Set theme data attribute on document element
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', activeTheme.name);
+  }, [activeTheme]);
 
   /**
    * Handle theme toggle

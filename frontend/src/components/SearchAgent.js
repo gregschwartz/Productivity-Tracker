@@ -7,66 +7,47 @@ import { format } from 'date-fns';
 /**
  * Container for search functionality
  */
-const SearchContainer = styled.div`
-  max-width: 900px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-`;
+const SearchContainer = styled.div.attrs(() => ({
+  className: 'max-w-4xl mx-auto flex flex-col gap-6'
+}))``;
 
 /**
  * Search input section
  */
-const SearchSection = styled.div`
+const SearchSection = styled.div.attrs(() => ({
+  className: 'p-6 rounded-xl shadow-lg border'
+}))`
   background: ${props => props.theme.colors.surface};
-  border-radius: ${props => props.theme.borderRadius.large};
-  padding: 24px;
-  box-shadow: ${props => props.theme.shadows.medium};
-  border: 1px solid ${props => props.theme.colors.border};
-  
-  ${props => props.theme.name === 'tron' && `
-    border: 1px solid ${props.theme.colors.border};
-    box-shadow: ${props.theme.shadows.medium};
-  `}
+  border-color: ${props => props.theme.colors.border};
 `;
 
 /**
  * Search input container
  */
-const SearchInputContainer = styled.div`
-  position: relative;
-  margin-bottom: 16px;
-`;
+const SearchInputContainer = styled.div.attrs(() => ({
+  className: 'relative mb-4'
+}))``;
 
 /**
  * Search input field
  */
-const SearchInput = styled.input`
-  width: 100%;
-  padding: 16px 20px 16px 48px;
-  border: 2px solid ${props => props.theme.colors.border};
-  border-radius: ${props => props.theme.borderRadius.medium};
+const SearchInput = styled.input.attrs(() => ({
+  className: 'w-full pl-12 pr-5 py-4 border-2 rounded-lg text-base transition-all duration-200 outline-none'
+}))`
   background: ${props => props.theme.colors.background};
+  border-color: ${props => props.theme.colors.border};
   color: ${props => props.theme.colors.text.primary};
-  font-size: 16px;
-  transition: all 0.2s ease;
   
   ${props => props.theme.name === 'tron' && `
     background: ${props.theme.colors.surface};
-    border: 2px solid ${props.theme.colors.border};
-    color: ${props.theme.colors.text.primary};
     font-family: ${props.theme.fonts.mono};
   `}
 
   &:focus {
     border-color: ${props => props.theme.colors.primary};
-    box-shadow: 0 0 0 3px ${props => props.theme.colors.primary}20;
-    outline: none;
     
     ${props => props.theme.name === 'tron' && `
       box-shadow: ${props.theme.glow.small};
-      border-color: ${props.theme.colors.primary};
     `}
   }
 
@@ -78,15 +59,10 @@ const SearchInput = styled.input`
 /**
  * Search icon in input
  */
-const SearchIcon = styled(Search)`
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
+const SearchIcon = styled(Search).attrs(() => ({
+  className: 'absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none'
+}))`
   color: ${props => props.theme.colors.text.muted};
-  pointer-events: none;
   
   ${props => props.theme.name === 'tron' && `
     color: ${props.theme.colors.primary};
@@ -96,25 +72,19 @@ const SearchIcon = styled(Search)`
 /**
  * Suggestion chips container
  */
-const SuggestionChips = styled.div`
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-`;
+const SuggestionChips = styled.div.attrs(() => ({
+  className: 'flex gap-2 flex-wrap'
+}))``;
 
 /**
  * Individual suggestion chip
  */
-const SuggestionChip = styled.button`
-  padding: 6px 12px;
-  border: 1px solid ${props => props.theme.colors.border};
-  border-radius: ${props => props.theme.borderRadius.full};
+const SuggestionChip = styled.button.attrs(() => ({
+  className: 'px-3 py-1.5 border rounded-full text-xs font-medium transition-all duration-200 cursor-pointer hover:-translate-y-px'
+}))`
   background: transparent;
+  border-color: ${props => props.theme.colors.border};
   color: ${props => props.theme.colors.text.secondary};
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  cursor: pointer;
   
   ${props => props.theme.name === 'tron' && `
     font-family: ${props.theme.fonts.mono};
@@ -126,7 +96,6 @@ const SuggestionChip = styled.button`
     background: ${props => props.theme.colors.primary};
     color: ${props => props.theme.colors.primaryText};
     border-color: ${props => props.theme.colors.primary};
-    transform: translateY(-1px);
     
     ${props => props.theme.name === 'tron' && `
       box-shadow: ${props.theme.glow.small};
@@ -137,29 +106,24 @@ const SuggestionChip = styled.button`
 /**
  * Search results container
  */
-const SearchResults = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-`;
+const SearchResults = styled.div.attrs(() => ({
+  className: 'flex flex-col gap-4'
+}))``;
 
 /**
  * Results header
  */
-const ResultsHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 4px;
-`;
+const ResultsHeader = styled.div.attrs(() => ({
+  className: 'flex justify-between items-center px-1'
+}))``;
 
 /**
  * Results count
  */
-const ResultsCount = styled.p`
+const ResultsCount = styled.p.attrs(() => ({
+  className: 'text-sm m-0'
+}))`
   color: ${props => props.theme.colors.text.secondary};
-  font-size: 14px;
-  margin: 0;
   
   ${props => props.theme.name === 'tron' && `
     font-family: ${props.theme.fonts.mono};
@@ -170,50 +134,35 @@ const ResultsCount = styled.p`
 /**
  * Sort dropdown
  */
-const SortSelect = styled.select`
-  padding: 8px 12px;
-  border: 1px solid ${props => props.theme.colors.border};
-  border-radius: ${props => props.theme.borderRadius.small};
+const SortSelect = styled.select.attrs(() => ({
+  className: 'px-3 py-2 border rounded text-xs cursor-pointer outline-none'
+}))`
   background: ${props => props.theme.colors.background};
+  border-color: ${props => props.theme.colors.border};
   color: ${props => props.theme.colors.text.secondary};
-  font-size: 12px;
-  cursor: pointer;
   
   ${props => props.theme.name === 'tron' && `
     background: ${props.theme.colors.surface};
-    border: 1px solid ${props.theme.colors.border};
     color: ${props.theme.colors.text.primary};
     font-family: ${props.theme.fonts.mono};
   `}
 
   &:focus {
     border-color: ${props => props.theme.colors.primary};
-    outline: none;
   }
 `;
 
 /**
  * Search result card
  */
-const ResultCard = styled(motion.div)`
+const ResultCard = styled(motion.div).attrs(() => ({
+  className: 'p-5 border rounded-lg shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md'
+}))`
   background: ${props => props.theme.colors.surface};
-  border: 1px solid ${props => props.theme.colors.border};
-  border-radius: ${props => props.theme.borderRadius.medium};
-  padding: 20px;
-  box-shadow: ${props => props.theme.shadows.small};
-  transition: all 0.2s ease;
+  border-color: ${props => props.theme.colors.border};
   
-  ${props => props.theme.name === 'tron' && `
-    border: 1px solid ${props.theme.colors.border};
-    box-shadow: ${props.theme.shadows.small};
-  `}
-
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: ${props => props.theme.shadows.medium};
-    
     ${props => props.theme.name === 'tron' && `
-      box-shadow: ${props.theme.shadows.medium};
       border-color: ${props.theme.colors.primary};
     `}
   }
@@ -222,21 +171,17 @@ const ResultCard = styled(motion.div)`
 /**
  * Result card header
  */
-const ResultHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-`;
+const ResultHeader = styled.div.attrs(() => ({
+  className: 'flex justify-between items-start mb-3'
+}))``;
 
 /**
  * Result title
  */
-const ResultTitle = styled.h3`
-  font-size: 16px;
-  font-weight: 600;
+const ResultTitle = styled.h3.attrs(() => ({
+  className: 'text-base font-semibold m-0'
+}))`
   color: ${props => props.theme.colors.text.primary};
-  margin: 0;
   
   ${props => props.theme.name === 'tron' && `
     color: ${props.theme.colors.primary};
@@ -247,13 +192,11 @@ const ResultTitle = styled.h3`
 /**
  * Result relevance score
  */
-const RelevanceScore = styled.div`
-  padding: 4px 8px;
-  border-radius: ${props => props.theme.borderRadius.small};
+const RelevanceScore = styled.div.attrs(() => ({
+  className: 'px-2 py-1 rounded text-xs font-medium'
+}))`
   background: ${props => props.theme.colors.primary}20;
   color: ${props => props.theme.colors.primary};
-  font-size: 12px;
-  font-weight: 500;
   
   ${props => props.theme.name === 'tron' && `
     background: ${props.theme.colors.primary}30;
@@ -265,22 +208,16 @@ const RelevanceScore = styled.div`
 /**
  * Result meta information
  */
-const ResultMeta = styled.div`
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-`;
+const ResultMeta = styled.div.attrs(() => ({
+  className: 'flex gap-4 items-center mb-3 flex-wrap'
+}))``;
 
 /**
  * Meta item
  */
-const MetaItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
+const MetaItem = styled.div.attrs(() => ({
+  className: 'flex items-center gap-1 text-xs'
+}))`
   color: ${props => props.theme.colors.text.muted};
   
   ${props => props.theme.name === 'tron' && `
@@ -296,11 +233,10 @@ const MetaItem = styled.div`
 /**
  * Result snippet with highlighted keywords
  */
-const ResultSnippet = styled.p`
+const ResultSnippet = styled.p.attrs(() => ({
+  className: 'text-sm leading-relaxed m-0'
+}))`
   color: ${props => props.theme.colors.text.secondary};
-  font-size: 14px;
-  line-height: 1.5;
-  margin: 0;
   
   mark {
     background: ${props => props.theme.colors.primary}30;
@@ -318,9 +254,9 @@ const ResultSnippet = styled.p`
 /**
  * Empty state for no results
  */
-const EmptyState = styled.div`
-  text-align: center;
-  padding: 60px 20px;
+const EmptyState = styled.div.attrs(() => ({
+  className: 'text-center py-15 px-5'
+}))`
   color: ${props => props.theme.colors.text.muted};
   
   h3 {
@@ -399,6 +335,7 @@ function SearchAgent({ summaries }) {
   const [query, setQuery] = useState('');
   const [sortBy, setSortBy] = useState('relevance');
   const [isSearching, setIsSearching] = useState(false);
+
 
   /**
    * Perform search when query changes

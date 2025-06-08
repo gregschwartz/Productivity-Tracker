@@ -35,7 +35,7 @@ export const generateSampleTasks = () => {
     { name: "Architecture discussion", timeMinMax: [1, 2], focusLevel: "medium" },
     { name: "Code review session", timeMinMax: [1, 2], focusLevel: "medium" },
     { name: "Mentoring junior developer", timeMinMax: [0.5, 1.5], focusLevel: "medium" },
-    { name: "Cross-team collaboration", timeMinMax: [1, 2], focusLevel: "medium" },
+    { name: "Cross-team collaboration", timeMinMax: [1, 2], focusLevel: "high" },
     
     // Documentation and admin
     { name: "Design system documentation", timeMinMax: [1, 3], focusLevel: "medium" },
@@ -49,7 +49,7 @@ export const generateSampleTasks = () => {
     // Research and learning
     { name: "Research new React patterns", timeMinMax: [1, 3], focusLevel: "high" },
     { name: "Technology evaluation", timeMinMax: [2, 4], focusLevel: "high" },
-    { name: "Learning new framework", timeMinMax: [2, 5], focusLevel: "high" },
+    { name: "Learning new framework", timeMinMax: [2, 5], focusLevel: "low" },
     { name: "Security research and analysis", timeMinMax: [2, 4], focusLevel: "high" },
     { name: "Industry best practices review", timeMinMax: [1, 3], focusLevel: "medium" },
     
@@ -57,7 +57,8 @@ export const generateSampleTasks = () => {
     { name: "Testing and QA session", timeMinMax: [1, 3], focusLevel: "medium" },
     { name: "Manual testing workflow", timeMinMax: [1, 2], focusLevel: "medium" },
     { name: "Automated test maintenance", timeMinMax: [1, 3], focusLevel: "medium" },
-    { name: "Bug investigation and analysis", timeMinMax: [1, 4], focusLevel: "high" }
+    { name: "Bug investigation and analysis", timeMinMax: [1, 4], focusLevel: "low" },
+    { name: "Performance optimization", timeMinMax: [1, 3], focusLevel: "high" }
   ];
 
   const sampleTasks = [];
@@ -114,11 +115,6 @@ export const generateSampleSummaries = () => {
   const summaryTemplates = [
     {
       summary: "Excellent week with strong focus on development work and good time management across all tasks.",
-      insights: [
-        "High productivity week with excellent time investment in development tasks.",
-        "Strong focus levels maintained across coding and technical work.",
-        "Good balance between deep work and collaborative activities."
-      ],
       recommendations: [
         "Continue maintaining current deep work sessions - they're working well",
         "Consider batching similar coding tasks for even better flow states",
@@ -127,11 +123,6 @@ export const generateSampleSummaries = () => {
     },
     {
       summary: "Heavy meeting schedule impacted deep work time, but good progress on deliverables despite challenges.",
-      insights: [
-        "Higher task volume but with more interruptions than usual.",
-        "Meeting-heavy week reduced available deep work time.",
-        "Good progress on project deliverables despite scheduling challenges."
-      ],
       recommendations: [
         "Try blocking morning hours for deep work before meetings",
         "Consider declining non-essential meetings to protect focus time",
@@ -140,11 +131,6 @@ export const generateSampleSummaries = () => {
     },
     {
       summary: "Strong week with focus on learning and skill development, balanced with project deliverables.",
-      insights: [
-        "Significant time invested in learning new technologies and patterns.",
-        "Good balance between research and implementation work.",
-        "Maintained consistent productivity across different task types."
-      ],
       recommendations: [
         "Continue allocating time for learning - it's paying dividends",
         "Document key learnings for future reference",
@@ -153,11 +139,6 @@ export const generateSampleSummaries = () => {
     },
     {
       summary: "Productive week with emphasis on code quality and testing, showing attention to long-term maintainability.",
-      insights: [
-        "Strong focus on code quality and testing initiatives.",
-        "Good investment in technical debt reduction.",
-        "Balanced approach between new features and maintenance."
-      ],
       recommendations: [
         "Keep prioritizing testing and code quality initiatives",
         "Consider establishing testing standards for the team",
@@ -166,11 +147,6 @@ export const generateSampleSummaries = () => {
     },
     {
       summary: "Collaborative week with strong team engagement and knowledge sharing across multiple projects.",
-      insights: [
-        "High level of team collaboration and mentoring activities.",
-        "Good cross-team communication and project coordination.",
-        "Effective knowledge sharing and skill development."
-      ],
       recommendations: [
         "Continue fostering collaborative environment",
         "Consider formalizing mentoring processes",
@@ -179,11 +155,6 @@ export const generateSampleSummaries = () => {
     },
     {
       summary: "Focus week with deep work sessions producing significant progress on core development tasks.",
-      insights: [
-        "Extended periods of focused development work.",
-        "Minimal interruptions allowed for deep problem solving.",
-        "High-quality output from concentrated effort."
-      ],
       recommendations: [
         "Protect these deep work periods - they're highly effective",
         "Consider establishing 'focus hours' for the team",

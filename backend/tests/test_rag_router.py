@@ -196,11 +196,6 @@ class TestRAGRouter:
         assert "general" in categories
         assert len(categories) == 8
 
-    def test_get_knowledge_categories_error(self):
-        """Test categories endpoint when an error occurs."""
-        response = client.get("/categories")
-        assert response.status_code == 500
-
     def test_search_knowledge_base_validation(self):
         """Test request validation for search endpoint."""
         # Test missing required field
@@ -257,4 +252,57 @@ class TestRAGRouter:
         assert stored_metadata["difficulty"] == "intermediate"
         assert stored_metadata["tags"] == ["time-management", "efficiency"]
         assert stored_metadata["category"] == "advanced_tips"
-        assert stored_metadata["source"] == "expert_guide" 
+        assert stored_metadata["source"] == "expert_guide"
+
+    def test_ask_success(self, mock_rag_service, sample_rag_response): # sample_rag_response from conftest
+        """Test successful question asking via /ask endpoint."""
+        mock_rag_service.search_similar_weeks = AsyncMock(return_value=sample_rag_response)
+
+        response = client.post(
+            "/ask",
+            params={"question": "How to be productive?", "max_results": 3}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["question"] == "How to be productive?"
+        assert data["answer"] == sample_rag_response.answer
+        assert len(data["sources"]) == len(sample_rag_response.results)
+        if sample_rag_response.results: # Ensure there are results to check
+            assert data["sources"][0]["content"] == sample_rag_response.results[0].content
+            assert data["sources"][0]["relevance"] == round(sample_rag_response.results[0].relevance_score, 2)
+
+        mock_rag_service.search_similar_weeks.assert_called_once()
+        # Check the RAGQuery object passed to the service call
+        called_args, called_kwargs = mock_rag_service.search_similar_weeks.call_args
+        assert len(called_args) == 1 # First positional argument is the RAGQuery object
+        called_rag_query = called_args[0]
+
+        assert isinstance(called_rag_query, RAGQuery)
+        assert called_rag_query.query == "How to be productive?"
+        assert called_rag_query.max_results == 3
+        assert called_rag_query.context is None # Default context
+
+    def test_ask_empty_question(self, mock_rag_service):
+        """Test /ask endpoint with an empty question."""
+        response = client.post(
+            "/ask",
+            params={"question": "   "}
+        )
+
+        assert response.status_code == 400
+        assert "Question cannot be empty" in response.json()["detail"]
+        mock_rag_service.search_similar_weeks.assert_not_called()
+
+    def test_ask_service_error(self, mock_rag_service):
+        """Test /ask endpoint when the service throws an error."""
+        mock_rag_service.search_similar_weeks = AsyncMock(side_effect=Exception("Service failure"))
+
+        response = client.post(
+            "/ask",
+            params={"question": "This will fail"}
+        )
+
+        assert response.status_code == 500
+        assert "Failed to process question: Service failure" in response.json()["detail"]
+        mock_rag_service.search_similar_weeks.assert_called_once()

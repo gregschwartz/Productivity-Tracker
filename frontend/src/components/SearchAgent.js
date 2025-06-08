@@ -233,7 +233,7 @@ const MetaItem = styled.div.attrs(() => ({
 /**
  * Result snippet with highlighted keywords
  */
-const ResultSnippet = styled.p.attrs(() => ({
+const SummaryResultSnippet = styled.p.attrs(() => ({
   className: 'text-sm leading-relaxed m-0'
 }))`
   color: ${props => props.theme.colors.text.secondary};
@@ -249,6 +249,12 @@ const ResultSnippet = styled.p.attrs(() => ({
       box-shadow: 0 0 4px ${props.theme.colors.primary}60;
     `}
   }
+`;
+
+const SummaryRecommendationSnippet = styled.li.attrs(() => ({
+  className: 'text-sm leading-relaxed m-0 list-disc list-inside'
+}))`
+  color: ${props => props.theme.colors.text.secondary};
 `;
 
 /**
@@ -297,7 +303,7 @@ const performSemanticSearch = (query, summaries) => {
   return summaries
     .map(summary => {
       // Calculate relevance score based on keyword matches
-      const text = `${summary.summary} ${summary.insights.join(' ')} ${summary.recommendations.join(' ')}`.toLowerCase();
+      const text = `${summary.summary || ''} ${Array.isArray(summary.recommendations) ? summary.recommendations.join(' ') : ''}`.toLowerCase();
       
       let score = 0;
       let matches = [];
@@ -312,16 +318,26 @@ const performSemanticSearch = (query, summaries) => {
       if (score === 0) return null;
       
       // Create highlighted snippet
-      let snippet = summary.summary;
+      let highlightedSummary = summary.summary;
       matches.forEach(match => {
         const regex = new RegExp(`\\b${match}\\b`, 'gi');
-        snippet = snippet.replace(regex, `<mark>$&</mark>`);
+        highlightedSummary = highlightedSummary.replace(regex, `<mark>$&</mark>`);
+      });
+
+      let highlightedRecommendations = summary.recommendations;
+      highlightedRecommendations = highlightedRecommendations.map(recommendation => {
+        matches.forEach(match => {
+          const regex = new RegExp(`\\b${match}\\b`, 'gi');
+          recommendation = recommendation.replace(regex, `<mark>$&</mark>`);
+        });
+        return recommendation;
       });
       
       return {
         ...summary,
         relevanceScore: score,
-        highlightedSnippet: snippet
+        highlightedSummary,
+        highlightedRecommendations
       };
     })
     .filter(Boolean)
@@ -388,6 +404,7 @@ function SearchAgent({ summaries }) {
           <SearchInput
             type="text"
             placeholder="Search productivity patterns... (e.g., 'coding tasks with high focus')"
+            autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -456,15 +473,26 @@ function SearchAgent({ summaries }) {
                     </MetaItem>
                     <MetaItem>
                       <Focus />
-                      {result.stats.avgFocus}/3 focus
+                      {result.stats.avgFocus} focus
                     </MetaItem>
                   </ResultMeta>
 
-                  <ResultSnippet
+                  <SummaryResultSnippet
                     dangerouslySetInnerHTML={{
-                      __html: result.highlightedSnippet || result.summary
+                      __html: result.highlightedSummary || result.summary
                     }}
                   />
+
+                  <ul>
+                    {result.highlightedRecommendations.map((recommendation, index) => (
+                      <SummaryRecommendationSnippet
+                        key={index}
+                        dangerouslySetInnerHTML={{
+                          __html: recommendation
+                        }}
+                      />
+                    ))}
+                  </ul>
                 </ResultCard>
               ))
             )}

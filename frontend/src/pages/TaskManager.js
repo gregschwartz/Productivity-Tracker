@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { AnimatePresence } from 'framer-motion';
 import { Plus, Clock, Trash2, Check, ChevronLeft, ChevronRight, Edit2, X, Calendar } from 'lucide-react';
 import { format, addDays, subDays, parseISO } from 'date-fns';
@@ -166,26 +166,10 @@ function TaskManager({
   onDateChange = () => {},
   onClearDateFilter = () => {}
 }) {
-  // Get current theme name from data attribute
-  const [currentTheme, setCurrentTheme] = useState('Ready');
+  // Use useTheme hook from styled-components instead of direct DOM queries
+  const theme = useTheme();
+  let currentTheme = theme.name || 'Ready';
   
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      const themeName = document.documentElement.getAttribute('data-theme');
-      if (themeName) setCurrentTheme(themeName);
-    });
-    
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme']
-    });
-    
-    // Set initial theme
-    const initialTheme = document.documentElement.getAttribute('data-theme');
-    if (initialTheme) setCurrentTheme(initialTheme);
-    
-    return () => observer.disconnect();
-  }, []);
   const [formData, setFormData] = useState({
     name: '',
     timeSpent: '',

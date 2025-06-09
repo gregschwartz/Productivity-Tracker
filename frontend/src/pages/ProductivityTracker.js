@@ -10,6 +10,7 @@ import Navigation from '../components/Navigation';
 import PageHeader from '../components/PageHeader';
 import { BarChart3, Calendar, Search, Settings } from 'lucide-react';
 import { getApiUrl } from '../utils/api';
+import { useTheme } from 'styled-components';
 
 /**
  * Main container for the productivity tracker application
@@ -26,8 +27,6 @@ const Content = styled.div.attrs({
   className: 'max-w-6xl mx-auto'
 })``;
 
-// Removed - now using imported Navigation and PageHeader components
-
 /**
  * Main ProductivityTracker component that orchestrates all functionality
  */
@@ -36,26 +35,8 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   
-  // Get current theme name from data attribute
-  const [currentTheme, setCurrentTheme] = useState('Ready');
-  
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      const themeName = document.documentElement.getAttribute('data-theme');
-      if (themeName) setCurrentTheme(themeName);
-    });
-    
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme']
-    });
-    
-    // Set initial theme
-    const initialTheme = document.documentElement.getAttribute('data-theme');
-    if (initialTheme) setCurrentTheme(initialTheme);
-    
-    return () => observer.disconnect();
-  }, []);
+  const theme = useTheme();
+  let currentTheme = theme.name || 'Ready';
   
   const [tasks, setTasks] = useState([]);
   const [summaries, setSummaries] = useState([]);

@@ -173,12 +173,14 @@ function App() {
   return (
     <ThemeProvider theme={activeTheme}>
       <GlobalStyle />
-      <Router>
-        <ProductivityTracker 
-          isDarkMode={isDarkMode}
-          onThemeToggle={handleThemeToggle}
-        />
-      </Router>
+      <div data-testid="app-container" data-theme={activeTheme}>
+        <Router>
+          <ProductivityTracker 
+            isDarkMode={isDarkMode}
+            onThemeToggle={handleThemeToggle}
+          />
+        </Router>
+      </div>
     </ThemeProvider>
   );
 }

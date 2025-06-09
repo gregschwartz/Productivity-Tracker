@@ -1,5 +1,5 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { motion } from 'framer-motion';
 
 /**
@@ -56,26 +56,9 @@ function ActionButton({
   className = "",
   ...props 
 }) {
-  // Get current theme name from data attribute
-  const [currentTheme, setCurrentTheme] = React.useState('Ready');
-  
-  React.useEffect(() => {
-    const observer = new MutationObserver(() => {
-      const themeName = document.documentElement.getAttribute('data-theme');
-      if (themeName) setCurrentTheme(themeName);
-    });
-    
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme']
-    });
-    
-    // Set initial theme
-    const initialTheme = document.documentElement.getAttribute('data-theme');
-    if (initialTheme) setCurrentTheme(initialTheme);
-    
-    return () => observer.disconnect();
-  }, []);
+  // Use useTheme hook to obtain the current theme from styled-components' ThemeProvider
+  const theme = useTheme();
+  let currentTheme = theme.name || 'Ready';
 
   return (
     <StyledActionButton

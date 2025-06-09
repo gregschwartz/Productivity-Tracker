@@ -1,5 +1,5 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { motion } from 'framer-motion';
 
 /**
@@ -84,26 +84,8 @@ function FocusSelector({
   className = "",
   ...props 
 }) {
-  // Get current theme name from data attribute
-  const [currentTheme, setCurrentTheme] = React.useState('Ready');
-  
-  React.useEffect(() => {
-    const observer = new MutationObserver(() => {
-      const themeName = document.documentElement.getAttribute('data-theme');
-      if (themeName) setCurrentTheme(themeName);
-    });
-    
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme']
-    });
-    
-    // Set initial theme
-    const initialTheme = document.documentElement.getAttribute('data-theme');
-    if (initialTheme) setCurrentTheme(initialTheme);
-    
-    return () => observer.disconnect();
-  }, []);
+  const theme = useTheme();
+  let currentTheme = theme.name || 'Ready';
 
   /**
    * Handle keyboard navigation for focus level pills
@@ -138,7 +120,7 @@ function FocusSelector({
   };
 
   return (
-    <FocusSelectorContainer $theme={currentTheme} className={className}>
+    <FocusSelectorContainer $theme={currentTheme} className={className} {...props}>
       {levels.map((level, index) => (
         <FocusChip
           key={level}
@@ -153,7 +135,6 @@ function FocusSelector({
           data-level={level}
           whileTap={{ scale: 0.95, transition: { duration: 0.1 } }}
           animate={value === level ? { scale: [1, 1.05, 1], transition: { duration: 0.3 } } : { scale: 1 }}
-          {...props}
         >
           {level}
         </FocusChip>

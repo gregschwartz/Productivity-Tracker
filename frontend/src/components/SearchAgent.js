@@ -255,6 +255,18 @@ const SummaryRecommendationSnippet = styled.li.attrs(() => ({
   className: 'text-sm leading-relaxed m-0 list-disc list-inside'
 }))`
   color: ${props => props.theme.colors.text.secondary};
+
+  mark {
+    background: ${props => props.theme.colors.primary}30;
+    color: ${props => props.theme.colors.text.primary};
+    padding: 2px 4px;
+    border-radius: 2px;
+    
+    ${props => props.theme.name === 'tron' && `
+      background: ${props.theme.colors.primary}40;
+      box-shadow: 0 0 4px ${props.theme.colors.primary}60;
+    `}
+  }
 `;
 
 /**
@@ -323,12 +335,19 @@ const performSemanticSearch = (query, summaries) => {
         const regex = new RegExp(`\\b${match}\\b`, 'gi');
         highlightedSummary = highlightedSummary.replace(regex, `<mark>$&</mark>`);
       });
+      // Prevent double highlighting
+      highlightedSummary = highlightedSummary.replace(/<mark><mark>/g, '<mark>');
+      highlightedSummary = highlightedSummary.replace(/<\/mark><\/mark>/g, '</mark>');
 
       let highlightedRecommendations = summary.recommendations;
       highlightedRecommendations = highlightedRecommendations.map(recommendation => {
         matches.forEach(match => {
           const regex = new RegExp(`\\b${match}\\b`, 'gi');
           recommendation = recommendation.replace(regex, `<mark>$&</mark>`);
+          
+          // Prevent double highlighting
+          recommendation = recommendation.replace(/<mark><mark>/g, '<mark>');
+          recommendation = recommendation.replace(/<\/mark><\/mark>/g, '</mark>');
         });
         return recommendation;
       });
@@ -459,10 +478,6 @@ function SearchAgent({ summaries }) {
                   </ResultHeader>
 
                   <ResultMeta>
-                    <MetaItem>
-                      <Calendar />
-                      {format(new Date(result.timestamp), 'MMM dd, yyyy')}
-                    </MetaItem>
                     <MetaItem>
                       <TrendingUp />
                       {result.stats.totalTasks} tasks

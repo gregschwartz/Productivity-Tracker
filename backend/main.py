@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 import weave
 
 from routers.tasks import router as tasks_router
-from routers.summaries import router as summaries_router  
+from routers.summaries import router as summaries_router
+from routers.admin import router as admin_router
 
 # Load environment variables
 load_dotenv()
@@ -30,6 +31,7 @@ app.add_middleware(
 # Include all routers
 app.include_router(tasks_router, prefix="/api")
 app.include_router(summaries_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
 
 @app.get("/")
 async def root():

@@ -46,3 +46,23 @@ View history
 ```bash
 alembic history --verbose
 ```
+
+## Sample Data Generation
+
+For development and demo purposes, you can generate sample tasks and AI-powered summaries.
+
+```bash
+python scripts/seed_data.py
+```
+
+or
+```bash
+curl -X POST http://localhost:8000/api/tasks/generate-sample-data
+```
+
+This will:
+- Clear all existing tasks and summaries
+- Generate many days of sample tasks (working backwards from today)
+- Generate AI-powered weekly summaries for all weeks that have tasks
+
+**Note:** Requires `OPENAI_API_KEY` environment variable to be set for AI summary generation.

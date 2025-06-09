@@ -66,7 +66,13 @@ A modern productivity tracking application with AI-powered insights, built with 
 
 2. Add your API keys to `.env`
 
-3. In terminal start everything else:
+3. In terminal, generate sample data:
+
+   ```bash
+   python backend/scripts/seed_data.py
+   ```
+
+4. In terminal, start everything else:
    ```bash
    docker-compose up --build
    ```
@@ -79,16 +85,20 @@ This will start:
 
 ## API Endpoints
 
-### Summary Generation
-- `POST /api/generate-summary` - Generate weekly productivity summary
-- `POST /api/enhance-summary` - Enhance existing summary with context
-- `POST /api/analyze-productivity` - Analyze productivity patterns
+### Task Management
+- `GET /api/tasks` - Get all tasks
+- `POST /api/tasks` - Create a new task
+- `PUT /api/tasks/{task_id}` - Update a task
+- `DELETE /api/tasks/{task_id}` - Delete a task
 
-### RAG Knowledge Base
-- `POST /api/search` - Search knowledge base with RAG
-- `POST /api/ask` - Ask productivity questions
-- `GET /api/knowledge-stats` - Get knowledge base statistics
-- `POST /api/add-knowledge` - Add documents to knowledge base
+### Summary Management
+- `GET /api/summaries` - Get all summaries
+- `POST /api/summaries` - Create a new summary
+- `PUT /api/summaries/{summary_id}` - Update a summary
+- `DELETE /api/summaries/{summary_id}` - Delete a summary
+
+### Admin
+- `POST /api/admin/generate-sample-data` - Generate sample data
 
 ### Utility
 - `GET /health` - Health check endpoint

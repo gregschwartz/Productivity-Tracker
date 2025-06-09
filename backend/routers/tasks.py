@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 import weave
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging
 
 from models.models import Task
 from services.task_service import TaskService
@@ -13,6 +14,7 @@ from services.database import get_session # For session dependency
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 task_service = TaskService()
+logger = logging.getLogger(__name__)
 
 @router.post("/", response_model=Task)
 @weave.op()
@@ -21,6 +23,7 @@ async def create_new_task_route(task_payload: Task, db: AsyncSession = Depends(g
     try:
         return await task_service.create_task(session=db, task_data=task_payload)
     except Exception as e:
+        logger.error("Failed to create task. Payload=%s", task_payload.dict(), exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to create task: {str(e)}")
 
 @router.get("/", response_model=List[Task])

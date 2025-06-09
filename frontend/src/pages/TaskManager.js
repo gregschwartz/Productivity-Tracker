@@ -5,6 +5,11 @@ import { Plus, Clock, Trash2, Check, ChevronLeft, ChevronRight, Edit2, X, Calend
 import { format, addDays, subDays, parseISO } from 'date-fns';
 import ReactCalendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
+import FocusSelector from '../components/FocusSelector';
+import { ActionButton, IconButton, NavButton, SecondaryButton, TodayButton } from '../components/buttons';
+import { ButtonGroup } from '../components/forms';
+import EmptyState from '../components/EmptyState';
+import TaskCard from '../components/TaskCard';
 
 /**
  * Main container for task management
@@ -59,40 +64,11 @@ const DateNavButtons = styled.div.attrs({
   className: 'flex gap-2'
 })``;
 
-/**
- * Navigation button styled component
- */
-const NavButton = styled.button.attrs(props => ({
-  className: `
-    flex items-center justify-center gap-1.5 px-4 py-2.5 bg-transparent
-    border border-border rounded-lg text-text-secondary text-sm font-medium
-    transition-all duration-200 cursor-pointer hover:bg-background-hover 
-    hover:border-primary hover:text-primary hover:-translate-y-0.5
-    ${props.$theme === 'Tron' ? 'border-primary text-text-primary font-mono uppercase tracking-wide hover:glow-sm' : ''}
-  `
-}))`
-  svg {
-    width: 16px;
-    height: 16px;
-  }
 
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--color-primary);
-  }
-`;
 
 /**
  * Today button styled component
  */
-const TodayButton = styled(NavButton).attrs(props => ({
-  className: `
-    ${props.$isToday ? 'bg-primary text-primary-text border-primary' : 'bg-transparent text-text-secondary'}
-    border-primary hover:bg-primary hover:text-primary-text
-    ${props.$theme === 'Tron' && props.$isToday ? 'glow-sm' : ''}
-  `
-}))``;
-
 /**
  * Add task section styled component
  */
@@ -119,180 +95,13 @@ const FormFields = styled.div.attrs({
 })``;
 
 /**
- * Input group styled component
- */
-const InputGroup = styled.div.attrs({
-  className: 'flex flex-col gap-2'
-})``;
-
-/**
- * Label styled component
- */
-const Label = styled.label.attrs(props => ({
-  className: `
-    text-sm font-medium text-text-secondary
-    ${props.$theme === 'Tron' ? 'text-primary uppercase tracking-wide text-xs' : ''}
-  `
-}))``;
-
-/**
- * Input styled component
- */
-const Input = styled.input.attrs(props => ({
-  className: `
-    px-4 py-3 border border-border rounded-lg bg-background text-text-primary 
-    text-sm transition-all duration-200 focus:border-primary focus:outline-none
-    focus:shadow-[0_0_0_3px_rgb(var(--color-primary)/0.2)] placeholder:text-text-muted
-    ${props.$theme === 'Tron' ? 'bg-surface border-border text-text-primary font-mono focus:glow-sm' : ''}
-  `
-}))``;
-
-const FocusSelector = styled.div.attrs(props => ({
-  className: `
-    flex border border-border rounded-full overflow-hidden bg-background
-    ${props.$theme === 'Tron' ? 'border-primary' : ''}
-  `
-}))``;
-
-/**
- * Segment of unified pill for Focus Level component
- */
-const FocusChip = styled(motion.button).attrs(props => ({ // Changed to motion.button
-  className: `
-    px-4 py-3 border-none text-sm font-medium capitalize tracking-wide 
-    transition-all duration-200 flex-1 relative h-11 flex items-center justify-center
-    border-r border-border last:border-r-0
-    ${props.$theme === 'Tron' ? 'border-r-primary' : ''}
-  `
-}))`
-  ${props => {
-    const focusColors = {
-      low: props.theme.colors.focus.low,
-      medium: props.theme.colors.focus.medium, 
-      high: props.theme.colors.primary
-    };
-    
-    const focusTextColors = {
-      low: props.theme.colors.text.primary,
-      medium: props.theme.colors.text.primary,
-      high: props.theme.colors.primaryText
-    };
-    
-    const color = focusColors[props.level];
-    const textColor = focusTextColors[props.level];
-    const hoverBg = props.theme.colors.backgroundHover;
-    
-    // Base styles
-    let baseStyle = `
-      color: ${props.theme.colors.text.secondary};
-      &:hover {
-        background: ${hoverBg};
-        color: ${props.theme.colors.primary};
-      }
-    `;
-
-    if (props.selected) {
-      baseStyle = `
-        background: ${color};
-        color: ${textColor};
-        font-weight: 600;
-        ${props.$theme === 'Tron' ? 'box-shadow: inset 0 0 5px currentColor;' : ''}
-        ${props.$theme === 'Tron' ? 'color: #000000 !important;' : ''}
-      `; // Added !important for Tron selected text color override
-    }
-    return baseStyle;
-  }}
-
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px var(--color-primary);
-    z-index: 1;
-    position: relative;
-  }
-`;
-
-/**
- * Primary button styled component
- */
-const PrimaryButton = styled(motion.button).attrs(props => ({ // Changed to motion.button
-  className: `
-    flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-text rounded-lg
-    font-medium text-sm transition-all duration-200 cursor-pointer
-    hover:-translate-y-0.5 hover:shadow-theme-md focus:outline-none 
-    focus:shadow-[0_0_0_3px_var(--color-primary)] disabled:opacity-60 
-    disabled:cursor-not-allowed disabled:transform-none
-    ${props.$theme === 'Tron' ? 'border border-primary glow-sm uppercase tracking-wide font-mono hover:glow-md' : ''}
-  `
-}))`
-  svg {
-    width: 16px;
-    height: 16px;
-    margin-right: 4px; /* Added margin for icon spacing */
-  }
-  .icon-placeholder { /* For maintaining size when icon changes */
-    width: 16px;
-    height: 16px;
-    margin-right: 4px;
-  }
-`;
-
-/**
- * Secondary button for cancel actions
- */
-const SecondaryButton = styled.button.attrs(props => ({
-  className: `
-    flex items-center gap-2 px-6 py-3 bg-transparent text-text-secondary 
-    border border-border rounded-lg font-medium text-sm transition-all duration-200 
-    cursor-pointer hover:bg-background-hover hover:border-primary hover:text-primary 
-    hover:-translate-y-0.5 focus:outline-none focus:shadow-[0_0_0_3px_var(--color-primary)]
-    ${props.$theme === 'Tron' ? 'border-border text-text-primary uppercase tracking-wide font-mono hover:glow-sm' : ''}
-  `
-}))`
-  svg {
-    width: 16px;
-    height: 16px;
-  }
-`;
-
-/**
- * Button group for form actions
- */
-const ButtonGroup = styled.div.attrs({
-  className: 'flex gap-3 md:flex-row flex-col'
-})``;
-
-/**
  * Task list styled component
  */
 const TaskList = styled.div.attrs({
   className: 'flex flex-col gap-3'
 })``;
 
-/**
- * Task card styled component
- */
-const TaskCard = styled(motion.div).attrs(props => ({
-  className: `
-    rounded-lg p-5 shadow-theme-sm transition-all duration-200 border
-    hover:-translate-y-0.5 hover:shadow-theme-md
-    ${props.$isEditing ? 'border-primary shadow-[0_0_0_2px_rgb(var(--color-primary)/0.2)]' : 'border-border'}
-    ${props.$theme === 'Tron' 
-      ? `border-border hover:border-primary ${props.$isEditing ? 'glow-md' : ''}` 
-      : ''
-    }
-  `
-}))`
-  ${props => {
-    // Get focus level background colors
-    const focusColors = {
-      low: 'var(--color-focus-low)',
-      medium: 'var(--color-focus-medium)',
-      high: 'var(--color-focus-high)'
-    };
-    
-    return `background: ${focusColors[props.$focusLevel] || 'var(--color-surface)'};`;
-  }}
-`;
+
 
 /**
  * Task header styled component
@@ -318,21 +127,7 @@ const TaskActions = styled.div.attrs({
   className: 'flex gap-2'
 })``;
 
-/**
- * Icon button styled component
- */
-const IconButton = styled.button.attrs(props => ({
-  className: `
-    p-2 border-none rounded bg-transparent text-text-muted transition-all duration-200 
-    cursor-pointer hover:bg-background-hover hover:text-text-secondary hover:scale-110
-    ${props.$theme === 'Tron' ? 'hover:text-primary hover:text-glow' : ''}
-  `
-}))`
-  svg {
-    width: 16px;
-    height: 16px;
-  }
-`;
+
 
 /**
  * Task meta information styled component
@@ -356,23 +151,6 @@ const MetaItem = styled.div.attrs(props => ({
   }
 `;
 
-/**
- * Empty state styled component
- */
-const EmptyState = styled.div.attrs({
-  className: 'text-center py-15 px-5 text-text-muted'
-})`
-  h3 {
-    font-size: 18px;
-    margin-bottom: 8px;
-    color: var(--color-text-secondary);
-  }
-  
-  p {
-    font-size: 14px;
-    margin-bottom: 24px;
-  }
-`;
 
 
 
@@ -479,39 +257,6 @@ function TaskManager({
    */
   const handleFocusLevelChange = (level) => {
     setFormData(prev => ({ ...prev, focusLevel: level }));
-  };
-
-  /**
-   * Handle keyboard navigation for focus level pills
-   */
-  const handleFocusLevelKeyDown = (e, currentLevel) => {
-    const levels = ['low', 'medium', 'high'];
-    const currentIndex = levels.indexOf(currentLevel);
-    
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      const newIndex = currentIndex > 0 ? currentIndex - 1 : levels.length - 1;
-      const newLevel = levels[newIndex];
-      handleFocusLevelChange(newLevel);
-      // Focus the new button
-      setTimeout(() => {
-        const newButton = document.querySelector(`button[level="${newLevel}"]`);
-        if (newButton) newButton.focus();
-      }, 0);
-    } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      const newIndex = currentIndex < levels.length - 1 ? currentIndex + 1 : 0;
-      const newLevel = levels[newIndex];
-      handleFocusLevelChange(newLevel);
-      // Focus the new button
-      setTimeout(() => {
-        const newButton = document.querySelector(`button[level="${newLevel}"]`);
-        if (newButton) newButton.focus();
-      }, 0);
-    } else if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleFocusLevelChange(currentLevel);
-    }
   };
 
   /**
@@ -678,48 +423,32 @@ function TaskManager({
 
             <InputGroup>
               <Label $theme={currentTheme}>Focus Level</Label>
-              <FocusSelector $theme={currentTheme}>
-                {['low', 'medium', 'high'].map((level, index) => (
-                  <FocusChip
-                    key={level}
-                    type="button"
-                    level={level}
-                    selected={formData.focusLevel === level}
-                    onClick={() => handleFocusLevelChange(level)}
-                    onKeyDown={(e) => handleFocusLevelKeyDown(e, level)}
-                    tabIndex={formData.focusLevel === level ? 3 : -1}
-                    aria-pressed={formData.focusLevel === level}
-                    $theme={currentTheme}
-                    whileTap={{ scale: 0.95, transition: { duration: 0.1 } }}
-                    animate={formData.focusLevel === level ? { scale: [1, 1.05, 1], transition: { duration: 0.3 } } : { scale: 1 } }
-                  >
-                    {level}
-                  </FocusChip>
-                ))}
-              </FocusSelector>
+              <FocusSelector
+                value={formData.focusLevel}
+                onChange={handleFocusLevelChange}
+                tabIndex={3}
+              />
             </InputGroup>
           </FormFields>
 
           <ButtonGroup>
-            <PrimaryButton
+            <ActionButton
               type="submit"
               tabIndex={4}
-              $theme={currentTheme}
               disabled={submitStatus === 'submitting'}
-              variants={{
-                idle: { scale: 1 },
-                submitting: { scale: 0.95 },
-                success: { backgroundColor: 'var(--color-success)' }, // Ensure --color-success is in theme
-              }}
-              animate={submitStatus}
-              whileHover={{ y: submitStatus === 'idle' ? -2 : 0 }} // Use y for hover effect
-              whileTap={{ scale: submitStatus === 'idle' ? 0.98 : 0.95 }}
+              loading={submitStatus === 'submitting'}
+              icon={submitStatus === 'success' ? <Check size={20} /> : (editingTask ? <Check /> : <Plus />)}
             >
-              {submitStatus === 'success' ? <Check size={20} /> : (editingTask ? <Check /> : <Plus />)}
               {submitStatus === 'submitting' ? 'Saving...' : (submitStatus === 'success' ? 'Saved!' : (editingTask ? 'Update' : 'Add Task'))}
-            </PrimaryButton>
+            </ActionButton>
             {editingTask && (
-              <SecondaryButton type="button" onClick={handleCancelEdit} tabIndex={5} $theme={currentTheme} disabled={submitStatus === 'submitting'}>
+              <SecondaryButton 
+                type="button" 
+                onClick={handleCancelEdit} 
+                tabIndex={5} 
+                disabled={submitStatus === 'submitting'}
+                $theme={currentTheme}
+              >
                 <X />
                 Cancel
               </SecondaryButton>
@@ -731,10 +460,10 @@ function TaskManager({
       <TaskList>
         <AnimatePresence>
           {filteredTasks.length === 0 ? (
-            <EmptyState>
-              <h3>{selectedDate ? 'No tasks for this date' : 'No tasks yet today'}</h3>
-              <p>{selectedDate ? 'No tasks were logged for this date.' : 'Add your first task to start tracking your productivity!'}</p>
-            </EmptyState>
+            <EmptyState
+              title={selectedDate ? 'No tasks for this date' : 'No tasks yet today'}
+              description={selectedDate ? 'No tasks were logged for this date.' : 'Add your first task to start tracking your productivity!'}
+            />
           ) : (
             filteredTasks.map(task => (
               <TaskCard

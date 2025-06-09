@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { startOfWeek, endOfWeek, getWeek, getYear, addWeeks } from 'date-fns';
-import WeekSummary from './WeekSummary';
+import WeekSummary from '../components/WeekSummary';
 
 /**
  * Simple container for weekly summaries without styling to avoid nested boxes

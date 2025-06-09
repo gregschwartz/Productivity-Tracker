@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { motion } from "framer-motion";
 import { Sparkles, Calendar, Clock, RefreshCw } from "lucide-react";
 import { format, getWeek, getYear } from "date-fns";
+import { getApiUrl } from "../utils/api";
 
 const focusValues = { low: 1, medium: 2, high: 3 };
 
@@ -312,10 +313,9 @@ function WeekSummary({
       };
 
       // Call backend API
+      const apiUrl = getApiUrl();
       const response = await fetch(
-        `${
-          process.env.REACT_APP_API_URL || "http://localhost:8000/api"
-        }/generate-summary`,
+        `${apiUrl}/summaries/`,
         {
           method: "POST",
           headers: {
@@ -323,10 +323,10 @@ function WeekSummary({
           },
           body: JSON.stringify({
             tasks: taskData,
-            weekStart: startDate.toISOString().split("T")[0],
-            weekEnd: endDate.toISOString().split("T")[0],
-            weekStats: weekStats,
-            contextSummaries: contextSummaries,
+            week_start: startDate.toISOString().split("T")[0],
+            week_end: endDate.toISOString().split("T")[0],
+            week_stats: weekStats,
+            context_summaries: contextSummaries,
           }),
         }
       );
@@ -337,18 +337,17 @@ function WeekSummary({
 
       const aiResult = await response.json();
 
+      // The backend already saved the summary, so we use the returned data
       const generatedSummary = {
+        ...aiResult,
         week: getWeek(startDate),
         year: getYear(startDate),
-        weekStart: startDate.toISOString(),
-        weekEnd: endDate.toISOString(),
+        weekStart: aiResult.week_start || startDate.toISOString(),
+        weekEnd: aiResult.week_end || endDate.toISOString(),
         weekRange: `${format(startDate, "MMM dd")} - ${format(
           endDate,
           "MMM dd, yyyy"
         )}`,
-        stats: weekStats,
-        summary: aiResult.summary,
-        recommendations: aiResult.recommendations,
         timestamp: new Date().toISOString(),
       };
 

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createGlobalStyle, ThemeProvider } from 'styled-components';
 import { BrowserRouter as Router } from 'react-router-dom';
-import ProductivityTracker from './components/ProductivityTracker';
+import ProductivityTracker from './pages/ProductivityTracker';
 import { themes } from './themes/themes';
-import { loadSampleDataIfEmpty } from './utils/sampleData';
 
 
 /**
@@ -69,7 +68,7 @@ function App() {
   const [tronState, setTronState] = useState(TRON_STATE.NEVER_TURNED_ON);
   const [tasks, setTasks] = useState([]);
 
-  // Load tasks from localStorage on mount
+  // Load tasks from backend on mount
   useEffect(() => {
     const savedTasks = localStorage.getItem('productivity-tasks');    
     if (savedTasks) {
@@ -79,7 +78,6 @@ function App() {
         console.error('Error loading tasks:', error);
       }
     }
-    loadSampleDataIfEmpty();
 
     const detectSystemTheme = () => {
       try {

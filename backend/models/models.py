@@ -1,11 +1,12 @@
 from datetime import datetime, time
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional, Dict, Any, Literal
+from typing import List, Optional, Dict, Any, Literal, Union
 from pydantic import BaseModel, Field, validator, field_validator
 from sqlmodel import SQLModel, Field as SQLField
 import sqlalchemy
 from pydantic.networks import PostgresDsn
+from pgvector.sqlalchemy import Vector
 
 class FocusLevel(str, Enum):
     low = "low"
@@ -38,6 +39,19 @@ class Task(SQLModel, table=True):
         if v < 0:
             raise ValueError('Time spent cannot be negative')
         return v
+
+    @field_validator('date', mode='before')
+    @classmethod
+    def validate_date(cls, v):
+        if isinstance(v, str):
+            try:
+                return datetime.fromisoformat(v.replace('Z', '+00:00'))
+            except ValueError:
+                raise ValueError('Date must be a valid ISO format datetime string')
+        elif isinstance(v, datetime):
+            return v
+        else:
+            raise ValueError('Date must be a datetime object or ISO format string')
 
 class WeeklyStats(BaseModel):
     total_tasks: int = Field(..., ge=0, description="Total number of tasks")
@@ -88,7 +102,7 @@ class WeeklySummary(SQLModel, table=True):
     summary: str = SQLField(description="Summary of the week's tasks and productivity metrics")
     stats: Dict[str, Any] = SQLField(default_factory=dict, sa_type=sqlalchemy.JSON, description="Weekly statistics")
     recommendations: List[str] = SQLField(default_factory=list, sa_type=sqlalchemy.JSON, description="Recommendations to improve efficiency or focus for the next week")
-    embedding: Optional[List[float]] = SQLField(None, sa_type=sqlalchemy.ARRAY(sqlalchemy.Float), description="Embedding of the summary for vector search")
+    embedding: Optional[List[float]] = SQLField(None, sa_type=Vector(1536), description="Embedding of the summary for vector search")
     created_at: Optional[datetime] = SQLField(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = SQLField(default_factory=datetime.utcnow)
 

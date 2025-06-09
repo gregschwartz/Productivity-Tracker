@@ -9,6 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from pgvector.sqlalchemy import Vector
 
 
 # revision identifiers, used by Alembic.
@@ -44,7 +45,7 @@ def upgrade() -> None:
         sa.Column('summary', sa.String(), nullable=False),
         sa.Column('stats', sa.JSON(), nullable=True),
         sa.Column('recommendations', sa.JSON(), nullable=True),
-        sa.Column('embedding', sa.ARRAY(sa.Float()), nullable=True),
+        sa.Column('embedding', Vector(1536), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=True),
         sa.Column('updated_at', sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint('id')
@@ -52,7 +53,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_weekly_summaries_week_start'), 'weekly_summaries', ['week_start'], unique=False)
     op.create_index(op.f('ix_weekly_summaries_week_end'), 'weekly_summaries', ['week_end'], unique=False)
     
-    # Create vector index for embeddings
+    # Create vector index for embeddings (cosine similarity)
     op.execute("""
         CREATE INDEX weekly_summaries_embedding_idx 
         ON weekly_summaries USING ivfflat (embedding vector_cosine_ops)

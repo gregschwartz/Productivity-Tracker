@@ -248,15 +248,15 @@ function TaskManager({
   /**
    * Handle form submission
    */
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.timeSpent || submitStatus === 'submitting') return;
 
     setSubmitStatus('submitting');
-    // Simulate API call delay for visual feedback
-    setTimeout(() => {
+    
+    try {
       if (editingTask) {
-        onUpdateTask(editingTask.id, {
+        await onUpdateTask(editingTask.id, {
           name: formData.name.trim(),
           timeSpent: parseFloat(formData.timeSpent),
           focusLevel: formData.focusLevel
@@ -265,16 +265,23 @@ function TaskManager({
         setEditingTask(null);
         setTimeout(() => setJustUpdatedTaskId(null), 1000); // Reset after animation duration
       } else {
-        onAddTask({
+        const taskPayload = { 
           name: formData.name.trim(),
-          timeSpent: parseFloat(formData.timeSpent),
-          focusLevel: formData.focusLevel
-        }, currentDateString);
+          time_spent: parseFloat(formData.timeSpent),
+          focus_level: formData.focusLevel,
+          date_worked: currentDateString };
+        await onAddTask(taskPayload, currentDateString);
       }
+      
+      // Only clear form and show success if operation succeeded
       setSubmitStatus('success');
       setFormData({ name: '', timeSpent: '', focusLevel: 'medium' });
       setTimeout(() => setSubmitStatus('idle'), 1500); // Revert button state
-    }, 700); // Simulated delay
+    } catch (error) {
+      console.error('Task operation failed:', error);
+      setSubmitStatus('idle'); // Reset button to allow retry
+      // Don't clear form data - let user retry with same data
+    }
   };
 
   /**
@@ -283,8 +290,8 @@ function TaskManager({
    */
   const targetDate = selectedDate || currentDateString;
   const filteredTasks = tasks
-    .filter(task => task.date === targetDate)
-    .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date));
+    .filter(task => task.date_worked === targetDate)
+    .sort((a, b) => new Date(b.date_worked) - new Date(a.date_worked));
 
   return (
     <TaskContainer>

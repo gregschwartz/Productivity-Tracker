@@ -30,12 +30,12 @@ def upgrade() -> None:
         sa.Column('name', sa.String(), nullable=False),
         sa.Column('time_spent', sa.Float(), nullable=True),
         sa.Column('focus_level', sa.Enum('low', 'medium', 'high', 'no_tasks', name='focuslevel'), nullable=False),
-        sa.Column('date', sa.DateTime(), nullable=False),
+        sa.Column('date_worked', sa.Date(), nullable=False),
         sa.Column('created_at', sa.DateTime(), nullable=True),
         sa.Column('updated_at', sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_tasks_date'), 'tasks', ['date'], unique=False)
+    op.create_index(op.f('ix_tasks_date_worked'), 'tasks', ['date_worked'], unique=False)
     
     # Create weekly_summaries table
     op.create_table('weekly_summaries',
@@ -69,7 +69,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_weekly_summaries_week_end'), table_name='weekly_summaries')
     op.drop_index(op.f('ix_weekly_summaries_week_start'), table_name='weekly_summaries')
     op.drop_table('weekly_summaries')
-    op.drop_index(op.f('ix_tasks_date'), table_name='tasks')
+    op.drop_index(op.f('ix_tasks_date_worked'), table_name='tasks')
     op.drop_table('tasks')
     
     # Note: We don't drop the vector extension as it might be used by other applications

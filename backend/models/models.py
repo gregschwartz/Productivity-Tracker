@@ -1,11 +1,9 @@
-from datetime import datetime, time
-from datetime import datetime
+from datetime import datetime, date
 from enum import Enum
-from typing import List, Optional, Dict, Any, Literal, Union
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, validator, field_validator
 from sqlmodel import SQLModel, Field as SQLField
 import sqlalchemy
-from pydantic.networks import PostgresDsn
 from pgvector.sqlalchemy import Vector
 
 class FocusLevel(str, Enum):
@@ -22,7 +20,7 @@ class Task(SQLModel, table=True):
     name: str = SQLField(description="What the task was")
     time_spent: float = SQLField(description="Time spent in hours")
     focus_level: FocusLevel = SQLField(description="Focus level of the task, used to help understand how well I worked on it")
-    date: datetime = SQLField(index=True, description="Date and time when the task was completed")
+    date_worked: date = SQLField(index=True, description="Date when the task was worked on")
     created_at: Optional[datetime] = SQLField(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = SQLField(default_factory=datetime.utcnow)
 
@@ -40,18 +38,20 @@ class Task(SQLModel, table=True):
             raise ValueError('Time spent cannot be negative')
         return v
 
-    @field_validator('date', mode='before')
+    @field_validator('date_worked', mode='before')
     @classmethod
-    def validate_date(cls, v):
+    def validate_date_worked(cls, v):
         if isinstance(v, str):
             try:
-                return datetime.fromisoformat(v.replace('Z', '+00:00'))
+                return date.fromisoformat(v)
             except ValueError:
-                raise ValueError('Date must be a valid ISO format datetime string')
+                raise ValueError('Date must be a valid ISO format date string (YYYY-MM-DD)')
         elif isinstance(v, datetime):
+            return v.date()
+        elif isinstance(v, date):
             return v
         else:
-            raise ValueError('Date must be a datetime object or ISO format string')
+            raise ValueError('Date must be a date object, datetime object, or ISO format date string')
 
 class WeeklyStats(BaseModel):
     total_tasks: int = Field(..., ge=0, description="Total number of tasks")

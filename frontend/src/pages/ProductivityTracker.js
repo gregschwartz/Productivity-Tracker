@@ -157,7 +157,13 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
    * Add a new task to the backend and local state
    */
   const addTask = async (task, targetDate = null) => {
-    const dateToUse = targetDate || task.date || selectedDate || new Date().toISOString().split('T')[0];
+    let dateToUse;
+    if (task.date_worked && task.date_worked.includes('T')) {
+      // Already a full datetime string
+      dateToUse = task.date;
+    } else {
+      dateToUse = targetDate || task.date_worked || selectedDate || new Date().toISOString().split('T')[0];
+    }
     const newTask = {
       ...task,
       date: dateToUse,

@@ -12,6 +12,10 @@ class TaskService:
         """Create a new task that persists on refresh."""
         # Exclude fields that should not be set directly or are auto-generated
         task_dict = task_data.dict(exclude={'id', 'created_at', 'updated_at'}, exclude_none=True)
+        # Date_worked can be cranky
+        if isinstance(task_dict.get('date_worked'), str):
+            from datetime import date
+            task_dict['date_worked'] = date.fromisoformat(task_dict['date_worked'])
         task = Task(**task_dict)
         session.add(task)
         await session.commit()

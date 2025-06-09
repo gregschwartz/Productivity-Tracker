@@ -45,29 +45,37 @@ A modern productivity tracking application with AI-powered insights, built with 
 - (Optional) Weights & Biases account for Weave tracking
 
 ### Steps
+1. In terminal:
 
-1. **Clone the repository**
    ```bash
+   # Clone the repository
    git clone https://github.com/gregschwartz/Productivity-Tracker.git
    cd Productivity-Tracker
-   ```
-
-2. **Set up environment variables**
-   ```bash
-   cp backend/env.example backend/.env
-   ```
+  
+   # Set up environment variables
+   cp env.example .env
+  
+   # Start **just** the database
+   docker-compose up -d postgres
    
-   Add your API keys to `backend/.env`
+   # Run database migrations
+   cd backend
+   alembic upgrade head
+   cd ..
+   ```
 
-3. **Start development environment**
+2. Add your API keys to `.env`
+
+3. In terminal start everything else:
    ```bash
    docker-compose up --build
    ```
 
-   This will start:
-   - Frontend on http://localhost:3000
-   - Backend API on http://localhost:8000
-   - API documentation on http://localhost:8000/docs
+This will start:
+- Frontend on http://localhost:3000
+- Backend API on http://localhost:8000
+- Postgres on http://localhost:5432
+
 
 ## API Endpoints
 
@@ -84,7 +92,6 @@ A modern productivity tracking application with AI-powered insights, built with 
 
 ### Utility
 - `GET /health` - Health check endpoint
-- `GET /docs` - Interactive API documentation
 
 ## Features in Detail
 
@@ -114,15 +121,21 @@ A modern productivity tracking application with AI-powered insights, built with 
 
 ## Running Tests
 
+Since this is a Docker-based application, tests should be run inside the containers:
+
 **Frontend tests:**
 ```bash
-npm test
+# Run tests in the frontend container
+docker-compose exec frontend npm test
 ```
 
 **Backend tests:**
 ```bash
-cd backend
-pytest
+# Run tests in the backend container
+docker-compose exec backend pytest
+
+# Run with coverage
+docker-compose exec backend pytest --cov=. --cov-report=html
 ```
 
 ## Code Structure

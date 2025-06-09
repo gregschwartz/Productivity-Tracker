@@ -1,95 +1,103 @@
 import os
-import json
-from typing import List, Dict, Any
-import chromadb
+from typing import List, Dict, Any, Optional
 import weave
 from openai import AsyncOpenAI
-from models.pydantic_models import RAGQuery, RAGResponse, RAGResult
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from models.models import RAGQuery, RAGResponse, RAGResult, WeeklySummaryCreate
+from services.database_service import DatabaseService
 
 class RAGService:
-    def __init__(self):
+    """Service for Retrieval-Augmented Generation (RAG) operations."""
+    
+    def __init__(self, db: AsyncSession):
+        """Initialize the RAGService with a database session and OpenAI client."""
         self.client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        
-        # Initialize ChromaDB
-        chroma_path = os.getenv("CHROMA_PERSIST_DIRECTORY", "./chromadb_data")
-        self.chroma_client = chromadb.PersistentClient(path=chroma_path)
-        
-        # Create collection for weekly summaries
+        self.db_service = DatabaseService(db)
+    
+    async def _generate_embedding(self, text: str) -> List[float]:
+        """Generate embeddings for the given text using OpenAI's API."""
         try:
-            self.summaries_collection = self.chroma_client.get_collection("weekly_summaries")
-            print({"knowledge_base_loaded": True, "documents_added": len(self.summaries_collection.get())})
-        except:
-            self.summaries_collection = self.chroma_client.create_collection("weekly_summaries")
-            print({"knowledge_base_initialized": True, "documents_added": 0})
+            response = await self.client.embeddings.create(
+                input=text,
+                model="text-embedding-3-small"
+            )
+            return response.data[0].embedding
+        except Exception as e:
+            print(f"Error generating embedding: {e}")
+            raise
     
     @weave.op()
-    def store_weekly_summary(self, summary_data: Dict[str, Any]):
-        """Store a weekly summary in the vector database."""
+    async def store_weekly_summary(self, summary_data: WeeklySummaryCreate) -> Dict[str, Any]:
+        """Store a weekly summary in the database with vector embedding."""
         try:
-            week_id = f"week_{summary_data['week_start']}_{summary_data['week_end']}"
-            
-            # Create searchable text from summary data
-            searchable_text = f"""
-            Week {summary_data['week_start']} to {summary_data['week_end']}
-            Summary: {summary_data['summary']}
-            Total tasks: {summary_data['stats']['totalTasks']}
-            Total hours: {summary_data['stats']['totalHours']}
-            Average focus: {summary_data['stats']['avgFocus']}
-            Insights: {' '.join(summary_data['insights'])}
-            Recommendations: {' '.join(summary_data['recommendations'])}
-            """
-            
-            self.summaries_collection.add(
-                documents=[searchable_text],
-                metadatas=[summary_data],
-                ids=[week_id]
+            # Generate embedding for the summary text
+            embedding = await self._generate_embedding(
+                f"""
+                Week {summary_data.week_start} to {summary_data.week_end}
+                Summary: {summary_data.summary}
+                Total tasks: {summary_data.stats.get('totalTasks', 0)}
+                Insights: {'; '.join(summary_data.insights or [])}
+                Recommendations: {'; '.join(summary_data.recommendations or [])}
+                """.strip()
             )
-            print({"knowledge_base_initialized": True, "documents_added": len(searchable_text)})
+            
+            # Store in PostgreSQL with pgvector
+            result = await self.db_service.store_weekly_summary(summary_data, embedding)
+            return {"status": "success", "message": "Weekly summary stored successfully", "id": result.id}
             
         except Exception as e:
             print(f"Error storing summary: {e}")
+            return {"status": "error", "message": str(e)}
     
     @weave.op()
-    async def search_similar_weeks(self, query: RAGQuery) -> RAGResponse:
-        """Search for similar weekly productivity patterns."""
+    async def search_similar_weeks(self, query: RAGQuery, similarity_threshold: float = 0.7) -> RAGResponse:
+        """Search for similar weeks based on a query using vector similarity."""
         try:
-            # Search the collection
-            results = self.summaries_collection.query(
-                query_texts=[query.query],
-                n_results=min(query.max_results, 5)
+            # Generate embedding for the query
+            query_embedding = await self._generate_embedding(query.query)
+            
+            # Search for similar weeks using pgvector
+            similar_weeks = await self.db_service.search_similar_weeks(
+                query_embedding=query_embedding,
+                limit=query.max_results,
+                similarity_threshold=similarity_threshold
             )
             
-            # Format results
-            rag_results = []
-            if results['documents'] and results['documents'][0]:
-                for i, doc in enumerate(results['documents'][0]):
-                    metadata = results['metadatas'][0][i]
-                    distance = results['distances'][0][i] if results['distances'] else 0.5
-                    relevance_score = max(0.0, 1.0 - distance)
-                    
-                    rag_results.append(RAGResult(
-                        content=f"Week {metadata['week_start']} to {metadata['week_end']}: {metadata['summary']}",
-                        source=f"Week {metadata['week_start']}",
-                        relevance_score=relevance_score,
-                        metadata=metadata
-                    ))
-            
-            # Generate AI answer
-            if rag_results:
-                context = "\n".join([f"- {result.content}" for result in rag_results[:3]])
-                answer = await self._generate_answer(query.query, context)
-            else:
-                answer = "No similar productivity patterns found in your history."
+            # Convert to RAGResult objects
+            results = []
+            for week in similar_weeks:
+                # Create a content string from the week data
+                content = f"""
+                Week {week.week_start} to {week.week_end}
+                Summary: {week.summary}
+                Insights: {'; '.join(week.insights or [])}
+                Recommendations: {'; '.join(week.recommendations or [])}
+                """.strip()
+                
+                results.append(RAGResult(
+                    content=content,
+                    source=f"Week {week.week_start} to {week.week_end}",
+                    relevance_score=getattr(week, 'similarity', 0.0),
+                    metadata={
+                        'week_start': week.week_start,
+                        'week_end': week.week_end,
+                        'stats': week.stats,
+                        'insights': week.insights,
+                        'recommendations': week.recommendations
+                    }
+                ))
             
             return RAGResponse(
-                results=rag_results,
-                answer=answer
+                results=results,
+                answer=None  # Can be filled in by a separate method if needed
             )
             
         except Exception as e:
+            print(f"Error searching similar weeks: {e}")
             return RAGResponse(
                 results=[],
-                answer=f"Search failed: {str(e)}"
+                answer=f"Error: {str(e)}"
             )
     
     # we don't need to use this function, but could be fun for extra credit
@@ -121,4 +129,12 @@ class RAGService:
             return response.choices[0].message.content
             
         except Exception:
-            return "Unable to generate analysis at this time." 
+            return "Unable to generate analysis at this time."
+    
+    async def _generate_embedding(self, text: str) -> List[float]:
+        """Generate embedding for the given text using OpenAI."""
+        response = await self.client.embeddings.create(
+            input=text,
+            model="text-embedding-3-small"
+        )
+        return response.data[0].embedding

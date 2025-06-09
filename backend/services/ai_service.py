@@ -3,8 +3,14 @@ import json
 from typing import List, Optional
 from openai import AsyncOpenAI
 import weave
-from models.pydantic_models import TaskData, SummaryResponse, WeeklyStats, FocusLevel
+from models.models import Task, FocusLevel, WeeklyStats
+from pydantic import BaseModel
 from pydantic_ai import Agent
+
+class SummaryResponse(BaseModel):
+    """Response model for AI-generated summaries."""
+    summary: str
+    recommendations: List[str]
 
 SUMMARY_PROMPT = """You are a productivity coach for software engineers at a startup.
 Analyze this week's productivity data and generate:
@@ -40,14 +46,14 @@ class AIService:
     @weave.op()
     async def generate_weekly_summary(
         self,
-        tasks: List[TaskData],
+        tasks: List[Task],
         week_start: str,
         week_end: str,
         week_stats: WeeklyStats,
         context_summaries: Optional[dict] = None
     ) -> SummaryResponse:
         """Generate a weekly productivity summary using OpenAI."""
-        if week_stats.totalTasks == 0 or week_stats.totalHours == 0:
+        if week_stats.total_tasks == 0 or week_stats.total_hours == "0.0":
             return SummaryResponse(
                 summary="No tasks completed this week.",
                 recommendations=[]
@@ -55,7 +61,7 @@ class AIService:
         
         # Create task summary
         task_summary = "\n".join([
-            f"- {task.name} ({task.timeSpent}h, {task.focusLevel.value} focus)"
+            f"- {task.name} ({task.time_spent}h, {task.focus_level.value} focus)"
             for task in tasks
         ])
         
@@ -87,9 +93,9 @@ class AIService:
         prompt = SUMMARY_PROMPT.format(
             week_start=week_start,
             week_end=week_end,
-            total_tasks=week_stats.totalTasks,
-            total_hours=week_stats.totalHours,
-            avg_focus=week_stats.avgFocus,
+            total_tasks=week_stats.total_tasks,
+            total_hours=week_stats.total_hours,
+            avg_focus=week_stats.avg_focus,
             task_summary=task_summary,
             adjacent_week_summaries=adjacent_week_summaries
         )

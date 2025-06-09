@@ -11,6 +11,7 @@ import { ButtonGroup, InputGroup, Label, Input } from '../components/forms';
 import EmptyState from '../components/EmptyState';
 import TaskCard from '../components/TaskCard';
 import MetaItem from '../components/MetaItem';
+import { TaskLoadingIndicator } from '../components/loading';
 
 /**
  * Main container for task management
@@ -146,7 +147,8 @@ function TaskManager({
   onDeleteTask = () => {},
   selectedDate = null,
   onDateChange = () => {},
-  onClearDateFilter = () => {}
+  onClearDateFilter = () => {},
+  isLoading
 }) {
   // Use useTheme hook from styled-components instead of direct DOM queries
   const theme = useTheme();
@@ -424,8 +426,13 @@ function TaskManager({
       </AddTaskSection>
 
       <TaskList>
+        {isLoading && filteredTasks.length === 0 && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+            <TaskLoadingIndicator />
+          </div>
+        )}
         <AnimatePresence>
-          {filteredTasks.length === 0 ? (
+          {!isLoading && filteredTasks.length === 0 ? (
             <EmptyState
               title={selectedDate ? 'No tasks for this date' : 'No tasks yet today'}
               description={selectedDate ? 'No tasks were logged for this date.' : 'Add your first task to start tracking your productivity!'}

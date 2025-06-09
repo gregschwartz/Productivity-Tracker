@@ -293,10 +293,11 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
             selectedDate={selectedDate}
             onDateChange={handleNavigateToDate}
             onClearDateFilter={handleClearDateFilter}
+            isLoading={loading}
           />
         );
       case 'analytics':
-        return <Visualizations tasks={tasks} summaries={summaries} onNavigateToDate={handleNavigateToDate} onAddSummary={addSummary} />;
+        return <Visualizations tasks={tasks} summaries={summaries} onNavigateToDate={handleNavigateToDate} onAddSummary={addSummary} isLoading={loading} />;
       case 'search':
         return <SearchAgent summaries={summaries} />;
       case 'admin':

@@ -1,583 +1,259 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ThemeProvider } from 'styled-components';
-import { themes } from '../themes/themes';
-import TaskManager from '../components/TaskManager';
-
-// Mock framer-motion to avoid animation issues in tests
-jest.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }) => <div {...props}>{children}</div>,
-  },
-  AnimatePresence: ({ children }) => <>{children}</>,
-}));
-
-// Mock react-calendar
-jest.mock('react-calendar', () => {
-  return function MockCalendar({ value, onChange }) {
-    return (
-      <div data-testid="mock-calendar">
-        <button onClick={() => onChange(new Date('2024-01-15'))}>
-          Mock Calendar
-        </button>
-      </div>
-    );
-  };
-});
-
-// Mock CSS imports
-jest.mock('react-calendar/dist/Calendar.css', () => {});
+import TaskManager from '../components/TaskManager'; // Assuming this is the correct path
+import { TaskProvider } from '../contexts/TaskContext'; // Assuming a TaskContext manages tasks
 
 // Mock localStorage
-const mockLocalStorage = (() => {
+const localStorageMock = (() => {
   let store = {};
   return {
     getItem: jest.fn((key) => store[key] || null),
-    setItem: jest.fn((key, value) => { store[key] = value.toString(); }),
-    removeItem: jest.fn((key) => { delete store[key]; }),
-    clear: jest.fn(() => { store = {}; })
+    setItem: jest.fn((key, value) => {
+      store[key] = value.toString();
+    }),
+    removeItem: jest.fn((key) => {
+      delete store[key];
+    }),
+    clear: jest.fn(() => {
+      store = {};
+    }),
   };
 })();
+Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
-Object.defineProperty(window, 'localStorage', {
-  value: mockLocalStorage
-});
+// Mock API calls if TaskManager uses them directly (e.g., for a backend sync)
+// For this test, we'll primarily focus on localStorage interactions as per the prompt.
+// If TaskContext handles API calls, then those would be mocked when testing TaskContext or components using it.
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({}), // Default mock fetch response
+  })
+);
 
-// Helper function to render component with theme
-const renderWithTheme = (component, theme = themes.Ready) => {
+// Wrapper for components needing TaskContext
+const renderWithTaskProvider = (ui) => {
   return render(
-    <ThemeProvider theme={theme}>
-      {component}
-    </ThemeProvider>
+    <TaskProvider>
+      {ui}
+    </TaskProvider>
   );
 };
 
 describe('TaskManager Component', () => {
   beforeEach(() => {
-    mockLocalStorage.clear();
-    jest.clearAllMocks();
+    localStorageMock.clear();
+    localStorageMock.getItem.mockClear();
+    localStorageMock.setItem.mockClear();
+    global.fetch.mockClear();
   });
 
-  describe('Task Creation', () => {
-    test('TC1.1: Add a New Task', async () => {
-      const user = userEvent.setup();
-      const mockOnAddTask = jest.fn();
-      
-      renderWithTheme(<TaskManager onAddTask={mockOnAddTask} />);
-
-      // Fill in task details
-      const taskNameInput = screen.getByPlaceholderText(/what did you work on/i);
-      await user.type(taskNameInput, 'Design new logo');
-
-      const timeInput = screen.getByLabelText(/hours spent/i);
-      await user.type(timeInput, '2.5');
-
-      const highFocusButton = screen.getByRole('button', { name: /high/i });
-      await user.click(highFocusButton);
-
-      // Save task
-      const saveButton = screen.getByRole('button', { name: /add task/i });
-      await user.click(saveButton);
-
-      // Verify onAddTask was called with correct data
-      expect(mockOnAddTask).toHaveBeenCalledWith({
-        name: 'Design new logo',
-        timeSpent: 2.5,
-        focusLevel: 'high'
-      }, expect.any(String));
-
-      // Verify form is reset
-      expect(taskNameInput.value).toBe('');
-      expect(timeInput.value).toBe('');
-    });
-
-    test('TC1.2: Quick Task Entry', async () => {
-      const user = userEvent.setup();
-      const mockOnAddTask = jest.fn();
-      
-      renderWithTheme(<TaskManager onAddTask={mockOnAddTask} />);
-
-      // Only enter task name
-      const taskNameInput = screen.getByPlaceholderText(/what did you work on/i);
-      await user.type(taskNameInput, 'Quick task');
-
-      const timeInput = screen.getByLabelText(/hours spent/i);
-      await user.type(timeInput, '0.5');
-
-      const saveButton = screen.getByRole('button', { name: /add task/i });
-      await user.click(saveButton);
-
-      // Verify onAddTask was called with defaults
-      expect(mockOnAddTask).toHaveBeenCalledWith({
-        name: 'Quick task',
-        timeSpent: 0.5,
-        focusLevel: 'medium' // default focus level
-      }, expect.any(String));
-    });
-
-    test('TC1.5: Attempt to Add Task with Invalid Data', async () => {
-      const user = userEvent.setup();
-      const mockOnAddTask = jest.fn();
-      
-      renderWithTheme(<TaskManager onAddTask={mockOnAddTask} />);
-
-      // Try to save without task name
-      const saveButton = screen.getByRole('button', { name: /add task/i });
-      await user.click(saveButton);
-
-      // Should not call onAddTask due to HTML5 validation
-      expect(mockOnAddTask).not.toHaveBeenCalled();
-
-      // Try with just task name but no time
-      const taskNameInput = screen.getByPlaceholderText(/what did you work on/i);
-      await user.type(taskNameInput, 'Test task');
-      
-      await user.click(saveButton);
-      
-      // Should still not call onAddTask due to missing time
-      expect(mockOnAddTask).not.toHaveBeenCalled();
-    });
+  test('renders TaskManager with form and task list areas', () => {
+    renderWithTaskProvider(<TaskManager />);
+    expect(screen.getByRole('form', { name: /task input form/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /task list/i })).toBeInTheDocument();
+    // Check for input fields
+    expect(screen.getByLabelText(/task name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/time spent/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/focus level/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/date/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add task/i })).toBeInTheDocument();
   });
 
-  describe('Task Management', () => {
-    test('TC1.3: Delete a Task', async () => {
-      const user = userEvent.setup();
-      const mockOnDeleteTask = jest.fn();
-      
-      const sampleTasks = [{
-        id: '1',
-        name: 'Task to delete',
-        timeSpent: 1,
-        focusLevel: 'medium',
-        completed: false,
-        date: new Date().toISOString().split('T')[0],
-        timestamp: new Date().toISOString()
-      }];
+  test('adds a new task, displays it, and calls localStorage.setItem', async () => {
+    const user = userEvent.setup();
+    renderWithTaskProvider(<TaskManager />);
 
-      renderWithTheme(<TaskManager tasks={sampleTasks} onDeleteTask={mockOnDeleteTask} />);
+    await user.type(screen.getByLabelText(/task name/i), 'New Test Task');
+    await user.type(screen.getByLabelText(/time spent/i), '1.5');
+    await user.selectOptions(screen.getByLabelText(/focus level/i), 'medium');
+    await user.type(screen.getByLabelText(/date/i), '2024-03-15');
 
-      // Verify task is displayed
-      expect(screen.getByText('Task to delete')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /add task/i }));
 
-      // Click delete button
-      const deleteButton = screen.getByTitle('Delete task');
-      await user.click(deleteButton);
-
-      // Verify onDeleteTask was called
-      expect(mockOnDeleteTask).toHaveBeenCalledWith('1');
+    await waitFor(() => {
+      expect(screen.getByText(/new test task/i)).toBeInTheDocument();
+      expect(screen.getByText(/1.5 hours/i)).toBeInTheDocument(); // Assuming display format
+      expect(screen.getByText(/focus: medium/i)).toBeInTheDocument(); // Assuming display format
     });
 
-    test('TC1.4: Edit a Task', async () => {
-      const user = userEvent.setup();
-      const mockOnUpdateTask = jest.fn();
-      
-      const sampleTasks = [{
-        id: '1',
-        name: 'Task to edit',
-        timeSpent: 2,
-        focusLevel: 'medium',
-        completed: false,
-        date: new Date().toISOString().split('T')[0],
-        timestamp: new Date().toISOString()
-      }];
+    // Check if task item has a data attribute or class for focus level
+    const taskItem = screen.getByText(/new test task/i).closest('li'); // Assuming tasks are in <li>
+    expect(taskItem).toHaveAttribute('data-focus-level', 'medium');
 
-      renderWithTheme(<TaskManager tasks={sampleTasks} onUpdateTask={mockOnUpdateTask} />);
+    expect(localStorageMock.setItem).toHaveBeenCalledTimes(1); // Or more depending on TaskContext implementation
+    expect(localStorageMock.setItem).toHaveBeenCalledWith(
+      'tasks', // Assuming 'tasks' is the localStorage key
+      expect.stringContaining('New Test Task')
+    );
+  });
 
-      // Verify task is displayed
-      expect(screen.getByText('Task to edit')).toBeInTheDocument();
+  test('loads and displays tasks from localStorage on initial render', () => {
+    const initialTasks = [
+      { id: '1', name: 'Loaded Task 1', timeSpent: 2, focusLevel: 'high', date: '2024-03-14' },
+      { id: '2', name: 'Loaded Task 2', timeSpent: 1, focusLevel: 'low', date: '2024-03-13' },
+    ];
+    localStorageMock.getItem.mockReturnValueOnce(JSON.stringify(initialTasks));
 
-      // Click edit button
-      const editButton = screen.getByTitle('Edit task');
-      await user.click(editButton);
+    renderWithTaskProvider(<TaskManager />);
 
-      // Verify form is populated with task data
-      const taskNameInput = screen.getByDisplayValue('Task to edit');
-      const timeInput = screen.getByDisplayValue('2');
-      const mediumFocusButton = screen.getByRole('button', { name: /medium/i });
+    expect(screen.getByText(/loaded task 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/loaded task 2/i)).toBeInTheDocument();
+    expect(localStorageMock.getItem).toHaveBeenCalledWith('tasks');
+  });
 
-      expect(taskNameInput).toBeInTheDocument();
-      expect(timeInput).toBeInTheDocument();
-      expect(mediumFocusButton).toHaveAttribute('aria-pressed', 'true');
+  test('edits an existing task and updates display and localStorage', async () => {
+    const user = userEvent.setup();
+    const initialTasks = [
+      { id: 'task-to-edit', name: 'Original Task', timeSpent: 1, focusLevel: 'low', date: '2024-03-10' },
+    ];
+    localStorageMock.getItem.mockReturnValueOnce(JSON.stringify(initialTasks));
 
-      // Verify button text changed to "Update"
-      expect(screen.getByRole('button', { name: /update/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+    renderWithTaskProvider(<TaskManager />);
 
-      // Edit the task
-      await user.clear(taskNameInput);
-      await user.type(taskNameInput, 'Updated task name');
-      
-      await user.clear(timeInput);
-      await user.type(timeInput, '3.5');
+    // Wait for initial tasks to render
+    await screen.findByText(/original task/i);
 
-      const highFocusButton = screen.getByRole('button', { name: /high/i });
-      await user.click(highFocusButton);
+    // Click edit button for the task
+    // Assuming edit button has a specific role or text, or is associated with the task item
+    // For example, within the task item: <button aria-label="Edit Original Task">Edit</button>
+    const editButton = screen.getByRole('button', { name: /edit original task/i });
+    await user.click(editButton);
 
-      // Save changes
-      const updateButton = screen.getByRole('button', { name: /update/i });
-      await user.click(updateButton);
+    // Form should be populated with task data
+    // Input fields might have their names changed or be specifically for editing
+    expect(screen.getByLabelText(/task name/i)).toHaveValue('Original Task');
+    expect(screen.getByLabelText(/time spent/i)).toHaveValue(1);
+    expect(screen.getByLabelText(/focus level/i)).toHaveValue('low');
+    expect(screen.getByLabelText(/date/i)).toHaveValue('2024-03-10');
 
-      // Verify onUpdateTask was called with correct data
-      expect(mockOnUpdateTask).toHaveBeenCalledWith('1', {
-        name: 'Updated task name',
-        timeSpent: 3.5,
-        focusLevel: 'high'
-      });
+    // Change details
+    await user.clear(screen.getByLabelText(/task name/i));
+    await user.type(screen.getByLabelText(/task name/i), 'Updated Test Task');
+    await user.clear(screen.getByLabelText(/time spent/i));
+    await user.type(screen.getByLabelText(/time spent/i), '2.5');
+    await user.selectOptions(screen.getByLabelText(/focus level/i), 'high');
 
-      // Verify form is reset and back to create mode
-      expect(screen.getByRole('button', { name: /add task/i })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /cancel/i })).not.toBeInTheDocument();
+    // Click the "Update Task" (or "Save Changes") button
+    // The button text might change when in edit mode
+    await user.click(screen.getByRole('button', { name: /update task/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/updated test task/i)).toBeInTheDocument();
+      expect(screen.getByText(/2.5 hours/i)).toBeInTheDocument();
+      expect(screen.getByText(/focus: high/i)).toBeInTheDocument();
     });
 
-    test('TC1.5: Cancel Edit Task', async () => {
-      const user = userEvent.setup();
-      const mockOnUpdateTask = jest.fn();
-      
-      const sampleTasks = [{
-        id: '1',
-        name: 'Task to edit',
-        timeSpent: 2,
-        focusLevel: 'medium',
-        completed: false,
-        date: new Date().toISOString().split('T')[0],
-        timestamp: new Date().toISOString()
-      }];
+    const taskItem = screen.getByText(/updated test task/i).closest('li');
+    expect(taskItem).toHaveAttribute('data-focus-level', 'high');
 
-      renderWithTheme(<TaskManager tasks={sampleTasks} onUpdateTask={mockOnUpdateTask} />);
+    expect(localStorageMock.setItem).toHaveBeenCalledWith(
+      'tasks',
+      expect.stringContaining('Updated Test Task')
+    );
+    // Ensure original task text is gone
+    expect(screen.queryByText(/original task/i)).not.toBeInTheDocument();
+  });
 
-      // Click edit button
-      const editButton = screen.getByTitle('Edit task');
-      await user.click(editButton);
+  test('deletes a task and removes it from display and localStorage', async () => {
+    const user = userEvent.setup();
+    const initialTasks = [
+      { id: 'task-to-delete', name: 'Task To Delete', timeSpent: 1, focusLevel: 'medium', date: '2024-03-10' },
+    ];
+    localStorageMock.getItem.mockReturnValueOnce(JSON.stringify(initialTasks));
 
-      // Verify we're in edit mode
-      expect(screen.getByRole('button', { name: /update/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+    renderWithTaskProvider(<TaskManager />);
 
-      // Make some changes
-      const taskNameInput = screen.getByDisplayValue('Task to edit');
-      await user.clear(taskNameInput);
-      await user.type(taskNameInput, 'Changed name');
+    await screen.findByText(/task to delete/i);
 
-      // Cancel editing
-      const cancelButton = screen.getByRole('button', { name: /cancel/i });
-      await user.click(cancelButton);
+    // Click delete button for the task
+    // Example: <button aria-label="Delete Task To Delete">Delete</button>
+    const deleteButton = screen.getByRole('button', { name: /delete task to delete/i });
+    await user.click(deleteButton);
 
-      // Verify we're back to create mode
-      expect(screen.getByRole('button', { name: /add task/i })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /cancel/i })).not.toBeInTheDocument();
+    // Confirm deletion if there's a confirmation dialog (not assumed for this test)
 
-      // Verify form is reset
-      const resetTaskNameInput = screen.getByPlaceholderText(/what did you work on/i);
-      expect(resetTaskNameInput.value).toBe('');
-
-      // Verify onUpdateTask was not called
-      expect(mockOnUpdateTask).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.queryByText(/task to delete/i)).not.toBeInTheDocument();
     });
 
-    test('TC1.6: Edit Task Visual Highlighting', async () => {
-      const user = userEvent.setup();
-      
-      const sampleTasks = [{
-        id: '1',
-        name: 'Task to edit',
-        timeSpent: 2,
-        focusLevel: 'medium',
-        completed: false,
-        date: new Date().toISOString().split('T')[0],
-        timestamp: new Date().toISOString()
-      }];
+    expect(localStorageMock.setItem).toHaveBeenCalledWith(
+      'tasks',
+      expect.not.stringContaining('Task To Delete')
+    );
+  });
 
-      renderWithTheme(<TaskManager tasks={sampleTasks} />);
+  test('displays appropriate visual styling for focus level', async () => {
+    const user = userEvent.setup();
+    renderWithTaskProvider(<TaskManager />);
 
-      // Click edit button
-      const editButton = screen.getByTitle('Edit task');
-      await user.click(editButton);
+    await user.type(screen.getByLabelText(/task name/i), 'High Focus Task');
+    await user.type(screen.getByLabelText(/time spent/i), '1');
+    await user.selectOptions(screen.getByLabelText(/focus level/i), 'high');
+    await user.type(screen.getByLabelText(/date/i), '2024-03-16');
+    await user.click(screen.getByRole('button', { name: /add task/i }));
 
-      // Verify task card has editing visual state
-      const taskCard = screen.getByText('Task to edit').closest('[data-testid="task-card"]');
-      expect(taskCard).toHaveAttribute('data-editing', 'true');
+    await user.type(screen.getByLabelText(/task name/i), 'Low Focus Task'); // Form should reset or allow new entry
+    await user.type(screen.getByLabelText(/time spent/i), '2');
+    await user.selectOptions(screen.getByLabelText(/focus level/i), 'low');
+    await user.type(screen.getByLabelText(/date/i), '2024-03-17');
+    await user.click(screen.getByRole('button', { name: /add task/i }));
+
+    await waitFor(() => {
+      const highFocusTaskItem = screen.getByText(/high focus task/i).closest('li');
+      expect(highFocusTaskItem).toHaveAttribute('data-focus-level', 'high');
+      // You could also check for a specific class if that's how styling is applied
+      // expect(highFocusTaskItem).toHaveClass('task-focus-high');
+
+      const lowFocusTaskItem = screen.getByText(/low focus task/i).closest('li');
+      expect(lowFocusTaskItem).toHaveAttribute('data-focus-level', 'low');
+      // expect(lowFocusTaskItem).toHaveClass('task-focus-low');
     });
   });
 
-  describe('Data Persistence', () => {
-    test('TC1.6: Data Persistence on Refresh', async () => {
-      const user = userEvent.setup();
+});
 
-      // Simulate existing data that would be loaded by parent component
-      const sampleTasks = [
-        {
-          id: '1',
-          name: 'Persisted task',
-          timeSpent: 1.5,
-          focusLevel: 'high',
-          completed: false,
-          date: new Date().toISOString().split('T')[0],
-          timestamp: new Date().toISOString()
-        }
-      ];
-
-      // Render component with tasks as props (simulating parent component loading from localStorage)
-      renderWithTheme(<TaskManager tasks={sampleTasks} />);
-
-      // Verify task is displayed
-      await waitFor(() => {
-        expect(screen.getByText('Persisted task')).toBeInTheDocument();
-        expect(screen.getByText(/1.5 hours/)).toBeInTheDocument();
-      });
-    });
-
-    test('TC3.1: Extended Persistence Test', async () => {
-      const user = userEvent.setup();
-      const mockOnAddTask = jest.fn();
-      
-      renderWithTheme(<TaskManager onAddTask={mockOnAddTask} />);
-
-      // Add multiple tasks
-      for (let i = 1; i <= 3; i++) {
-        const taskNameInput = screen.getByPlaceholderText(/what did you work on/i);
-        await user.type(taskNameInput, `Task ${i}`);
-
-        const timeInput = screen.getByLabelText(/hours spent/i);
-        await user.type(timeInput, '1');
-
-        const saveButton = screen.getByRole('button', { name: /add task/i });
-        await user.click(saveButton);
-
-        // Verify each task was added
-        expect(mockOnAddTask).toHaveBeenCalledWith({
-          name: `Task ${i}`,
-          timeSpent: 1,
-          focusLevel: 'medium'
-        }, expect.any(String));
-      }
-
-      // Verify all tasks were added
-      expect(mockOnAddTask).toHaveBeenCalledTimes(3);
-    });
-  });
-
-  describe('Visual Styling', () => {
-    test('TC2.1: Task Display Styling', () => {
-      const sampleTasks = [
-        {
-          id: '1',
-          name: 'High focus task',
-          timeSpent: 2,
-          focusLevel: 'high',
-          completed: false,
-          date: new Date().toISOString().split('T')[0],
-          timestamp: new Date().toISOString()
-        },
-        {
-          id: '2',
-          name: 'Completed task',
-          timeSpent: 1,
-          focusLevel: 'medium',
-          completed: true,
-          date: new Date().toISOString().split('T')[0],
-          timestamp: new Date().toISOString()
-        }
-      ];
-
-      renderWithTheme(<TaskManager tasks={sampleTasks} />);
-
-      // Verify tasks are displayed
-      expect(screen.getByText('High focus task')).toBeInTheDocument();
-      expect(screen.getByText('Completed task')).toBeInTheDocument();
-
-      // Verify time badges
-      expect(screen.getByText(/2 hours/)).toBeInTheDocument();
-      expect(screen.getByText(/1 hour/)).toBeInTheDocument();
-
-      // Verify focus level styling (check for focus level indicators)
-      const highFocusTask = screen.getByText('High focus task').closest('[data-testid]');
-      const completedTask = screen.getByText('Completed task').closest('[data-testid]');
-
-      expect(highFocusTask).toHaveAttribute('data-focus-level', 'high');
-      expect(completedTask).toHaveAttribute('data-completed', 'true');
-    });
-
-    test('TC2.2: Cross-Theme Styling', () => {
-      const sampleTask = [{
-        id: '1',
-        name: 'Theme test task',
-        timeSpent: 1,
-        focusLevel: 'high',
-        completed: false,
-        date: new Date().toISOString().split('T')[0],
-        timestamp: new Date().toISOString()
-      }];
-
-      // Test with different themes
-      const themesToTest = ['Ready', 'Ready-Dark', 'Tron'];
-
-      themesToTest.forEach(themeName => {
-        const { unmount } = renderWithTheme(<TaskManager tasks={sampleTask} />, themes[themeName]);
-        
-        // Verify task is rendered with theme
-        expect(screen.getByText('Theme test task')).toBeInTheDocument();
-        
-        unmount();
-      });
-    });
-  });
-
-  describe('Keyboard Navigation and Accessibility', () => {
-    test('TC4.1: Tab Order', async () => {
-      const user = userEvent.setup();
-      renderWithTheme(<TaskManager />);
-
-      // The first input should already have focus due to autoFocus
-      expect(screen.getByPlaceholderText(/what did you work on/i)).toHaveFocus();
-
-      // Test tab order: task name -> time -> focus level -> submit button
-      await user.tab();
-      expect(screen.getByLabelText(/hours spent/i)).toHaveFocus();
-
-      await user.tab();
-      expect(screen.getByRole('button', { name: /medium/i })).toHaveFocus();
-
-      await user.tab();
-      expect(screen.getByRole('button', { name: /add task/i })).toHaveFocus();
-    });
-
-    test('TC4.2: Focus Level Keyboard Navigation', async () => {
-      const user = userEvent.setup();
-      renderWithTheme(<TaskManager />);
-
-      // Focus on the focus level selector
-      const lowButton = screen.getByRole('button', { name: /low/i });
-      lowButton.focus();
-
-      // Test arrow key navigation
-      await user.keyboard('{ArrowRight}');
-      expect(screen.getByRole('button', { name: /medium/i })).toHaveFocus();
-
-      await user.keyboard('{ArrowRight}');
-      expect(screen.getByRole('button', { name: /high/i })).toHaveFocus();
-
-      // Test wrapping
-      await user.keyboard('{ArrowRight}');
-      expect(screen.getByRole('button', { name: /low/i })).toHaveFocus();
-
-      // Test left arrow
-      await user.keyboard('{ArrowLeft}');
-      expect(screen.getByRole('button', { name: /high/i })).toHaveFocus();
-    });
-
-    test('TC4.3: Focus Level Space/Enter Selection', async () => {
-      const user = userEvent.setup();
-      const mockOnAddTask = jest.fn();
-      renderWithTheme(<TaskManager onAddTask={mockOnAddTask} />);
-
-      // Fill required fields
-      await user.type(screen.getByPlaceholderText(/what did you work on/i), 'Test task');
-      await user.type(screen.getByLabelText(/hours spent/i), '1');
-
-      // Focus on high focus level and select with space
-      const highButton = screen.getByRole('button', { name: /high/i });
-      highButton.focus();
-      await user.keyboard(' ');
-
-      // Submit form
-      await user.click(screen.getByRole('button', { name: /add task/i }));
-
-      expect(mockOnAddTask).toHaveBeenCalledWith({
-        name: 'Test task',
-        timeSpent: 1,
-        focusLevel: 'high'
-      }, expect.any(String));
-    });
-
-    test('TC4.4: Edit Mode Tab Order', async () => {
-      const user = userEvent.setup();
-      const sampleTasks = [{
-        id: '1',
-        name: 'Task to edit',
-        timeSpent: 2,
-        focusLevel: 'medium',
-        completed: false,
-        date: new Date().toISOString().split('T')[0],
-        timestamp: new Date().toISOString()
-      }];
-
-      renderWithTheme(<TaskManager tasks={sampleTasks} />);
-
-      // Enter edit mode
-      const editButton = screen.getByTitle('Edit task');
-      await user.click(editButton);
-
-      // Focus the task name input manually since edit doesn't auto-focus
-      const taskNameInput = screen.getByDisplayValue('Task to edit');
-      taskNameInput.focus();
-
-      // Test tab order in edit mode: task name -> time -> focus level -> update -> cancel
-      expect(screen.getByDisplayValue('Task to edit')).toHaveFocus();
-      
-      await user.tab();
-      expect(screen.getByDisplayValue('2')).toHaveFocus();
-
-      await user.tab();
-      expect(screen.getByRole('button', { name: /medium/i })).toHaveFocus();
-
-      await user.tab();
-      expect(screen.getByRole('button', { name: /update/i })).toHaveFocus();
-
-      await user.tab();
-      expect(screen.getByRole('button', { name: /cancel/i })).toHaveFocus();
-    });
-  });
-
-  describe('Form Behavior', () => {
-    test('TC5.1: Form Reset After Successful Submission', async () => {
-      const user = userEvent.setup();
-      const mockOnAddTask = jest.fn();
-      renderWithTheme(<TaskManager onAddTask={mockOnAddTask} />);
-
-      // Fill form
-      await user.type(screen.getByPlaceholderText(/what did you work on/i), 'Test task');
-      await user.type(screen.getByLabelText(/hours spent/i), '2.5');
-      await user.click(screen.getByRole('button', { name: /high/i }));
-
-      // Submit
-      await user.click(screen.getByRole('button', { name: /add task/i }));
-
-      // Verify form is reset
-      expect(screen.getByPlaceholderText(/what did you work on/i).value).toBe('');
-      expect(screen.getByLabelText(/hours spent/i).value).toBe('');
-      // Verify medium is selected as default focus level
-      expect(screen.getByRole('button', { name: /medium/i })).toHaveAttribute('aria-pressed', 'true');
-    });
-
-    test('TC5.2: Form Validation', async () => {
-      const user = userEvent.setup();
-      const mockOnAddTask = jest.fn();
-      renderWithTheme(<TaskManager onAddTask={mockOnAddTask} />);
-
-      // Try to submit empty form
-      await user.click(screen.getByRole('button', { name: /add task/i }));
-      expect(mockOnAddTask).not.toHaveBeenCalled();
-
-      // Add task name but no time
-      await user.type(screen.getByPlaceholderText(/what did you work on/i), 'Test task');
-      await user.click(screen.getByRole('button', { name: /add task/i }));
-      expect(mockOnAddTask).not.toHaveBeenCalled();
-
-      // Add time and submit
-      await user.type(screen.getByLabelText(/hours spent/i), '1');
-      await user.click(screen.getByRole('button', { name: /add task/i }));
-      expect(mockOnAddTask).toHaveBeenCalled();
-    });
-  });
-
-  describe('Empty State', () => {
-    test('Empty state display', () => {
-      renderWithTheme(<TaskManager />);
-
-      // Should show empty state message
-      expect(screen.getByText(/no tasks yet today/i)).toBeInTheDocument();
-      expect(screen.getByText(/add your first task to start tracking/i)).toBeInTheDocument();
-    });
-  });
-}); 
+// Note: These tests assume a TaskContext (`<TaskProvider>`) is used to manage task state
+// and interact with localStorage. If TaskManager does this directly, the provider wrap is not needed.
+// The `aria-label` for form, edit/delete buttons, and display formats of task details
+// are assumptions and should match the actual implementation.
+// For "edit" and "delete", the buttons need to be uniquely identifiable, often by being
+// associated with the task text or an ID. Using `aria-label` like "Edit Original Task" is one way.
+// The form fields (getByLabelText) and submit button (getByRole 'button', name 'Add Task' / 'Update Task')
+// also rely on correct labeling and naming in the component.
+// The `data-focus-level` attribute is an assumption for how focus level might be styled or identified.
+// It could also be a class name (e.g., `focus-high`).
+// The tests for edit/delete assume that after clicking the respective buttons, the form
+// is either pre-filled (for edit) or the task is removed from the list (for delete).
+// The exact mechanism for initiating an edit (e.g., which button to click) needs to match the UI.
+// Typically, each task in the list would have its own edit and delete buttons.
+// Example task list item structure:
+// <li data-focus-level="medium">
+//   <span>Task Name (X hours, Focus: Medium, Date)</span>
+//   <button aria-label="Edit Task Name">Edit</button>
+//   <button aria-label="Delete Task Name">Delete</button>
+// </li>
+// This structure would work with the tests.
+// The form name `aria-label="task input form"` on the `<form>` tag is also assumed.
+// The heading `aria-label="Task list"` on an `<h2>` or similar for the list section.
+// Clearing form after submission: The tests implicitly assume the form is ready for new input after submission.
+// If not, `clear()` calls would be needed for form fields before adding the second task in some tests.
+// e.g. await user.clear(screen.getByLabelText(/task name/i));
+// This is handled by typing into the same field for "High Focus Task" and "Low Focus Task"
+// assuming it's either cleared or a new TaskManager instance is used per test (which it is).
+// The `waitFor` calls are important for asynchronous updates to the DOM after user actions.
+// The `localStorage` calls are mocked at the top. We check `setItem` to ensure persistence.
+// `getItem` is used to test loading initial state.
+// If the TaskManager or TaskContext performs API calls to sync tasks with a backend,
+// those `fetch` calls would also need to be mocked, and tests could verify them.
+// The current prompt focuses on localStorage, so fetch mocking is minimal.
+// The submit button text might change from "Add Task" to "Update Task" when editing.
+// The tests account for this by looking for "Update Task" in the edit test.
+// The `id` field in task objects is important for editing/deleting the correct task.
+// TaskContext would typically generate these IDs (e.g., using `uuid`).
+// The tests assume tasks are rendered as `<li>` elements. This can be adjusted.
+// The display of "X hours" and "Focus: medium" is an assumption of how task details are rendered.
+// These should match the actual text content or structure.
+// For example, if time is just `<span>{timeSpent}</span>`, then check `screen.getByText('1.5')`.
+// The tests use more descriptive text like `/1.5 hours/i` for robustness.

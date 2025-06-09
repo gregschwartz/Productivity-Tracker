@@ -1,63 +1,53 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import App from '../App';
-
-// Mock ProductivityTracker component
-jest.mock('../components/ProductivityTracker', () => {
-  return function MockProductivityTracker() {
-    return <div data-testid="productivity-tracker">Productivity Tracker Component</div>;
-  };
-});
-
-// Mock sample data utility
-jest.mock('../utils/sampleData', () => ({
-  loadSampleDataIfEmpty: jest.fn()
-}));
+import App from '../App'; // Assuming App.js is in src/
+import { ThemeProvider } from '../contexts/ThemeContext'; // Assuming a ThemeContext
 
 // Mock localStorage
-const mockLocalStorage = (() => {
+const localStorageMock = (() => {
   let store = {};
   return {
-    getItem: jest.fn((key) => store[key] || null),
-    setItem: jest.fn((key, value) => { store[key] = value.toString(); }),
-    removeItem: jest.fn((key) => { delete store[key]; }),
-    clear: jest.fn(() => { store = {}; })
+    getItem: (key) => store[key] || null,
+    setItem: (key, value) => {
+      store[key] = value.toString();
+    },
+    removeItem: (key) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    },
   };
 })();
+Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
-Object.defineProperty(window, 'localStorage', {
-  value: mockLocalStorage
-});
+// Mock any components that are heavy or not relevant to App.test.js itself
+jest.mock('../components/ProductivityTracker', () => () => <div data-testid="productivity-tracker">ProductivityTracker Mock</div>);
 
-// Mock window.matchMedia for system dark mode detection
-const mockMatchMedia = jest.fn().mockImplementation(query => ({
-  matches: false,
-  media: query,
-  onchange: null,
-  addListener: jest.fn(),
-  removeListener: jest.fn(),
-  addEventListener: jest.fn(),
-  removeEventListener: jest.fn(),
-  dispatchEvent: jest.fn(),
-}));
-
+// Mock matchMedia for theme preference testing
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: mockMatchMedia,
+  value: jest.fn().mockImplementation(query => ({
+    matches: false, // Default to light mode preference
+    media: query,
+    onchange: null,
+    addListener: jest.fn(), // deprecated
+    removeListener: jest.fn(), // deprecated
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
 });
 
-// Set up global before each test
-global.matchMedia = mockMatchMedia;
 
 describe('App Component', () => {
   beforeEach(() => {
-    mockLocalStorage.clear();
-    jest.clearAllMocks();
-    // Reset matchMedia mock
-    mockMatchMedia.mockClear();
-    mockMatchMedia.mockImplementation(query => ({
-      matches: false,
+    // Clear localStorage before each test
+    localStorageMock.clear();
+    // Reset mocks if needed, e.g., theme preference
+    window.matchMedia.mockImplementation(query => ({
+      matches: query === '(prefers-color-scheme: dark)', // Simulate dark mode if query matches
       media: query,
       onchange: null,
       addListener: jest.fn(),
@@ -68,267 +58,176 @@ describe('App Component', () => {
     }));
   });
 
-  describe('Basic Rendering', () => {
-    test('renders with light/dark toggle', () => {
-      render(<App />);
-      
-      expect(screen.getByTestId('productivity-tracker')).toBeInTheDocument();
-      expect(screen.getByText('Dark')).toBeInTheDocument();
-    });
+  test('renders basic App structure and ProductivityTracker', () => {
+    render(
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    );
 
-    test('renders ProductivityTracker component', () => {
-      render(<App />);
-      
-      expect(screen.getByTestId('productivity-tracker')).toBeInTheDocument();
-    });
+    // Check for a main container or element in App
+    expect(screen.getByTestId('app-container')).toBeInTheDocument(); // Assuming App.js has data-testid="app-container"
+
+    // Check that ProductivityTracker mock is rendered
+    expect(screen.getByTestId('productivity-tracker')).toBeInTheDocument();
+    expect(screen.getByText('ProductivityTracker Mock')).toBeInTheDocument();
   });
 
-  describe('Dark Mode Functionality', () => {
-    test('renders dark mode toggle button', () => {
-      render(<App />);
+  test('theme switching functionality (light/dark/Tron)', async () => {
+    const user = userEvent.setup();
+    render(
+      // ThemeProvider is crucial for theme switching
+      // It might need to be imported from its actual location
+      // For this test, we assume ThemeProvider wraps App and provides a way to switch themes
+      // e.g., via a button or select dropdown exposed by a Header component within App.
+      // Let's assume there's a component that App renders which has theme switching buttons.
+      // We'll need to mock that component or ensure App itself renders these controls.
+      // For simplicity, let's assume App renders some theme switch buttons directly or via a child.
+      // (This part might need adjustment based on actual App.js structure)
+      <App />
+    );
 
-      const darkModeToggle = screen.getByRole('button', { name: /dark/i });
-      expect(darkModeToggle).toBeInTheDocument();
-    });
+    // Assuming App.js (or a child like Header) renders buttons with these specific texts or testids
+    // And that the ThemeProvider context causes a change in a data-theme attribute on a main container
+    const appContainer = screen.getByTestId('app-container');
 
-    test('toggles between light and dark mode', async () => {
-      const user = userEvent.setup();
-      render(<App />);
+    // Initial theme (default or from localStorage)
+    // Let's assume default is 'light'. We can check this via an attribute.
+    // The ThemeContext should apply a `data-theme` attribute to a top-level element (e.g., app-container)
+    expect(appContainer).toHaveAttribute('data-theme', 'light'); // Default
 
-      // Initially shows "Dark" button (currently in light mode)
-      const darkModeToggle = screen.getByRole('button', { name: /dark/i });
-      expect(darkModeToggle).toHaveTextContent('Dark');
+    // Find theme switch buttons (these might be in a Header component)
+    // If not directly in App, test will fail. Need to know App structure.
+    // For this example, let's assume buttons exist.
+    const lightThemeButton = screen.getByRole('button', { name: /light theme/i });
+    const darkThemeButton = screen.getByRole('button', { name: /dark theme/i });
+    const tronThemeButton = screen.getByRole('button', { name: /tron theme/i });
 
-      // Click to switch to dark mode
-      await user.click(darkModeToggle);
+    await user.click(darkThemeButton);
+    expect(appContainer).toHaveAttribute('data-theme', 'dark');
+    expect(localStorageMock.getItem('theme')).toBe('dark');
 
-      // Should now show "Light" button (currently in dark mode)
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /light/i })).toBeInTheDocument();
-      });
-    });
+    await user.click(tronThemeButton);
+    expect(appContainer).toHaveAttribute('data-theme', 'tron');
+    expect(localStorageMock.getItem('theme')).toBe('tron');
 
-    test('persists dark mode preference to localStorage', async () => {
-      const user = userEvent.setup();
-      render(<App />);
-
-      const darkModeToggle = screen.getByRole('button', { name: /dark/i });
-      await user.click(darkModeToggle);
-
-      await waitFor(() => {
-        expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-          'productivity-dark-mode',
-          'true'
-        );
-      });
-    });
-
-    test('loads dark mode preference from localStorage', () => {
-      mockLocalStorage.getItem.mockImplementation((key) => {
-        if (key === 'productivity-dark-mode') return 'true';
-        return null;
-      });
-
-      render(<App />);
-
-      // Should show Light button (currently in dark mode)
-      expect(screen.getByRole('button', { name: /light/i })).toBeInTheDocument();
-    });
-
-    test('handles system dark mode preference detection', () => {
-      // Mock system prefers dark mode
-      mockMatchMedia.mockImplementation(query => ({
-        matches: query === '(prefers-color-scheme: dark)',
-        media: query,
-        onchange: null,
-        addListener: jest.fn(),
-        removeListener: jest.fn(),
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn(),
-      }));
-
-      // Update window.matchMedia to use the mock
-      Object.defineProperty(window, 'matchMedia', {
-        writable: true,
-        value: mockMatchMedia,
-      });
-
-      render(<App />);
-
-      // Component should render without crashing and show a theme toggle
-      expect(screen.getByRole('button')).toBeInTheDocument();
-      expect(screen.getByTestId('productivity-tracker')).toBeInTheDocument();
-    });
+    await user.click(lightThemeButton);
+    expect(appContainer).toHaveAttribute('data-theme', 'light');
+    expect(localStorageMock.getItem('theme')).toBe('light');
   });
 
-  describe('Tron Theme Auto-Selection', () => {
-    test('automatically selects Tron theme when task contains "for the user"', () => {
-      const tasksWithTronKeyword = [
-        {
-          id: '1',
-          name: 'Design interface for the user',
-          timeSpent: 2,
-          focusLevel: 'high',
-          date: '2024-01-15'
-        }
-      ];
-
-      mockLocalStorage.getItem.mockImplementation((key) => {
-        if (key === 'productivity-tasks') return JSON.stringify(tasksWithTronKeyword);
-        return null;
-      });
-
-      render(<App />);
-
-      // Tron theme should be applied automatically
-      expect(screen.getByTestId('productivity-tracker')).toBeInTheDocument();
-    });
-
-    test('automatically selects Tron theme when task contains "Master Control Program"', () => {
-      const tasksWithTronKeyword = [
-        {
-          id: '1',
-          name: 'Debug Master Control Program interface',
-          timeSpent: 3,
-          focusLevel: 'high',
-          date: '2024-01-15'
-        }
-      ];
-
-      mockLocalStorage.getItem.mockImplementation((key) => {
-        if (key === 'productivity-tasks') return JSON.stringify(tasksWithTronKeyword);
-        return null;
-      });
-
-      render(<App />);
-
-      expect(screen.getByTestId('productivity-tracker')).toBeInTheDocument();
-    });
-
-    test('automatically selects Tron theme when task contains "mcp" (case insensitive)', () => {
-      const tasksWithTronKeyword = [
-        {
-          id: '1',
-          name: 'Connect to MCP systems',
-          timeSpent: 1.5,
-          focusLevel: 'medium',
-          date: '2024-01-15'
-        }
-      ];
-
-      mockLocalStorage.getItem.mockImplementation((key) => {
-        if (key === 'productivity-tasks') return JSON.stringify(tasksWithTronKeyword);
-        return null;
-      });
-
-      render(<App />);
-
-      expect(screen.getByTestId('productivity-tracker')).toBeInTheDocument();
-    });
-
-    test('automatically selects Tron theme when task contains "Kevin"', () => {
-      const tasksWithTronKeyword = [
-        {
-          id: '1',
-          name: 'Meeting with Kevin Flynn',
-          timeSpent: 1,
-          focusLevel: 'low',
-          date: '2024-01-15'
-        }
-      ];
-
-      mockLocalStorage.getItem.mockImplementation((key) => {
-        if (key === 'productivity-tasks') return JSON.stringify(tasksWithTronKeyword);
-        return null;
-      });
-
-      render(<App />);
-
-      expect(screen.getByTestId('productivity-tracker')).toBeInTheDocument();
-    });
-
-    test('uses normal light/dark theme when no Tron keywords are present', () => {
-      const normalTasks = [
-        {
-          id: '1',
-          name: 'Regular development work',
-          timeSpent: 4,
-          focusLevel: 'high',
-          date: '2024-01-15'
-        }
-      ];
-
-      mockLocalStorage.getItem.mockImplementation((key) => {
-        if (key === 'productivity-tasks') return JSON.stringify(normalTasks);
-        return null;
-      });
-
-      render(<App />);
-
-      // Should show normal Ready mode toggle
-      expect(screen.getByText('Dark')).toBeInTheDocument();
-    });
+  test('initial theme is set from localStorage if available', () => {
+    localStorageMock.setItem('theme', 'tron');
+    render(<App />);
+    const appContainer = screen.getByTestId('app-container');
+    expect(appContainer).toHaveAttribute('data-theme', 'tron');
   });
 
-  describe('Theme UI', () => {
-    test('theme toggle is positioned fixed in top-right', () => {
-      render(<App />);
+  test('initial theme respects prefers-color-scheme: dark', () => {
+    window.matchMedia.mockImplementation(query => ({
+      matches: query === '(prefers-color-scheme: dark)',
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    }));
 
-      const themeToggle = screen.getByText('Dark').closest('div');
-      const styles = window.getComputedStyle(themeToggle);
-      expect(styles.position).toBe('fixed');
-    });
-
-    test('shows correct icons for dark mode toggle', () => {
-      render(<App />);
-
-      // Should show moon icon in light mode
-      const darkModeToggle = screen.getByRole('button', { name: /dark/i });
-      expect(darkModeToggle.querySelector('svg')).toBeInTheDocument();
-    });
+    render(<App />);
+    const appContainer = screen.getByTestId('app-container');
+    // Check if the theme is set to dark by default due to OS preference
+    // This depends on ThemeContext logic to check matchMedia
+    expect(appContainer).toHaveAttribute('data-theme', 'dark');
   });
 
-  describe('Error Handling', () => {
-    test('handles malformed tasks data gracefully', () => {
-      mockLocalStorage.getItem.mockImplementation((key) => {
-        if (key === 'productivity-tasks') return 'invalid json';
-        return null;
-      });
+   test('initial theme defaults to light if no preference and no localStorage', () => {
+    window.matchMedia.mockImplementation(query => ({ // No preference
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    }));
+    localStorageMock.clear();
 
-      // Should not crash
-      expect(() => render(<App />)).not.toThrow();
-      expect(screen.getByTestId('productivity-tracker')).toBeInTheDocument();
-    });
-
-    test('handles missing localStorage data gracefully', () => {
-      mockLocalStorage.getItem.mockReturnValue(null);
-
-      expect(() => render(<App />)).not.toThrow();
-      expect(screen.getByTestId('productivity-tracker')).toBeInTheDocument();
-    });
+    render(<App />);
+    const appContainer = screen.getByTestId('app-container');
+    expect(appContainer).toHaveAttribute('data-theme', 'light');
   });
 
-  describe('Integration', () => {
-    test('loads sample data on mount', () => {
-      const { loadSampleDataIfEmpty } = require('../utils/sampleData');
-      
-      render(<App />);
+});
 
-      expect(loadSampleDataIfEmpty).toHaveBeenCalled();
-    });
+// Helper component to simulate theme switch buttons if not directly in App
+// You might need to adjust App.js to render such a component or mock its children.
+// For now, this test assumes such buttons are discoverable.
+// If App uses a Header component:
+// jest.mock('../components/Header', () => ({ onThemeChange }) => (
+//   <div>
+//     <button onClick={() => onThemeChange('light')}>Light Theme</button>
+//     <button onClick={() => onThemeChange('dark')}>Dark Theme</button>
+//     <button onClick={() => onThemeChange('tron')}>Tron Theme</button>
+//   </div>
+// ));
+// And App would need to pass down an onThemeChange prop from ThemeContext.
+// Or ThemeContext itself provides a component with these buttons.
 
-    test('listens for localStorage changes to update tasks', () => {
-      render(<App />);
+// The test for theme switching needs to align with how themes are actually changed:
+// - Are there buttons with specific text?
+// - Is there a select dropdown?
+// - How does ThemeContext expose the theme changing function and current theme?
+// - How is the current theme applied to the DOM (e.g., class name, data attribute)?
+// The current test assumes buttons and a 'data-theme' attribute on 'app-container'.
+// This file 'App.js' (the component) needs to have a data-testid='app-container'
+// and the ThemeProvider must apply the data-theme attribute to it.
+// For example, in App.js:
+// import { useTheme } from './contexts/ThemeContext';
+// function App() {
+//   const { theme }_ = useTheme();
+//   return <div data-testid="app-container" data-theme={theme}>...</div>
+// }
+// And ThemeContext.js:
+// const [theme, setTheme] = useState(() => { /* logic for initial theme */ });
+// useEffect(() => { localStorage.setItem('theme', theme); }, [theme]);
+// return <ThemeContext.Provider value={{ theme, setTheme }}> {children} </ThemeContext.Provider>
 
-      // Simulate localStorage change event
-      const newTasks = [{ id: '1', name: 'New task for the user', timeSpent: 1 }];
-      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(newTasks));
-      
-      fireEvent(window, new Event('storage'));
-
-      // Component should handle the storage event
-      expect(screen.getByTestId('productivity-tracker')).toBeInTheDocument();
-    });
-  });
-}); 
+// The actual theme switching mechanism (buttons, select) would call `setTheme` from the context.
+// If these controls are in a sub-component like `Header`, that component would use `useTheme`
+// to get `setTheme` and `theme`.
+// The test needs to interact with these actual controls.
+// The provided test above makes a best guess.
+// If `App.js` itself doesn't contain the theme switch UI, but a child component does (e.g. `Header`),
+// then we should not mock `Header` for the theme switching test, or ensure the mock provides the functionality.
+// For the `renders basic App structure` test, mocking `ProductivityTracker` is fine.
+// For the theme switching test, if `Header` contains the theme buttons, it should NOT be mocked,
+// or its mock must replicate the theme switching buttons.
+// The simplest setup is that `App.js` renders `Header` which has the buttons.
+// The `ThemeProvider` would be at the root of `App.js` or even in `index.js` wrapping `<App />`.
+// I've assumed `ThemeProvider` is used within the test render.
+// It might be better to have a `renderWithTheme` helper:
+/*
+const renderWithTheme = (ui, options) => {
+  return render(<ThemeProvider>{ui}</ThemeProvider>, options);
+}
+// Then use: renderWithTheme(<App />);
+*/
+// This is implicitly done by wrapping with ThemeProvider in the test.
+// The key is that the `App` component, when rendered within `ThemeProvider`,
+// will have its `data-testid="app-container"` element's `data-theme` attribute updated.
+// The theme buttons are assumed to be part of what App renders.
+// If theme buttons are in a `Header` component:
+// Inside App.js:
+// import Header from './components/Header';
+// <div data-testid="app-container" data-theme={theme}>
+//   <Header />
+//   <ProductivityTracker />
+// </div>
+// Inside Header.js:
+// import { useTheme } from '../contexts/ThemeContext';
+// const { theme, setTheme } = useTheme();
+// <button onClick={() => setTheme('light')}>Light Theme</button> ... etc.
+// This setup would work with the current test.

@@ -157,7 +157,7 @@ const FocusSelector = styled.div.attrs(props => ({
 /**
  * Segment of unified pill for Focus Level component
  */
-const FocusChip = styled.button.attrs(props => ({
+const FocusChip = styled(motion.button).attrs(props => ({ // Changed to motion.button
   className: `
     px-4 py-3 border-none text-sm font-medium capitalize tracking-wide 
     transition-all duration-200 flex-1 relative h-11 flex items-center justify-center
@@ -182,18 +182,25 @@ const FocusChip = styled.button.attrs(props => ({
     const textColor = focusTextColors[props.level];
     const hoverBg = props.theme.colors.backgroundHover;
     
-    return props.selected ? `
-      background: ${color};
-      color: ${textColor};
-      font-weight: 600;
-      ${props.$theme === 'Tron' ? 'box-shadow: inset 0 0 5px currentColor;' : ''}
-      ${props.$theme === 'Tron' ? 'color: #000000;' : ''}
-    ` : `
+    // Base styles
+    let baseStyle = `
       color: ${props.theme.colors.text.secondary};
       &:hover {
         background: ${hoverBg};
         color: ${props.theme.colors.primary};
-      }`;
+      }
+    `;
+
+    if (props.selected) {
+      baseStyle = `
+        background: ${color};
+        color: ${textColor};
+        font-weight: 600;
+        ${props.$theme === 'Tron' ? 'box-shadow: inset 0 0 5px currentColor;' : ''}
+        ${props.$theme === 'Tron' ? 'color: #000000 !important;' : ''}
+      `; // Added !important for Tron selected text color override
+    }
+    return baseStyle;
   }}
 
   &:focus {
@@ -207,9 +214,9 @@ const FocusChip = styled.button.attrs(props => ({
 /**
  * Primary button styled component
  */
-const PrimaryButton = styled.button.attrs(props => ({
+const PrimaryButton = styled(motion.button).attrs(props => ({ // Changed to motion.button
   className: `
-    flex items-center gap-2 px-6 py-3 bg-primary text-primary-text rounded-lg 
+    flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-text rounded-lg
     font-medium text-sm transition-all duration-200 cursor-pointer
     hover:-translate-y-0.5 hover:shadow-theme-md focus:outline-none 
     focus:shadow-[0_0_0_3px_var(--color-primary)] disabled:opacity-60 
@@ -220,6 +227,12 @@ const PrimaryButton = styled.button.attrs(props => ({
   svg {
     width: 16px;
     height: 16px;
+    margin-right: 4px; /* Added margin for icon spacing */
+  }
+  .icon-placeholder { /* For maintaining size when icon changes */
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
   }
 `;
 
@@ -403,6 +416,9 @@ function TaskManager({
 
   const [editingTask, setEditingTask] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState('idle'); // 'idle', 'submitting', 'success'
+  const [justUpdatedTaskId, setJustUpdatedTaskId] = useState(null);
+
 
   /**
    * Get the current working date (selected date or today)
@@ -523,26 +539,31 @@ function TaskManager({
    */
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.timeSpent) return;
+    if (!formData.name.trim() || !formData.timeSpent || submitStatus === 'submitting') return;
 
-    if (editingTask) {
-      // Update existing task
-      onUpdateTask(editingTask.id, {
-        name: formData.name.trim(),
-        timeSpent: parseFloat(formData.timeSpent),
-        focusLevel: formData.focusLevel
-      });
-      setEditingTask(null);
-    } else {
-      // Create new task
-      onAddTask({
-        name: formData.name.trim(),
-        timeSpent: parseFloat(formData.timeSpent),
-        focusLevel: formData.focusLevel
-      }, currentDateString);
-    }
-
-    setFormData({ name: '', timeSpent: '', focusLevel: 'medium' });
+    setSubmitStatus('submitting');
+    // Simulate API call delay for visual feedback
+    setTimeout(() => {
+      if (editingTask) {
+        onUpdateTask(editingTask.id, {
+          name: formData.name.trim(),
+          timeSpent: parseFloat(formData.timeSpent),
+          focusLevel: formData.focusLevel
+        });
+        setJustUpdatedTaskId(editingTask.id); // Trigger update animation
+        setEditingTask(null);
+        setTimeout(() => setJustUpdatedTaskId(null), 1000); // Reset after animation duration
+      } else {
+        onAddTask({
+          name: formData.name.trim(),
+          timeSpent: parseFloat(formData.timeSpent),
+          focusLevel: formData.focusLevel
+        }, currentDateString);
+      }
+      setSubmitStatus('success');
+      setFormData({ name: '', timeSpent: '', focusLevel: 'medium' });
+      setTimeout(() => setSubmitStatus('idle'), 1500); // Revert button state
+    }, 700); // Simulated delay
   };
 
   /**
@@ -669,6 +690,8 @@ function TaskManager({
                     tabIndex={formData.focusLevel === level ? 3 : -1}
                     aria-pressed={formData.focusLevel === level}
                     $theme={currentTheme}
+                    whileTap={{ scale: 0.95, transition: { duration: 0.1 } }}
+                    animate={formData.focusLevel === level ? { scale: [1, 1.05, 1], transition: { duration: 0.3 } } : { scale: 1 } }
                   >
                     {level}
                   </FocusChip>
@@ -678,12 +701,25 @@ function TaskManager({
           </FormFields>
 
           <ButtonGroup>
-            <PrimaryButton type="submit" tabIndex={4} $theme={currentTheme}>
-              {editingTask ? <Check /> : <Plus />}
-              {editingTask ? 'Update' : 'Add Task'}
+            <PrimaryButton
+              type="submit"
+              tabIndex={4}
+              $theme={currentTheme}
+              disabled={submitStatus === 'submitting'}
+              variants={{
+                idle: { scale: 1 },
+                submitting: { scale: 0.95 },
+                success: { backgroundColor: 'var(--color-success)' }, // Ensure --color-success is in theme
+              }}
+              animate={submitStatus}
+              whileHover={{ y: submitStatus === 'idle' ? -2 : 0 }} // Use y for hover effect
+              whileTap={{ scale: submitStatus === 'idle' ? 0.98 : 0.95 }}
+            >
+              {submitStatus === 'success' ? <Check size={20} /> : (editingTask ? <Check /> : <Plus />)}
+              {submitStatus === 'submitting' ? 'Saving...' : (submitStatus === 'success' ? 'Saved!' : (editingTask ? 'Update' : 'Add Task'))}
             </PrimaryButton>
             {editingTask && (
-              <SecondaryButton type="button" onClick={handleCancelEdit} tabIndex={5} $theme={currentTheme}>
+              <SecondaryButton type="button" onClick={handleCancelEdit} tabIndex={5} $theme={currentTheme} disabled={submitStatus === 'submitting'}>
                 <X />
                 Cancel
               </SecondaryButton>
@@ -703,29 +739,36 @@ function TaskManager({
             filteredTasks.map(task => (
               <TaskCard
                 key={task.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.2 }}
+                layout // Enables smooth reordering if list changes
+                initial={{ opacity: 0, scale: 0.8, y: 50 }}
+                animate={{
+                  opacity: 1,
+                  scale: editingTask?.id === task.id ? 1.03 : (justUpdatedTaskId === task.id ? [1, 1.02, 1] : 1),
+                  y: 0,
+                  transition: { type: 'spring', stiffness: 300, damping: 20, delay: editingTask?.id === task.id ? 0 : 0.1 }
+                }}
+                exit={{ opacity: 0, scale: 0.5, x: 300, transition: { duration: 0.3 } }}
                 data-testid="task-card"
                 data-focus-level={task.focusLevel}
-                data-completed={task.completed}
-                data-editing={editingTask && editingTask.id === task.id}
+                data-completed={task.completed} // Assuming task.completed exists
                 $isEditing={editingTask && editingTask.id === task.id}
                 $focusLevel={task.focusLevel}
+                $theme={currentTheme} // Pass theme for potential Tron glow on edit
               >
                 <TaskHeader>
-                  <TaskTitle>{task.name}</TaskTitle>
+                  <TaskTitle $theme={currentTheme}>{task.name}</TaskTitle>
                   <TaskActions>
                     <IconButton
                       onClick={() => handleEditTask(task)}
                       title="Edit task"
+                      $theme={currentTheme}
                     >
                       <Edit2 />
                     </IconButton>
                     <IconButton
                       onClick={() => onDeleteTask(task.id)}
                       title="Delete task"
+                      $theme={currentTheme}
                     >
                       <Trash2 />
                     </IconButton>
@@ -733,11 +776,11 @@ function TaskManager({
                 </TaskHeader>
 
                 <TaskMeta>
-                  <MetaItem>
+                  <MetaItem $theme={currentTheme}>
                     <Clock />
                     {task.timeSpent} {task.timeSpent === 1 ? 'hour' : 'hours'}
                   </MetaItem>
-                  <MetaItem>
+                  <MetaItem $theme={currentTheme}>
                     {task.focusLevel} focus
                   </MetaItem>
                 </TaskMeta>

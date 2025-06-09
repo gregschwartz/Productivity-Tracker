@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Plus, Clock, Trash2, Check, ChevronLeft, ChevronRight, Edit2, X, Calendar } from 'lucide-react';
 import { format, addDays, subDays, parseISO } from 'date-fns';
 import ReactCalendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import FocusSelector from '../components/FocusSelector';
 import { ActionButton, IconButton, NavButton, SecondaryButton, TodayButton } from '../components/buttons';
-import { ButtonGroup } from '../components/forms';
+import { ButtonGroup, InputGroup, Label, Input } from '../components/forms';
 import EmptyState from '../components/EmptyState';
 import TaskCard from '../components/TaskCard';
 

@@ -6,7 +6,7 @@ import {
   Activity,
   Trash2
 } from 'lucide-react';
-import Button from './Button';
+import Button from '../components/buttons/Button';
 
 /**
  * Container for admin dashboard

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
-import { format } from 'date-fns';
-import SearchInput from '../components/SearchInput';
+import SearchInput from '../components/forms/SearchInput';
 import SuggestionChips from '../components/SuggestionChips';
 import EmptyState from '../components/EmptyState';
 import SearchResultCard from '../components/SearchResultCard';

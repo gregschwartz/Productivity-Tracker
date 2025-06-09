@@ -1,6 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 import styled from 'styled-components';
-import { motion, AnimatePresence } from 'framer-motion';
 import { startOfWeek, endOfWeek, getWeek, getYear, addWeeks } from 'date-fns';
 import WeekSummary from '../components/WeekSummary';
 

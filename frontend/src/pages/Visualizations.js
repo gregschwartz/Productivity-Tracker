@@ -1,9 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { motion } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { Calendar, TrendingUp, Clock, Focus, FileText } from 'lucide-react';
+import { Calendar, TrendingUp, Clock, Focus } from 'lucide-react';
 import WeeklySummaries from './WeeklySummaries';
 import CustomTooltip from '../components/CustomTooltip';
 import StatCard from '../components/StatCard';
@@ -13,7 +12,7 @@ import { HeatmapCell, HeatmapContainer, HeatmapLegend, HourlyHeatmapContainer } 
 import { SectionDescription, SectionHeader, SectionHeaderWithControls, SectionSummary, SectionTitle } from '../components/sections';
 import AllStatsWrapper from '../components/AllStatsWrapper';
 import TimeRangeSelector from '../components/TimeRangeSelector';
-import { generateLegendData } from '../components/heatmap/HeatmapLegend';
+import { generateLegendData, LegendItem, LegendColorBox } from '../components/heatmap/HeatmapLegend';
 import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, addDays } from 'date-fns';
 
 /**

@@ -43,17 +43,34 @@ class AIService:
     def __init__(self):
         self.client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         
+    def calculate_weekly_stats(self, tasks: List[Task]) -> WeeklyStats:
+        """Calculate weekly stats from tasks."""
+        total_tasks = len(tasks)
+        total_hours_raw = sum(task.time_spent for task in tasks)
+        total_hours = str(round(total_hours_raw, 1))
+
+        # Calculate average focus level
+        focus_values = {"low": 1, "medium": 2, "high": 3}
+        avg_focus_numeric = sum(focus_values[task.focus_level.value] for task in tasks) / total_tasks
+        if avg_focus_numeric < 1.5:
+            avg_focus = "low"
+        elif avg_focus_numeric < 2.5:
+            avg_focus = "medium"
+        else:
+            avg_focus = "high"
+        
+        return WeeklyStats(total_tasks=total_tasks, total_hours=total_hours, avg_focus=avg_focus)
+    
     @weave.op()
     async def generate_weekly_summary(
         self,
         tasks: List[Task],
         week_start: str,
         week_end: str,
-        week_stats: WeeklyStats,
         context_summaries: Optional[dict] = None
     ) -> SummaryResponse:
         """Generate a weekly productivity summary using OpenAI."""
-        if week_stats.total_tasks == 0 or week_stats.total_hours == "0.0":
+        if not tasks:
             return SummaryResponse(
                 summary="No tasks completed this week.",
                 recommendations=[]
@@ -89,17 +106,19 @@ class AIService:
             if context_parts:
                 adjacent_week_summaries = "IMPORTANT: Use this context from previous and future weeks to provide DIFFERENT advice than what was already given. Avoid repeating recommendations and focus on new insights or next steps in the user's productivity journey. Praise them for ways they have implemented past recommendations or improved their productivity.\n\n" + "\n".join(context_parts)
         
-        # Generate AI summary
+        stats = self.calculate_weekly_stats(tasks)
+        
+        # Generate prompt for AI
         prompt = SUMMARY_PROMPT.format(
             week_start=week_start,
             week_end=week_end,
-            total_tasks=week_stats.total_tasks,
-            total_hours=week_stats.total_hours,
-            avg_focus=week_stats.avg_focus,
+            total_tasks=stats.total_tasks,
+            total_hours=stats.total_hours,
+            avg_focus=stats.avg_focus,
             task_summary=task_summary,
             adjacent_week_summaries=adjacent_week_summaries
         )
-        print("prompt: ", prompt)
+        print("Prompt to generate weekly summary: ", prompt)
         
         try:
             agent = Agent(
@@ -109,16 +128,10 @@ class AIService:
                 output_type=SummaryResponse
             )
             result = await agent.run(prompt)
-            print("result: ", result)
             
             # Extract the SummaryResponse from the AgentRunResult
             ai_response = result.output
-            
-            print({
-                    "recommendations": ai_response.recommendations,
-                    "summary": ai_response.summary
-                })
-            
+            print("Summary: ", ai_response.summary, "Recommendations: ", ai_response.recommendations)
             return ai_response
         except Exception as e:
             # Fallback response

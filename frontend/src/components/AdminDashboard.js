@@ -284,87 +284,16 @@ const ServiceDescription = styled.div.attrs(() => ({
  * AdminDashboard component for system configuration and monitoring
  */
 function AdminDashboard({ tasks, summaries }) {
-  const [config, setConfig] = useState({
-    openaiApiKey: '',
-    chromaEndpoint: 'http://localhost:8000',
-    rateLimitPerSecond: 3
-  });
-  
-  const [testResults, setTestResults] = useState({
-    chatgpt: null,
-    chroma: null
-  });
 
-
-
-  /**
-   * Handle configuration input changes
-   */
-  const handleConfigChange = (field, value) => {
-    setConfig(prev => ({ ...prev, [field]: value }));
-  };
-
-  /**
-   * Save configuration
-   */
-  const handleSaveConfig = () => {
-    localStorage.setItem('productivityTracker_config', JSON.stringify(config));
-    // Show success message
-    console.log('Configuration saved');
-  };
-
-  /**
-   * Test API connections
-   */
-  const testConnection = async (service) => {
-    setTestResults(prev => ({ ...prev, [service]: 'testing' }));
-    
-    // Simulate API test
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Mock results
-    const success = Math.random() > 0.3; // 70% success rate
-    setTestResults(prev => ({ ...prev, [service]: success ? 'success' : 'error' }));
-  };
-
-  /**
-   * Export data
-   */
-  const handleExportData = () => {
-    const data = {
-      tasks,
-      summaries,
-      config,
-      exportDate: new Date().toISOString()
-    };
-    
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'productivity-tracker-data.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  /**
-   * Clear all data
-   */
   const handleClearData = () => {
     if (window.confirm('Are you sure you want to clear all data? This cannot be undone.')) {
-      localStorage.removeItem('productivityTracker_tasks');
-      localStorage.removeItem('productivityTracker_summaries');
-      localStorage.removeItem('productivityTracker_config');
+      fetch('/api/clear-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       window.location.reload();
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'success': return <CheckCircle />;
-      case 'error': return <XCircle />;
-      case 'testing': return <RefreshCw style={{ animation: 'spin 1s linear infinite' }} />;
-      default: return <Activity />;
     }
   };
 
@@ -394,112 +323,7 @@ function AdminDashboard({ tasks, summaries }) {
             <MetricValue>{(tasks.reduce((sum, task) => sum + task.timeSpent, 0)).toFixed(1)}h</MetricValue>
             <MetricLabel>Total Hours</MetricLabel>
           </MetricCard>
-          <MetricCard>
-            <MetricValue>{Math.round((localStorage.getItem('productivityTracker_tasks')?.length || 0) / 1024)}KB</MetricValue>
-            <MetricLabel>Storage Used</MetricLabel>
-          </MetricCard>
         </MetricsGrid>
-      </DashboardSection>
-
-      {/* API Configuration */}
-      <DashboardSection
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-      >
-        <SectionHeader>
-          <Key />
-          <SectionTitle>API Configuration</SectionTitle>
-        </SectionHeader>
-
-        <FormGroup>
-          <Label htmlFor="apiKey">OpenAI API Key</Label>
-          <Input
-            id="apiKey"
-            type="password"
-            placeholder="sk-..."
-            value={config.openaiApiKey}
-            onChange={(e) => handleConfigChange('openaiApiKey', e.target.value)}
-          />
-        </FormGroup>
-
-        <FormGroup>
-          <Label htmlFor="chromaEndpoint">Chroma Vector Store Endpoint</Label>
-          <Input
-            id="chromaEndpoint"
-            type="url"
-            placeholder="http://localhost:8000"
-            value={config.chromaEndpoint}
-            onChange={(e) => handleConfigChange('chromaEndpoint', e.target.value)}
-          />
-        </FormGroup>
-
-        <FormGroup>
-          <Label htmlFor="rateLimit">Rate Limit (requests/second)</Label>
-          <Input
-            id="rateLimit"
-            type="number"
-            min="1"
-            max="10"
-            value={config.rateLimitPerSecond}
-            onChange={(e) => handleConfigChange('rateLimitPerSecond', parseInt(e.target.value))}
-          />
-        </FormGroup>
-
-        <Button variant="primary" onClick={handleSaveConfig}>
-          <Settings />
-          Save Configuration
-        </Button>
-      </DashboardSection>
-
-      {/* Service Health */}
-      <DashboardSection
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-      >
-        <SectionHeader>
-          <Globe />
-          <SectionTitle>Service Health</SectionTitle>
-        </SectionHeader>
-
-        <ServiceList>
-          <ServiceItem>
-            <ServiceInfo>
-              <ServiceName>OpenAI ChatGPT API</ServiceName>
-              <ServiceDescription>AI summary generation service</ServiceDescription>
-            </ServiceInfo>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <StatusIndicator status={testResults.chatgpt === 'success' ? 'success' : testResults.chatgpt === 'error' ? 'error' : 'info'}>
-                {getStatusIcon(testResults.chatgpt)}
-                {testResults.chatgpt === 'testing' ? 'Testing...' : 
-                 testResults.chatgpt === 'success' ? 'Connected' :
-                 testResults.chatgpt === 'error' ? 'Failed' : 'Not Tested'}
-              </StatusIndicator>
-              <Button onClick={() => testConnection('chatgpt')}>
-                Test Connection
-              </Button>
-            </div>
-          </ServiceItem>
-
-          <ServiceItem>
-            <ServiceInfo>
-              <ServiceName>Chroma Vector Store</ServiceName>
-              <ServiceDescription>Semantic search and embeddings storage</ServiceDescription>
-            </ServiceInfo>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <StatusIndicator status={testResults.chroma === 'success' ? 'success' : testResults.chroma === 'error' ? 'error' : 'info'}>
-                {getStatusIcon(testResults.chroma)}
-                {testResults.chroma === 'testing' ? 'Testing...' : 
-                 testResults.chroma === 'success' ? 'Connected' :
-                 testResults.chroma === 'error' ? 'Failed' : 'Not Tested'}
-              </StatusIndicator>
-              <Button onClick={() => testConnection('chroma')}>
-                Test Connection
-              </Button>
-            </div>
-          </ServiceItem>
-        </ServiceList>
       </DashboardSection>
 
       {/* Data Management */}
@@ -514,28 +338,13 @@ function AdminDashboard({ tasks, summaries }) {
         </SectionHeader>
 
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <Button variant="primary" onClick={handleExportData}>
-            <Download />
-            Export Data
-          </Button>
-          
-          <Button>
-            <Upload />
-            Import Data
-          </Button>
           
           <Button onClick={handleClearData}>
             <Trash2 />
-            Clear All Data
+            Reset Data to Initial State
           </Button>
         </div>
 
-        <div style={{ marginTop: '16px' }}>
-          <StatusIndicator status="warning">
-            <AlertTriangle />
-            Regular backups recommended for data safety
-          </StatusIndicator>
-        </div>
       </DashboardSection>
     </AdminContainer>
   );

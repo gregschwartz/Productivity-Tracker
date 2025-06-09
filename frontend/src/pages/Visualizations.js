@@ -8,7 +8,7 @@ import CustomTooltip from '../components/CustomTooltip';
 import StatCard from '../components/StatCard';
 import { TimeRangeButton } from '../components/buttons';
 import { ChartContainer, ChartLegend, ChartSection, ChartViewToggle } from '../components/chart';
-import { HeatmapCell, HeatmapContainer, HeatmapLegend, HourlyHeatmapContainer } from '../components/heatmap';
+import { HeatmapCell, HeatmapContainer, HeatmapLegend } from '../components/heatmap';
 import { SectionDescription, SectionHeader, SectionHeaderWithControls, SectionSummary, SectionTitle } from '../components/sections';
 import AllStatsWrapper from '../components/AllStatsWrapper';
 import TimeRangeSelector from '../components/TimeRangeSelector';
@@ -274,35 +274,6 @@ function Visualizations({ tasks = [], summaries = [], onNavigateToDate, onAddSum
       };
     });
   }, [filteredTasks, getDateRange]);
-
-  /**
-   * Prepare hourly productivity data
-   */
-  const hourlyData = useMemo(() => {
-    // Initialize hours 0-23 with zero values
-    const hourlyStats = Array.from({ length: 24 }, (_, hour) => ({
-      hour,
-      tasks: 0,
-      totalHours: 0,
-      intensity: 0
-    }));
-
-    // Aggregate data by hour across all filtered tasks
-    filteredTasks.forEach(task => {
-      const taskDate = new Date(task.date);
-      const taskHour = taskDate.getHours();
-      hourlyStats[taskHour].tasks += 1;
-      hourlyStats[taskHour].totalHours += task.timeSpent;
-    });
-
-    // Calculate intensity (normalize to 0-10 scale)
-    const maxHours = Math.max(...hourlyStats.map(h => h.totalHours));
-    hourlyStats.forEach(hourStat => {
-      hourStat.intensity = maxHours > 0 ? (hourStat.totalHours / maxHours) * 10 : 0;
-    });
-
-    return hourlyStats;
-  }, [filteredTasks]);
 
   /**
    * Format hour for display
@@ -573,42 +544,6 @@ function Visualizations({ tasks = [], summaries = [], onNavigateToDate, onAddSum
             </HeatmapCell>
           ))}
         </HeatmapContainer>
-        <HeatmapLegend>
-          {generateLegendData(theme).map((item, index) => (
-            <LegendItem key={index}>
-              <LegendColorBox color={item.color} />
-              <span>{item.label}</span>
-            </LegendItem>
-          ))}
-        </HeatmapLegend>
-      </ChartSection>
-
-      {/* Hourly Productivity Heatmap */}
-      <ChartSection
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.4 }}
-      >
-        <SectionHeader>
-          <SectionTitle>
-            <Clock />
-            Productivity Per Hour
-          </SectionTitle>
-          <SectionDescription>
-            Identify your most productive hours across {getTimeRangeLabel().toLowerCase()}
-          </SectionDescription>
-        </SectionHeader>
-        <HourlyHeatmapContainer>
-          {hourlyData.map((hourStat) => (
-            <HeatmapCell
-              key={hourStat.hour}
-              intensity={hourStat.intensity}
-              title={`${formatHour(hourStat.hour)}: ${hourStat.tasks} tasks, ${hourStat.totalHours.toFixed(1)}h`}
-            >
-              {formatHour(hourStat.hour)}
-            </HeatmapCell>
-          ))}
-        </HourlyHeatmapContainer>
         <HeatmapLegend>
           {generateLegendData(theme).map((item, index) => (
             <LegendItem key={index}>

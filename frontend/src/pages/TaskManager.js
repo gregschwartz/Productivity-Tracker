@@ -148,10 +148,12 @@ function TaskManager({
   onDateChange = () => {},
   onClearDateFilter = () => {}
 }) {
-  // Use useTheme hook from styled-components instead of direct DOM queries
   const theme = useTheme();
   let currentTheme = theme.name || 'Ready';
-  
+
+  // Debug logging to check tasks loaded from API
+  console.debug('TaskManager tasks:', tasks);
+
   const [formData, setFormData] = useState({
     name: '',
     timeSpent: '',
@@ -284,14 +286,11 @@ function TaskManager({
     }
   };
 
-  /**
-   * Get filtered tasks based on selected date or today's tasks
-   * Sort by timestamp (newest first)
-   */
-  const targetDate = selectedDate || currentDateString;
-  const filteredTasks = tasks
-    .filter(task => task.date_worked === targetDate)
-    .sort((a, b) => new Date(b.date_worked) - new Date(a.date_worked));
+  const filteredTasks = selectedDate
+    ? tasks.filter(task => task.date_worked === selectedDate)
+    : tasks;
+
+  const sortedTasks = filteredTasks.sort((a, b) => new Date(b.date_worked) - new Date(a.date_worked));
 
   return (
     <TaskContainer>
@@ -432,13 +431,13 @@ function TaskManager({
 
       <TaskList>
         <AnimatePresence>
-          {filteredTasks.length === 0 ? (
+          {sortedTasks.length === 0 ? (
             <EmptyState
               title={selectedDate ? 'No tasks for this date' : 'No tasks yet today'}
               description={selectedDate ? 'No tasks were logged for this date.' : 'Add your first task to start tracking your productivity!'}
             />
           ) : (
-            filteredTasks.map(task => (
+            sortedTasks.map(task => (
               <TaskCard
                 key={task.id}
                 layout // Enables smooth reordering if list changes

@@ -67,18 +67,63 @@ function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [tronState, setTronState] = useState(TRON_STATE.NEVER_TURNED_ON);
   const [tasks, setTasks] = useState([]);
+  const [tasksCount, setTasksCount] = useState(0);
 
-  // Load tasks from backend on mount
+  // Load initial tasks count for the navbar (simplified)
   useEffect(() => {
-    const savedTasks = localStorage.getItem('productivity-tasks');    
-    if (savedTasks) {
+    console.debug("Loading tasks count");
+    const loadTasksCount = async () => {
       try {
-        setTasks(JSON.parse(savedTasks));
+        const apiUrl = process.env.NODE_ENV === 'development' 
+          ? 'http://localhost:8000/api' 
+          : '/api';
+        
+        const response = await fetch(`${apiUrl}/tasks/stats/count/`);
+        if (response.ok) {
+          const data = await response.json();
+          setTasksCount(data.total_tasks || 0);
+          console.debug("Tasks count loaded:", data.total_tasks);
+        } else {
+          console.error("Failed to load tasks count:", response.statusText);
+        }
       } catch (error) {
-        console.error('Error loading tasks:', error);
+        console.error('Error loading tasks count:', error);
+        setTasksCount(0);
       }
-    }
+    };
 
+    loadTasksCount();
+  }, []);
+
+  // Listen for tasks changes (from API updates)
+  useEffect(() => {
+    const handleTasksUpdate = () => {
+      // Re-fetch count when tasks are updated
+      const loadTasksCount = async () => {
+        try {
+          const apiUrl = process.env.NODE_ENV === 'development' 
+            ? 'http://localhost:8000/api' 
+            : '/api';
+          
+          const response = await fetch(`${apiUrl}/tasks/stats/count/`);
+          if (response.ok) {
+            const data = await response.json();
+            setTasksCount(data.total_tasks || 0);
+          }
+        } catch (error) {
+          console.error('Error loading tasks count:', error);
+        }
+      };
+      loadTasksCount();
+    };
+
+    // Listen for custom events or implement your own task update tracking
+    window.addEventListener('tasksUpdated', handleTasksUpdate);
+    return () => window.removeEventListener('tasksUpdated', handleTasksUpdate);
+  }, []);
+
+  // Initialize theme from system preference
+  useEffect(() => {
     const detectSystemTheme = () => {
       try {
         return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -110,30 +155,6 @@ function App() {
       } else {
         mediaQuery.removeListener(handleSystemThemeChange);
       }
-    };
-  }, []);
-
-  // Listen for tasks changes (from localStorage updates)
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const savedTasks = localStorage.getItem('productivity-tasks');
-      if (savedTasks) {
-        try {
-          setTasks(JSON.parse(savedTasks));
-        } catch (error) {
-          console.error('Error loading tasks:', error);
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also check periodically for tasks changes
-    const interval = setInterval(handleStorageChange, 1000);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
     };
   }, []);
 
@@ -178,6 +199,7 @@ function App() {
           <ProductivityTracker 
             isDarkMode={isDarkMode}
             onThemeToggle={handleThemeToggle}
+            tasksCount={tasksCount}
           />
         </Router>
       </div>

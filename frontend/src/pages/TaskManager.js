@@ -10,6 +10,7 @@ import { ActionButton, IconButton, NavButton, SecondaryButton, TodayButton } fro
 import { ButtonGroup, InputGroup, Label, Input } from '../components/forms';
 import EmptyState from '../components/EmptyState';
 import TaskCard from '../components/TaskCard';
+import MetaItem from '../components/MetaItem';
 
 /**
  * Main container for task management
@@ -65,10 +66,6 @@ const DateNavButtons = styled.div.attrs({
 })``;
 
 
-
-/**
- * Today button styled component
- */
 /**
  * Add task section styled component
  */
@@ -127,8 +124,6 @@ const TaskActions = styled.div.attrs({
   className: 'flex gap-2'
 })``;
 
-
-
 /**
  * Task meta information styled component
  */
@@ -136,20 +131,7 @@ const TaskMeta = styled.div.attrs({
   className: 'flex gap-4 items-center flex-wrap'
 })``;
 
-/**
- * Meta item styled component
- */
-const MetaItem = styled.div.attrs(props => ({
-  className: `
-    flex items-center gap-1.5 text-sm text-text-secondary
-    ${props.$theme === 'Tron' ? 'font-mono text-text-muted' : ''}
-  `
-}))`
-  svg {
-    width: 14px;
-    height: 14px;
-  }
-`;
+
 
 
 
@@ -489,11 +471,11 @@ function TaskManager({
                 </TaskHeader>
 
                 <TaskMeta>
-                  <MetaItem $theme={currentTheme}>
+                  <MetaItem>
                     <Clock />
                     {task.timeSpent} {task.timeSpent === 1 ? 'hour' : 'hours'}
                   </MetaItem>
-                  <MetaItem $theme={currentTheme}>
+                  <MetaItem>
                     {task.focusLevel} focus
                   </MetaItem>
                 </TaskMeta>

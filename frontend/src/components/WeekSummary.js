@@ -1,9 +1,16 @@
 import React, { useState } from "react";
 import styled from "styled-components";
-import { motion } from "framer-motion";
-import { Sparkles, Calendar, Clock, RefreshCw } from "lucide-react";
+import { Calendar, Clock } from "lucide-react";
 import { format, getWeek, getYear } from "date-fns";
 import { getApiUrl } from "../utils/api";
+import GenerateButton from "./WeekSummary/GenerateButton";
+import SummaryCard from "./WeekSummary/SummaryCard";
+import SummaryContent from "./WeekSummary/SummaryContent";
+import SummaryTimestamp from "./WeekSummary/SummaryTimestamp";
+import SummaryWeekRange from "./WeekSummary/SummaryWeekRange";
+import WeekInfo from "./WeekSummary/WeekInfo";
+import ErrorAlert from "./ErrorAlert";
+import EmptyState from "./EmptyState";
 
 const focusValues = { low: 1, medium: 2, high: 3 };
 
@@ -29,107 +36,11 @@ const WeekSelector = styled.div.attrs(() => ({
 }))``;
 
 /**
- * Week info display
- */
-const WeekInfo = styled.div.attrs(() => ({
-  className: "text-sm",
-}))`
-  color: ${(props) => props.theme.colors.text.secondary};
-
-  ${(props) =>
-    props.theme.name === "tron" &&
-    `
-    background: ${props.theme.colors.surface};
-    border: 1px solid ${props.theme.colors.border};
-    font-family: ${props.theme.fonts.mono};
-  `}
-`;
-
-/**
- * Generate button styled component
- */
-const GenerateButton = styled.button.attrs((props) => ({
-  className: `flex items-center gap-2 px-6 py-3 border-none rounded-lg font-medium text-sm transition-all duration-200 ${
-    props.disabled
-      ? "cursor-not-allowed"
-      : "cursor-pointer hover:-translate-y-0.5 hover:shadow-lg"
-  }`,
-  disabled: props.disabled,
-}))`
-  background: ${(props) =>
-    props.disabled
-      ? props.theme.colors.backgroundHover
-      : props.theme.colors.primary};
-  color: ${(props) =>
-    props.disabled
-      ? props.theme.colors.text.muted
-      : props.theme.colors.primaryText};
-
-  ${(props) =>
-    props.theme.name === "tron" &&
-    !props.disabled &&
-    `
-    border: 1px solid ${props.theme.colors.primary};
-    box-shadow: ${props.theme.glow.small};
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-family: ${props.theme.fonts.mono};
-  `}
-
-  &:hover:not(:disabled) {
-    ${(props) =>
-      props.theme.name === "tron" &&
-      `
-      box-shadow: ${props.theme.glow.medium};
-    `}
-  }
-
-  svg {
-    width: 16px;
-    height: 16px;
-
-    ${(props) =>
-      props.generating &&
-      `
-      animation: spin 1s linear infinite;
-    `}
-  }
-
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-`;
-
-/**
  * Summary list container
  */
 const SummaryList = styled.div.attrs(() => ({
   className: "flex flex-col gap-4",
 }))``;
-
-/**
- * Summary card styled component
- */
-const SummaryCard = styled(motion.div).attrs(() => ({
-  className:
-    "p-6 border rounded-xl shadow-sm transition-all duration-200 w-full max-w-full md:w-[95%] md:mx-auto lg:w-[90%] hover:-translate-y-0.5 hover:shadow-lg",
-}))`
-  background: ${(props) => props.theme.colors.surface};
-  border-color: ${(props) => props.theme.colors.border};
-
-  &:hover {
-    ${(props) =>
-      props.theme.name === "tron" &&
-      `
-      border-color: ${props.theme.colors.primary};
-    `}
-  }
-`;
 
 /**
  * Summary header
@@ -144,88 +55,6 @@ const SummaryHeader = styled.div.attrs(() => ({
 const SummaryMeta = styled.div.attrs(() => ({
   className: "flex items-start justify-between w-full",
 }))``;
-
-/**
- * Summary week range
- */
-const SummaryWeekRange = styled.h3.attrs(() => ({
-  className: "text-lg font-semibold m-0",
-}))`
-  color: ${(props) => props.theme.colors.text.primary};
-
-  ${(props) =>
-    props.theme.name === "tron" &&
-    `
-    color: ${props.theme.colors.primary};
-    font-family: ${props.theme.fonts.mono};
-  `}
-`;
-
-/**
- * Summary timestamp
- */
-const SummaryTimestamp = styled.p.attrs(() => ({
-  className: "text-xs m-0",
-}))`
-  color: ${(props) => props.theme.colors.text.muted};
-
-  ${(props) =>
-    props.theme.name === "tron" &&
-    `
-    font-family: ${props.theme.fonts.mono};
-  `}
-`;
-
-/**
- * Summary content
- */
-const SummaryContent = styled.div.attrs(() => ({
-  className: "leading-relaxed",
-}))`
-  color: ${(props) => props.theme.colors.text.primary};
-
-  h4 {
-    color: ${(props) => props.theme.colors.primary};
-    margin: 16px 0 8px 0;
-    font-size: 14px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  p {
-    margin-bottom: 12px;
-  }
-
-  ul {
-    margin: 8px 0 16px 0;
-    padding-left: 20px;
-  }
-
-  li {
-    margin-bottom: 4px;
-  }
-`;
-
-/**
- * Empty state for no summaries
- */
-const EmptyState = styled.div.attrs(() => ({
-  className: "text-center py-15 px-5",
-}))`
-  color: ${(props) => props.theme.colors.text.muted};
-
-  h3 {
-    font-size: 18px;
-    margin-bottom: 8px;
-    color: ${(props) => props.theme.colors.text.secondary};
-  }
-
-  p {
-    font-size: 14px;
-    margin-bottom: 24px;
-  }
-`;
 
 /**
  * Display AI-generated productivity insights from a single week
@@ -252,26 +81,23 @@ function WeekSummary({
   ) {
     return (
       <SummaryContainer>
-        <div
-          style={{
-            padding: "24px",
-            backgroundColor: "#fee2e2",
-            border: "1px solid #f87171",
-            borderRadius: "6px",
-            color: "#991b1b",
-          }}
-        >
-          <h3>Invalid Date Range</h3>
-          <p>WeekSummary received invalid dates:</p>
-          <ul>
-            <li>
-              startDate: {String(startDate)} (type: {typeof startDate})
-            </li>
-            <li>
-              endDate: {String(endDate)} (type: {typeof endDate})
-            </li>
-          </ul>
-        </div>
+        <ErrorAlert
+          title="Invalid Date Range"
+          message={
+            <div>
+              <p>WeekSummary received invalid dates:</p>
+              <ul className="list-disc ml-4 mt-2">
+                <li>
+                  startDate: {String(startDate)} (type: {typeof startDate})
+                </li>
+                <li>
+                  endDate: {String(endDate)} (type: {typeof endDate})
+                </li>
+              </ul>
+            </div>
+          }
+          type="error"
+        />
       </SummaryContainer>
     );
   }
@@ -398,42 +224,18 @@ function WeekSummary({
           </SummaryHeader>
 
           {summary ? (
-            <SummaryContent>
-              <p>{summary.summary}</p>
-
-              {summary.recommendations &&
-                summary.recommendations.length > 0 && (
-                  <>
-                    <h4>Recommendations for next week</h4>
-                    <ul>
-                      {summary.recommendations.map((rec, index) => (
-                        <li
-                          key={index}
-                          dangerouslySetInnerHTML={{ __html: rec }}
-                        ></li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-            </SummaryContent>
+            <SummaryContent summary={summary} />
           ) : (
             <GenerationSection>
-              {summary && tasks.length > 0 ? (
+              {!summary && tasks.length > 0 ? (
                 <WeekSelector>
                   <GenerateButton
                     onClick={handleGenerateSummary}
                     disabled={generating || tasks.length === 0 || summary}
                     generating={generating}
-                  >
-                    {generating ? <RefreshCw /> : <Sparkles />}
-                    {generating
-                      ? "Generating..."
-                      : summary
-                      ? "Summary Already Generated"
-                      : tasks.length === 0
-                      ? "No Tasks This Week"
-                      : "Generate AI Summary"}
-                  </GenerateButton>
+                    hasSummary={summary}
+                    taskCount={tasks.length}
+                  />
                   <WeekInfo>
                     <Clock
                       style={{
@@ -451,27 +253,18 @@ function WeekSummary({
                   </WeekInfo>
                 </WeekSelector>
               ) : (
-                <EmptyState>
-                  <h3>No tasks for this week</h3>
-                  <p>
-                    Add some tasks and then we can generate a weekly summary
-                  </p>
-                </EmptyState>
+                <EmptyState 
+                  title="No tasks for this week"
+                  description="Add some tasks and then we can generate a weekly summary"
+                />
               )}
 
               {error && (
-                <div
-                  style={{
-                    marginTop: "16px",
-                    padding: "12px",
-                    backgroundColor: "#fee2e2",
-                    border: "1px solid #f87171",
-                    borderRadius: "6px",
-                    color: "#991b1b",
-                    fontSize: "14px",
-                  }}
-                >
-                  {error}
+                <div className="mt-4">
+                  <ErrorAlert
+                    message={error}
+                    type="error"
+                  />
                 </div>
               )}
             </GenerationSection>

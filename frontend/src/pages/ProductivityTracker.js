@@ -43,7 +43,10 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // Get active tab from URL path
+  /**
+   * Get active tab from URL path
+   * @returns {string} The active tab
+   */
   const getActiveTabFromPath = () => {
     const path = location.pathname.substring(1); // Remove leading slash
     return path || 'tasks';
@@ -86,60 +89,48 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
   }, [location.pathname]);
 
   /**
-   * Load tasks from backend API
+   * Load tasks from the backend API
    */
   const loadTasks = async () => {
     try {
       const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/tasks/`);
+      let url = `${apiUrl}/tasks/`;
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch tasks: ${response.status} ${response.statusText}`);
+      if (selectedDate) {
+        const nextDay = new Date(selectedDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        url += `?start_date=${selectedDate}&end_date=${nextDay.toISOString().split('T')[0]}`;
       }
       
-      const tasksData = await response.json();
-      setTasks(tasksData || []);
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to load tasks: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      setTasks(data);
     } catch (error) {
       console.error('Error loading tasks:', error);
-      setError('Failed to load tasks from server');
-      // Fallback to localStorage if backend fails
-      const savedTasks = localStorage.getItem('productivity-tasks');
-      if (savedTasks) {
-        try {
-          setTasks(JSON.parse(savedTasks));
-        } catch (parseError) {
-          console.error('Error parsing localStorage tasks:', parseError);
-        }
-      }
+      setError('Failed to load tasks from server.');
     }
   };
 
   /**
-   * Load summaries from backend API
+   * Load summaries from the backend API
    */
   const loadSummaries = async () => {
     try {
       const apiUrl = getApiUrl();
       const response = await fetch(`${apiUrl}/summaries/`);
-      
       if (!response.ok) {
-        throw new Error(`Failed to fetch summaries: ${response.status} ${response.statusText}`);
+        throw new Error(`Failed to load summaries: ${response.status} ${response.statusText}`);
       }
       
-      const summariesData = await response.json();
-      setSummaries(summariesData || []);
+      const data = await response.json();
+      setSummaries(data);
     } catch (error) {
       console.error('Error loading summaries:', error);
-      setError(prevError => prevError ? `${prevError}; Failed to load summaries` : 'Failed to load summaries from server');
-      // Fallback to localStorage if backend fails
-      const savedSummaries = localStorage.getItem('weekly-summaries');
-      if (savedSummaries) {
-        try {
-          setSummaries(JSON.parse(savedSummaries));
-        } catch (parseError) {
-          console.error('Error parsing localStorage summaries:', parseError);
-        }
-      }
+      setError('Failed to load summaries from server.');
     }
   };
 
@@ -163,14 +154,14 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
   }, []);
 
   /**
-   * Add a new task to the backend and update local state
+   * Add a new task to the backend and local state
    */
   const addTask = async (task, targetDate = null) => {
-    const dateToUse = targetDate || selectedDate || new Date().toISOString().split('T')[0];
+    const dateToUse = targetDate || task.date || selectedDate || new Date().toISOString().split('T')[0];
     const newTask = {
       ...task,
       date: dateToUse,
-      timestamp: new Date().toISOString()
+      id: undefined
     };
 
     try {
@@ -189,19 +180,11 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
 
       const createdTask = await response.json();
       setTasks(prev => [...prev, createdTask]);
-      
-      // Also save to localStorage as backup
-      localStorage.setItem('productivity-tasks', JSON.stringify([...tasks, createdTask]));
     } catch (error) {
       console.error('Error adding task:', error);
-      // Fallback to local state and localStorage
-      const taskWithTempId = {
-        ...newTask,
-        id: Date.now() + Math.random()
-      };
-      setTasks(prev => [...prev, taskWithTempId]);
-      localStorage.setItem('productivity-tasks', JSON.stringify([...tasks, taskWithTempId]));
-      setError('Task saved locally. Server sync failed - will retry later.');
+      setError('Failed to save task to server. Please try again.');
+      // Don't clear the form - let the user retry
+      throw error; // Re-throw so TaskManager knows the operation failed
     }
   };
 
@@ -211,7 +194,7 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
   const updateTask = async (taskId, updatedTask) => {
     try {
       const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/tasks/${taskId}`, {
+      const response = await fetch(`${apiUrl}/tasks/${taskId}/`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -227,23 +210,10 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
       setTasks(prev => prev.map(task => 
         task.id === taskId ? updatedTaskFromServer : task
       ));
-      
-      // Update localStorage backup
-      const updatedTasks = tasks.map(task => 
-        task.id === taskId ? updatedTaskFromServer : task
-      );
-      localStorage.setItem('productivity-tasks', JSON.stringify(updatedTasks));
     } catch (error) {
       console.error('Error updating task:', error);
-      // Fallback to local state update
-      setTasks(prev => prev.map(task => 
-        task.id === taskId ? { ...task, ...updatedTask } : task
-      ));
-      const updatedTasks = tasks.map(task => 
-        task.id === taskId ? { ...task, ...updatedTask } : task
-      );
-      localStorage.setItem('productivity-tasks', JSON.stringify(updatedTasks));
-      setError('Task updated locally. Server sync failed - will retry later.');
+      setError('Failed to update task on server. Please try again.');
+      throw error; // Re-throw so calling code knows the operation failed
     }
   };
 
@@ -253,7 +223,7 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
   const deleteTask = async (taskId) => {
     try {
       const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/tasks/${taskId}`, {
+      const response = await fetch(`${apiUrl}/tasks/${taskId}/`, {
         method: 'DELETE',
       });
 
@@ -262,17 +232,10 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
       }
 
       setTasks(prev => prev.filter(task => task.id !== taskId));
-      
-      // Update localStorage backup
-      const filteredTasks = tasks.filter(task => task.id !== taskId);
-      localStorage.setItem('productivity-tasks', JSON.stringify(filteredTasks));
     } catch (error) {
       console.error('Error deleting task:', error);
-      // Fallback to local state update
-      setTasks(prev => prev.filter(task => task.id !== taskId));
-      const filteredTasks = tasks.filter(task => task.id !== taskId);
-      localStorage.setItem('productivity-tasks', JSON.stringify(filteredTasks));
-      setError('Task deleted locally. Server sync failed - will retry later.');
+      setError('Failed to delete task on server. Please try again.');
+      throw error; // Re-throw so calling code knows the operation failed
     }
   };
 
@@ -281,8 +244,6 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
    */
   const addSummary = (summary) => {
     setSummaries(prev => [...prev, summary]);
-    // Also save to localStorage as backup
-    localStorage.setItem('weekly-summaries', JSON.stringify([...summaries, summary]));
   };
 
   const navigationItems = [

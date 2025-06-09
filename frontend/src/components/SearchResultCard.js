@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { TrendingUp, Clock, Focus } from 'lucide-react';
+import MetaItem from './MetaItem';
 
 /**
  * Search result card
@@ -63,23 +64,7 @@ const ResultMeta = styled.div.attrs(() => ({
   className: 'flex gap-4 items-center mb-3 flex-wrap'
 }))``;
 
-/**
- * Meta item
- */
-const MetaItem = styled.div.attrs(() => ({
-  className: 'flex items-center gap-1 text-xs'
-}))`
-  color: ${props => props.theme.colors.text.muted};
-  
-  ${props => props.theme.name === 'tron' && `
-    font-family: ${props.theme.fonts.mono};
-  `}
 
-  svg {
-    width: 12px;
-    height: 12px;
-  }
-`;
 
 /**
  * Result snippet with highlighted keywords
@@ -148,15 +133,15 @@ function SearchResultCard({ result, index = 0, className = "" }) {
       </ResultHeader>
 
       <ResultMeta>
-        <MetaItem>
+        <MetaItem size="xs" gap="1" iconSize="12px">
           <TrendingUp />
           {result.stats.totalTasks} tasks
         </MetaItem>
-        <MetaItem>
+        <MetaItem size="xs" gap="1" iconSize="12px">
           <Clock />
           {result.stats.totalHours}h total
         </MetaItem>
-        <MetaItem>
+        <MetaItem size="xs" gap="1" iconSize="12px">
           <Focus />
           {result.stats.avgFocus} focus
         </MetaItem>

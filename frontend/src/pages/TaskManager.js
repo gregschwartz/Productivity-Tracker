@@ -11,6 +11,7 @@ import { ButtonGroup, InputGroup, Label, Input } from '../components/forms';
 import EmptyState from '../components/EmptyState';
 import TaskCard from '../components/TaskCard';
 import MetaItem from '../components/MetaItem';
+import { TaskLoadingIndicator } from '../components/loading';
 
 /**
  * Main container for task management
@@ -146,7 +147,8 @@ function TaskManager({
   onDeleteTask = () => {},
   selectedDate = null,
   onDateChange = () => {},
-  onClearDateFilter = () => {}
+  onClearDateFilter = () => {},
+  isLoading
 }) {
   const theme = useTheme();
   let currentTheme = theme.name || 'Ready';
@@ -430,6 +432,11 @@ function TaskManager({
       </AddTaskSection>
 
       <TaskList>
+        {isLoading && sortedTasks.length === 0 && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+            <TaskLoadingIndicator />
+          </div>
+        )}
         <AnimatePresence>
           {sortedTasks.length === 0 ? (
             <EmptyState

@@ -9,6 +9,7 @@ import SearchResultCard from '../components/SearchResultCard';
 import ResultsCount from '../components/ResultsCount';
 import SortSelect from '../components/SortSelect';
 import { getApiUrl } from '../utils/api';
+import { SearchProgressBar } from '../components/loading';
 
 /**
  * Container for search functionality
@@ -223,7 +224,7 @@ function SearchAgent({ summaries }) {
         <SearchResults>
           <ResultsHeader>
             <ResultsCount>
-              {isSearching ? 'Searching...' : `${searchResults.length} results found`}
+              {isSearching ? <SearchProgressBar /> : `${searchResults.length} results found`}
             </ResultsCount>
             <SortSelect value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
               <option value="relevance">Sort by Relevance</option>

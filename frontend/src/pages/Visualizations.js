@@ -14,6 +14,7 @@ import AllStatsWrapper from '../components/AllStatsWrapper';
 import TimeRangeSelector from '../components/TimeRangeSelector';
 import { generateLegendData, LegendItem, LegendColorBox } from '../components/heatmap/HeatmapLegend';
 import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, addDays } from 'date-fns';
+import { SkeletonStatCard, SkeletonChart } from '../components/loading';
 
 /**
  * Container for all visualizations
@@ -51,7 +52,7 @@ const FocusStatsRow = styled.div`
 /**
  * Visualizations tab showing productivity analytics
  */
-function Visualizations({ tasks = [], summaries = [], onNavigateToDate, onAddSummary}) {
+function Visualizations({ tasks = [], summaries = [], onNavigateToDate, onAddSummary, isLoading }) {
   const [timeRange, setTimeRange] = useState('week'); // week, month, quarter, all
   const [taskViewMode, setTaskViewMode] = useState('tasks'); // 'tasks' or 'time'
   const theme = useTheme();
@@ -299,8 +300,45 @@ function Visualizations({ tasks = [], summaries = [], onNavigateToDate, onAddSum
 
   return (
     <VisualizationContainer>
-      {/* Time Range Selector */}
-      <TimeRangeSelector>
+      {isLoading ? (
+        <>
+          <TimeRangeSelector>
+            {[
+              { value: 'week', label: 'Week' },
+              { value: 'month', label: 'Month' },
+              { value: 'all', label: 'All Time' }
+            ].map(option => (
+              <TimeRangeButton
+                key={option.value}
+                $active={timeRange === option.value}
+                onClick={() => setTimeRange(option.value)}
+                // Disabled while loading
+              >
+                {option.label}
+              </TimeRangeButton>
+            ))}
+          </TimeRangeSelector>
+          <AllStatsWrapper>
+            <OverviewStatsRow>
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+            </OverviewStatsRow>
+            <FocusStatsRow>
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+            </FocusStatsRow>
+          </AllStatsWrapper>
+          <SkeletonChart height="200px" /> {/* WeeklySummaries skeleton */}
+          <SkeletonChart height="300px" /> {/* Daily Productivity skeleton */}
+          <SkeletonChart height="300px" /> {/* Focus Distribution skeleton */}
+          <SkeletonChart height="150px" /> {/* Daily Heatmap skeleton */}
+          <SkeletonChart height="150px" /> {/* Hourly Heatmap skeleton */}
+        </>
+      ) : (
+        <>
+          {/* Time Range Selector */}
+          <TimeRangeSelector>
         {[
           { value: 'week', label: 'Week' },
           { value: 'month', label: 'Month' },

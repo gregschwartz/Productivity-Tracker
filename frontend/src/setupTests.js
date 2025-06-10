@@ -8,22 +8,33 @@ import React from 'react';
 // Mock framer-motion globally
 jest.mock('framer-motion', () => {
   const React = require('react');
+  
+  // Create a proper mock component that works with styled-components
+  const createMockMotionComponent = (element) => {
+    const Component = React.forwardRef((props, ref) => {
+      const { children, ...otherProps } = props;
+      return React.createElement(element, { ...otherProps, ref }, children);
+    });
+    Component.displayName = `motion.${element}`;
+    return Component;
+  };
+  
   return {
-  motion: {
-    div: ({ children, ...props }) => React.createElement('div', props, children),
-    button: ({ children, ...props }) => React.createElement('button', props, children),
-    form: ({ children, ...props }) => React.createElement('form', props, children),
-    section: ({ children, ...props }) => React.createElement('section', props, children),
-    article: ({ children, ...props }) => React.createElement('article', props, children),
-    span: ({ children, ...props }) => React.createElement('span', props, children),
-    h1: ({ children, ...props }) => React.createElement('h1', props, children),
-    h2: ({ children, ...props }) => React.createElement('h2', props, children),
-    h3: ({ children, ...props }) => React.createElement('h3', props, children),
-    p: ({ children, ...props }) => React.createElement('p', props, children),
-    ul: ({ children, ...props }) => React.createElement('ul', props, children),
-    li: ({ children, ...props }) => React.createElement('li', props, children),
-  },
-  AnimatePresence: ({ children }) => children,
+    motion: {
+      div: createMockMotionComponent('div'),
+      button: createMockMotionComponent('button'),
+      form: createMockMotionComponent('form'),
+      section: createMockMotionComponent('section'),
+      article: createMockMotionComponent('article'),
+      span: createMockMotionComponent('span'),
+      h1: createMockMotionComponent('h1'),
+      h2: createMockMotionComponent('h2'),
+      h3: createMockMotionComponent('h3'),
+      p: createMockMotionComponent('p'),
+      ul: createMockMotionComponent('ul'),
+      li: createMockMotionComponent('li'),
+    },
+    AnimatePresence: ({ children }) => children,
   };
 });
 

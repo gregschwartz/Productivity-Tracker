@@ -91,3 +91,12 @@ export const apiPut = (endpoint, data) => {
 export const apiDelete = (endpoint) => {
   return apiRequest(endpoint, { method: 'DELETE' });
 };
+
+/**
+ * Calculate task statistics from a list of tasks
+ * @param {Array} tasks - Array of task objects
+ * @returns {Promise<Object>} Statistics object with metrics
+ */
+export const calculateTaskStatistics = (tasks) => {
+  return apiPost('/tasks/stats/calculate', tasks);
+};

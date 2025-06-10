@@ -28,8 +28,8 @@ export async function getProductivityInsights(tasks) {
     // Fallback to basic local calculation
     return {
       total_tasks: tasks.length,
-      total_hours: tasks.reduce((sum, task) => sum + (task.timeSpent || 0), 0),
-      average_hours_per_task: tasks.length > 0 ? tasks.reduce((sum, task) => sum + (task.timeSpent || 0), 0) / tasks.length : 0,
+      total_hours: tasks.reduce((sum, task) => sum + (task.time_spent || 0), 0),
+      average_hours_per_task: tasks.length > 0 ? tasks.reduce((sum, task) => sum + (task.time_spent || 0), 0) / tasks.length : 0,
       focus_count_percentages: {},
       focus_hours: {},
       focus_with_most_hours: 'N/A'
@@ -71,7 +71,7 @@ export async function getWeeklySummary(tasks) {
 export function processTasksForCharts(tasks) {
   // Group tasks by date
   const tasksByDate = tasks.reduce((acc, task) => {
-    const date = task.date || new Date().toISOString().split('T')[0];
+    const date = task.date_worked || new Date().toISOString().split('T')[0];
     if (!acc[date]) {
       acc[date] = [];
     }
@@ -83,12 +83,12 @@ export function processTasksForCharts(tasks) {
   const dailyData = Object.entries(tasksByDate).map(([date, dayTasks]) => ({
     date,
     tasks: dayTasks.length,
-    hours: dayTasks.reduce((sum, task) => sum + (task.timeSpent || 0), 0),
+    hours: dayTasks.reduce((sum, task) => sum + (task.time_spent || 0), 0),
     completed: dayTasks.filter(task => task.completed).length,
     avgFocus: dayTasks.length > 0 
       ? dayTasks.reduce((sum, task) => {
           const focusValues = { low: 1, medium: 2, high: 3 };
-          return sum + (focusValues[task.focusLevel] || 1);
+          return sum + (focusValues[task.focus_level] || 1);
         }, 0) / dayTasks.length
       : 0
   }));
@@ -96,7 +96,7 @@ export function processTasksForCharts(tasks) {
   return {
     dailyData: dailyData.sort((a, b) => new Date(a.date) - new Date(b.date)),
     totalTasks: tasks.length,
-    totalHours: tasks.reduce((sum, task) => sum + (task.timeSpent || 0), 0),
+    totalHours: tasks.reduce((sum, task) => sum + (task.time_spent || 0), 0),
     completionRate: tasks.length > 0 ? (tasks.filter(task => task.completed).length / tasks.length) * 100 : 0
   };
 } 

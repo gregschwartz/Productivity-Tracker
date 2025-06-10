@@ -5,10 +5,9 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import TaskManager from './TaskManager';
 import Visualizations from './Visualizations';
 import SearchAgent from './SearchAgent';
-import AdminDashboard from './AdminDashboard';
 import Navigation from '../components/Navigation';
 import PageHeader from '../components/PageHeader';
-import { BarChart3, Calendar, Search, Settings } from 'lucide-react';
+import { BarChart3, Calendar, Search } from 'lucide-react';
 import { getApiUrl } from '../utils/api';
 import { useTheme } from 'styled-components';
 
@@ -68,8 +67,6 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
           return `Visualizations | ${baseTitle}`;
         case 'search':
           return `Search | ${baseTitle}`;
-        case 'admin':
-          return `Admin | ${baseTitle}`;
         default:
           return baseTitle;
       }
@@ -91,7 +88,6 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
     { key: 'tasks', label: 'Tasks', icon: Calendar },
     { key: 'visualizations', label: 'Visualizations', icon: BarChart3 },
     { key: 'search', label: 'Search', icon: Search },
-    { key: 'admin', label: 'Admin', icon: Settings }
   ];
 
   /**
@@ -136,8 +132,6 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
         return <Visualizations onNavigateToDate={handleNavigateToDate} onAddSummary={(summary) => {}} />;
       case 'search':
         return <SearchAgent />;
-      case 'admin':
-        return <AdminDashboard />;
       default:
         return null;
     }
@@ -148,7 +142,6 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
       case 'tasks': return 'Daily Task Tracker';
       case 'visualizations': return 'Visualizations & Summaries';
       case 'search': return 'Historical Search';
-      case 'admin': return 'Admin Dashboard';
       default: return 'Productivity Tracker';
     }
   };
@@ -158,7 +151,6 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
       case 'tasks': return 'Track your work to understand your patterns.';
       case 'visualizations': return 'Task visualizations and AI recommendations';
       case 'search': return 'Search through your productivity history to find similar patterns and insights.';
-      case 'admin': return 'Configure integrations, monitor system health, and manage your data.';
       default: return 'Your personal productivity intelligence platform.';
     }
   };

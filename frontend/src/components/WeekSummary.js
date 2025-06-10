@@ -128,7 +128,6 @@ function WeekSummary({
       const avgFocusLabel = Object.keys(focusValues).find(
         (key) => focusValues[key] === avgFocusScore
       );
-      console.log(avgFocusScoreRaw, avgFocusScore, avgFocusLabel);
 
       const weekStats = {
         totalTasks: tasks.length,

@@ -71,7 +71,6 @@ function App() {
 
   // Load initial tasks count for the navbar (simplified)
   useEffect(() => {
-    console.debug("Loading tasks count");
     const loadTasksCount = async () => {
       try {
         const apiUrl = process.env.NODE_ENV === 'development' 
@@ -82,7 +81,6 @@ function App() {
         if (response.ok) {
           const data = await response.json();
           setTasksCount(data.total_tasks || 0);
-          console.debug("Tasks count loaded:", data.total_tasks);
         } else {
           console.error("Failed to load tasks count:", response.statusText);
         }

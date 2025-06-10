@@ -145,6 +145,7 @@ function SearchAgent({ summaries = [] }) {
   const [sortBy, setSortBy] = useState('relevance');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [searchError, setSearchError] = useState(null);
 
 
   /**
@@ -153,11 +154,13 @@ function SearchAgent({ summaries = [] }) {
   useEffect(() => {
     if (!query.trim()) {
       setSearchResults([]);
+      setSearchError(null);
       return;
     }
 
     const performSearch = async () => {
       setIsSearching(true);
+      setSearchError(null);
       
       try {
         const apiUrl = getApiUrl();
@@ -182,9 +185,8 @@ function SearchAgent({ summaries = [] }) {
         setSearchResults(transformedResults);
       } catch (error) {
         console.error('Error performing search:', error);
-        // Fallback to local search if backend fails
-        const fallbackResults = performSemanticSearch(query, summaries);
-        setSearchResults(fallbackResults);
+        setSearchError('Error performing search. Please try again.');
+        setSearchResults([]);
       } finally {
         setIsSearching(false);
       }
@@ -265,7 +267,12 @@ function SearchAgent({ summaries = [] }) {
           </ResultsHeader>
 
           <AnimatePresence>
-            {searchResults.length === 0 && !isSearching ? (
+            {searchError ? (
+              <EmptyState
+                title="Search Error"
+                description={searchError}
+              />
+            ) : searchResults.length === 0 && !isSearching ? (
               <EmptyState
                 title="No matching weeks found"
                 description="Try different keywords or check your spelling."

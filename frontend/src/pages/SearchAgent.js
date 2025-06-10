@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
@@ -41,6 +41,26 @@ const SearchResults = styled.div.attrs(() => ({
 const ResultsHeader = styled.div.attrs(() => ({
   className: 'flex justify-between items-center px-1'
 }))``;
+
+/**
+ * Format week range for display
+ */
+const formatWeekRange = (weekStart, weekEnd) => {
+  if (!weekStart) return 'Unknown Week';
+  
+  const start = new Date(weekStart);
+  const end = weekEnd ? new Date(weekEnd) : new Date(start.getTime() + 6 * 24 * 60 * 60 * 1000);
+  
+  const options = { month: 'short', day: 'numeric' };
+  const startStr = start.toLocaleDateString('en-US', options);
+  const endStr = end.toLocaleDateString('en-US', options);
+  
+  if (start.getFullYear() !== end.getFullYear()) {
+    return `${start.toLocaleDateString('en-US', { ...options, year: 'numeric' })} - ${end.toLocaleDateString('en-US', { ...options, year: 'numeric' })}`;
+  }
+  
+  return `${startStr} - ${endStr}`;
+};
 
 /**
  * Mock semantic search function
@@ -109,7 +129,8 @@ const performSemanticSearch = (query, summaries) => {
         ...summary,
         relevanceScore: score,
         highlightedSummary,
-        highlightedRecommendations
+        highlightedRecommendations,
+        weekRange: formatWeekRange(summary.week_start, summary.week_end)
       };
     })
     .filter(Boolean)
@@ -119,7 +140,7 @@ const performSemanticSearch = (query, summaries) => {
 /**
  * SearchAgent component for searching historical productivity summaries
  */
-function SearchAgent({ summaries }) {
+function SearchAgent({ summaries = [] }) {
   const [query, setQuery] = useState('');
   const [sortBy, setSortBy] = useState('relevance');
   const [isSearching, setIsSearching] = useState(false);
@@ -154,26 +175,11 @@ function SearchAgent({ summaries }) {
           ...result,
           relevanceScore: results.length - index, // Higher score for earlier results
           highlightedSummary: result.summary,
-          highlightedRecommendations: result.recommendations || []
+          highlightedRecommendations: result.recommendations || [],
+          weekRange: formatWeekRange(result.week_start, result.week_end)
         }));
         
-        // Sort results based on selected sort option
-        const sortedResults = [...transformedResults].sort((a, b) => {
-          switch (sortBy) {
-            case 'date':
-              return new Date(b.week_start || b.timestamp) - new Date(a.week_start || a.timestamp);
-            case 'tasks':
-              return (b.stats?.total_tasks || b.stats?.totalTasks || 0) - (a.stats?.total_tasks || a.stats?.totalTasks || 0);
-            case 'hours':
-              const bHours = parseFloat(b.stats?.total_hours || b.stats?.totalHours || 0);
-              const aHours = parseFloat(a.stats?.total_hours || a.stats?.totalHours || 0);
-              return bHours - aHours;
-            default: // relevance
-              return b.relevanceScore - a.relevanceScore;
-          }
-        });
-        
-        setSearchResults(sortedResults);
+        setSearchResults(transformedResults);
       } catch (error) {
         console.error('Error performing search:', error);
         // Fallback to local search if backend fails
@@ -186,7 +192,31 @@ function SearchAgent({ summaries }) {
 
     const debounceTimeout = setTimeout(performSearch, 300);
     return () => clearTimeout(debounceTimeout);
-  }, [query, summaries, sortBy]);
+  }, [query]);
+
+  /**
+   * Re-sort search results when sort option changes
+   */
+  useEffect(() => {
+    if (searchResults.length === 0) return;
+
+    const sortedResults = [...searchResults].sort((a, b) => {
+      switch (sortBy) {
+        case 'date':
+          return new Date(b.week_start || b.timestamp) - new Date(a.week_start || a.timestamp);
+        case 'tasks':
+          return (b.stats?.total_tasks || b.stats?.totalTasks || 0) - (a.stats?.total_tasks || a.stats?.totalTasks || 0);
+        case 'hours':
+          const bHours = parseFloat(b.stats?.total_hours || b.stats?.totalHours || 0);
+          const aHours = parseFloat(a.stats?.total_hours || a.stats?.totalHours || 0);
+          return bHours - aHours;
+        default: // relevance
+          return b.relevanceScore - a.relevanceScore;
+      }
+    });
+    
+    setSearchResults(sortedResults);
+  }, [sortBy]);
 
   /**
    * Handle suggestion chip click

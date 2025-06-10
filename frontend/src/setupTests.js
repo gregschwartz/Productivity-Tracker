@@ -6,7 +6,9 @@ import '@testing-library/jest-dom';
 import React from 'react';
 
 // Mock framer-motion globally
-jest.mock('framer-motion', () => ({
+jest.mock('framer-motion', () => {
+  const React = require('react');
+  return {
   motion: {
     div: ({ children, ...props }) => React.createElement('div', props, children),
     button: ({ children, ...props }) => React.createElement('button', props, children),
@@ -22,7 +24,8 @@ jest.mock('framer-motion', () => ({
     li: ({ children, ...props }) => React.createElement('li', props, children),
   },
   AnimatePresence: ({ children }) => children,
-}));
+  };
+});
 
 // Mock ResizeObserver
 global.ResizeObserver = jest.fn().mockImplementation(() => ({

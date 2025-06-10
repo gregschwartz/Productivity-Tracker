@@ -134,23 +134,23 @@ function App() {
     setIsDarkMode(detectSystemTheme());
 
     // Listen for system theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const mediaQuery = window.matchMedia?.('(prefers-color-scheme: dark)');
     const handleSystemThemeChange = (e) => {
       // Always follow system preference
       setIsDarkMode(e.matches);
     };
 
-    if (mediaQuery.addEventListener) {
+    if (mediaQuery?.addEventListener) {
       mediaQuery.addEventListener('change', handleSystemThemeChange);
-    } else {
+    } else if (mediaQuery?.addListener) {
       // Fallback for older browsers
       mediaQuery.addListener(handleSystemThemeChange);
     }
 
     return () => {
-      if (mediaQuery.removeEventListener) {
+      if (mediaQuery?.removeEventListener) {
         mediaQuery.removeEventListener('change', handleSystemThemeChange);
-      } else {
+      } else if (mediaQuery?.removeListener) {
         mediaQuery.removeListener(handleSystemThemeChange);
       }
     };

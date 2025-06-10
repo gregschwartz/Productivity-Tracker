@@ -3,7 +3,7 @@ import styled from 'styled-components';
 /**
  * Results count display component
  */
-const ResultsCount = styled.p.attrs(() => ({
+const ResultsCount = styled.div.attrs(() => ({
   className: 'text-sm m-0'
 }))`
   color: ${props => props.theme.colors.text.secondary};

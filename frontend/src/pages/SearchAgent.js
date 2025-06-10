@@ -179,12 +179,16 @@ function SearchAgent({ summaries = [] }) {
           relevanceScore: result.relevance_score || 0,
           summary: result.summary,
           recommendations: result.recommendations || [],
-          weekRange: formatWeekRange(result.week_start, result.week_end)
+          weekRange: formatWeekRange(result.week_start, result.week_end),
+          stats: {
+            totalTasks: result.stats?.total_tasks || 0,
+            totalHours: result.stats?.total_hours || '0',
+            avgFocus: result.stats?.avg_focus || 'medium'
+          }
         }));
         
         setSearchResults(transformedResults);
       } catch (error) {
-        console.error('Error performing search:', error);
         setSearchError('Error performing search. Please try again.');
         setSearchResults([]);
       } finally {

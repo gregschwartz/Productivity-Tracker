@@ -104,6 +104,32 @@ async def get_summaries_route(
             detail=f"Failed to get summaries: {str(e)}"
         )
 
+@router.get("/search", response_model=List[WeeklySummary])
+@weave.op()
+async def search_summaries_route(
+    query: str,
+    db: AsyncSession = Depends(get_session)
+):
+    """Search for summaries using vector similarity."""
+    try:
+        summaries = await summary_service.vector_search_week_summaries(session=db, query_text=query, similarity_threshold=0.3)
+        return summaries
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to search summaries: {str(e)}"
+        )
+
+@router.get("/stats/count", response_model=dict) # Adjusted response_model
+@weave.op()
+async def get_summary_count_route(db: AsyncSession = Depends(get_session)):
+    """Get total count of weekly summaries."""
+    try:
+        count = await summary_service.get_count_of_summaries(session=db)
+        return {"total_summaries": count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get summary count: {str(e)}")
+
 @router.get("/{summary_id}", response_model=WeeklySummary)
 @weave.op()
 async def get_summary_by_id_route(summary_id: int, db: AsyncSession = Depends(get_session)):
@@ -145,29 +171,3 @@ async def delete_summary_route(summary_id: int, db: AsyncSession = Depends(get_s
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete summary: {str(e)}")
-
-@router.get("/stats/count", response_model=dict) # Adjusted response_model
-@weave.op()
-async def get_summary_count_route(db: AsyncSession = Depends(get_session)):
-    """Get total count of weekly summaries."""
-    try:
-        count = await summary_service.get_count_of_summaries(session=db)
-        return {"total_summaries": count}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get summary count: {str(e)}")
-
-@router.get("/search", response_model=List[WeeklySummary])
-@weave.op()
-async def search_summaries_route(
-    query: str,
-    db: AsyncSession = Depends(get_session)
-):
-    """Search for summaries using vector similarity."""
-    try:
-        summaries = await summary_service.vector_search_week_summaries(session=db, query_text=query)
-        return summaries
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to search summaries: {str(e)}"
-        )

@@ -6,6 +6,7 @@ from openai import AsyncOpenAI
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text, func
 from sqlmodel import select
+import numpy as np
 
 from models.models import WeeklySummary
 
@@ -22,9 +23,9 @@ class SummaryService:
                 input=text,
                 model="text-embedding-3-small"
             )
-            return response.data[0].embedding
+            embedding = response.data[0].embedding
+            return self.ensure_embedding_is_list(embedding)
         except Exception as e:
-            print(f"Error generating embedding: {e}")
             raise
     
     async def create_weekly_summary(self, session: AsyncSession, summary_data: WeeklySummary) -> WeeklySummary:
@@ -41,7 +42,7 @@ class SummaryService:
         
         # Generate embedding and set it on the WeeklySummary
         embedding = await self.generate_embedding(summary_text_to_embed)
-        db_summary.embedding = embedding
+        db_summary.embedding = self.ensure_embedding_is_list(embedding)
 
         session.add(db_summary)
         await session.commit() # Commit the transaction
@@ -113,6 +114,10 @@ class SummaryService:
         count = result.scalar()
         return count if count is not None else 0
 
+    def ensure_embedding_is_list(self, embedding: Union[List[float], np.ndarray]) -> List[float]:
+        """Ensure embedding is a list, not numpy array. Postgres can't store numpy arrays."""
+        return list(embedding) if hasattr(embedding, '__iter__') and not isinstance(embedding, str) else embedding
+
     @weave.op()
     async def vector_search_week_summaries(
         self, session: AsyncSession,
@@ -128,15 +133,15 @@ class SummaryService:
         # The size should match OpenAI's "text-embedding-3-small" model (1536 dimensions).
         sql_query = text("""
             SELECT id, week_start, week_end, summary, stats, recommendations, created_at, updated_at,
-                   1 - (embedding <=> :embedding::vector) as similarity
+                   1 - (embedding <=> :embedding) as similarity
             FROM weekly_summaries
-            WHERE embedding IS NOT NULL AND (1 - (embedding <=> :embedding::vector)) >= :similarity_threshold
+            WHERE embedding IS NOT NULL AND (1 - (embedding <=> :embedding)) >= :similarity_threshold
             ORDER BY similarity DESC
             LIMIT :limit
         """)
 
         result = await session.execute(sql_query, {
-            "embedding": str(list(query_embedding)), # pgvector expects list-like string for vector
+            "embedding": str(query_embedding), # Convert list to string for pgvector
             "similarity_threshold": similarity_threshold,
             "limit": limit
         })

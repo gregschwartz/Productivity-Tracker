@@ -149,12 +149,12 @@ function SearchResultCard({ result, index = 0, className = "" }) {
 
       <SummaryResultSnippet
         dangerouslySetInnerHTML={{
-          __html: result.highlightedSummary || result.summary
+          __html: result.summary
         }}
       />
 
       <ul>
-        {result.highlightedRecommendations.map((recommendation, index) => (
+        {result.recommendations.map((recommendation, index) => (
           <SummaryRecommendationSnippet
             key={index}
             dangerouslySetInnerHTML={{

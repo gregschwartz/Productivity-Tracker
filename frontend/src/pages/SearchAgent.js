@@ -162,7 +162,7 @@ function SearchAgent({ summaries = [] }) {
       try {
         const apiUrl = getApiUrl();
         const encodedQuery = encodeURIComponent(query);
-        const response = await fetch(`${apiUrl}/summaries/?query=${encodedQuery}`);
+        const response = await fetch(`${apiUrl}/summaries/search?query=${encodedQuery}`);
         
         if (!response.ok) {
           throw new Error(`Search failed: ${response.status} ${response.statusText}`);
@@ -173,9 +173,9 @@ function SearchAgent({ summaries = [] }) {
         // Transform backend results to match frontend expectations
         const transformedResults = results.map((result, index) => ({
           ...result,
-          relevanceScore: results.length - index, // Higher score for earlier results
-          highlightedSummary: result.summary,
-          highlightedRecommendations: result.recommendations || [],
+          relevanceScore: result.relevance_score || 0,
+          summary: result.summary,
+          recommendations: result.recommendations || [],
           weekRange: formatWeekRange(result.week_start, result.week_end)
         }));
         

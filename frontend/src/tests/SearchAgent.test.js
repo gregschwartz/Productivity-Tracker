@@ -17,24 +17,27 @@ jest.mock('framer-motion', () => ({
   AnimatePresence: ({ children }) => <>{children}</>,
 }));
 
-// Sample API response for RAG search
-const mockRagSearchApiResponse = {
-  results: [
-    {
-      content: "Week 2024-01-08 to 2024-01-14: High focus on code reviews resulted in better quality",
-      source: "Week 2024-01-08",
-      relevance_score: 0.95,
-      metadata: { week_start: "2024-01-08", week_end: "2024-01-14" }
-    },
-    {
-      content: "Week 2024-01-15 to 2024-01-21: Medium focus tasks took longer than expected",
-      source: "Week 2024-01-15",
-      relevance_score: 0.82,
-      metadata: { week_start: "2024-01-15", week_end: "2024-01-21" }
-    }
-  ],
-  answer: "Based on your history, maintaining high focus during code reviews has led to better quality outcomes."
-};
+// Sample API response for search endpoint - array of WeeklySummary objects
+const mockSearchApiResponse = [
+  {
+    id: 1,
+    week_start: "2024-01-08",
+    week_end: "2024-01-14", 
+    summary: "High focus on code reviews resulted in better quality",
+    stats: { total_tasks: 5, total_hours: "40.0", avg_focus: "high" },
+    recommendations: ["Continue high focus approach"],
+    relevance_score: 0.95
+  },
+  {
+    id: 2,
+    week_start: "2024-01-15", 
+    week_end: "2024-01-21",
+    summary: "Medium focus tasks took longer than expected",
+    stats: { total_tasks: 3, total_hours: "35.0", avg_focus: "medium" },
+    recommendations: ["Try to improve focus level"],
+    relevance_score: 0.82
+  }
+];
 
 describe('SearchAgent Component', () => {
   beforeEach(() => {
@@ -70,12 +73,12 @@ describe('SearchAgent Component', () => {
       </BrowserRouter>
     );
     
-    const searchInput = screen.getByText(/productivity history/i);
+    const searchInput = screen.getByRole('textbox');
     await user.type(searchInput, 'how to improve focus');
     expect(searchInput).toHaveValue('how to improve focus');
   });
 
-  test('Typing in search box  triggers API call with the query', async () => {
+  test('Typing in search box triggers API call with the query', async () => {
     const user = userEvent.setup();
     
     render(
@@ -88,24 +91,20 @@ describe('SearchAgent Component', () => {
     
     const searchInput = screen.getByRole('textbox');
     await user.type(searchInput, 'code');
-
-    expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/summaries/rag/search'),
-      expect.objectContaining({
-        method: 'POST',
-        headers: expect.objectContaining({
-          'Content-Type': 'application/json',
-        }),
-        body: JSON.stringify({ query: 'code reviews' }),
-      })
-    );
+    
+    // Wait for the debounced API call (300ms delay)
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/summaries/search?query=code')
+      );
+    }, { timeout: 1000 });
   });
 
   test('displays search results after successful API call', async () => {
     const user = userEvent.setup();
     global.fetch.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve(mockRagSearchApiResponse),
+      json: () => Promise.resolve(mockSearchApiResponse),
     });
 
     render(
@@ -117,13 +116,13 @@ describe('SearchAgent Component', () => {
     );
     
     const searchInput = screen.getByRole('textbox');
-    await user.type(searchInput, 'meeting');
+    await user.type(searchInput, 'code');
 
     await waitFor(() => {
-      // Check for the answer
-      expect(screen.getByText(/based on your history/i)).toBeInTheDocument();
+      // Check for results count
+      expect(screen.getByText(/2 results found/i)).toBeInTheDocument();
       
-      // Check for results
+      // Check for search results content
       expect(screen.getByText(/high focus on code reviews/i)).toBeInTheDocument();
       expect(screen.getByText(/medium focus tasks took longer/i)).toBeInTheDocument();
     });
@@ -133,7 +132,7 @@ describe('SearchAgent Component', () => {
     const user = userEvent.setup();
     global.fetch.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({ results: [], answer: null }),
+      json: () => Promise.resolve([]),
     });
 
     render(
@@ -144,22 +143,17 @@ describe('SearchAgent Component', () => {
       </BrowserRouter>
     );
     
-    const searchInput = screen.getByPlaceholderText(/productivity history/i);
+    const searchInput = screen.getByRole('textbox');
     await user.type(searchInput, 'unknown query');
-    await user.click(screen.getByRole('button', { name: /search/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/no relevant summaries found/i)).toBeInTheDocument();
+      expect(screen.getByText(/no matching weeks found/i)).toBeInTheDocument();
     });
   });
 
   test('handles API error during search', async () => {
     const user = userEvent.setup();
-    global.fetch.mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-      statusText: 'Internal Server Error',
-    });
+    global.fetch.mockRejectedValueOnce(new Error('Network error'));
 
     render(
       <BrowserRouter>
@@ -169,12 +163,12 @@ describe('SearchAgent Component', () => {
       </BrowserRouter>
     );
     
-    const searchInput = screen.getByPlaceholderText(/productivity history/i);
+    const searchInput = screen.getByRole('textbox');
     await user.type(searchInput, 'trigger error');
-    await user.click(screen.getByRole('button', { name: /search/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/search failed/i)).toBeInTheDocument();
-    });
+      // Should show error message, not fallback to local search
+      expect(screen.getByText(/error performing search/i)).toBeInTheDocument();
+    }, { timeout: 1000 });
   });
 });

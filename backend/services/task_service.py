@@ -26,12 +26,12 @@ class TaskService:
         """Get tasks, optionally filtered by date range."""
         query = select(Task)
         if start_date and end_date:
-            query = query.where(Task.date >= start_date, Task.date < end_date)
+            query = query.where(Task.date_worked >= start_date, Task.date_worked < end_date)
         elif start_date:
-            query = query.where(Task.date >= start_date)
+            query = query.where(Task.date_worked >= start_date)
         elif end_date:
-            query = query.where(Task.date < end_date)
-        result = await session.execute(query.order_by(Task.date.desc()))
+            query = query.where(Task.date_worked < end_date)
+        result = await session.execute(query.order_by(Task.date_worked.desc()))
         return result.scalars().all()
 
     async def get_task_by_id(self, session: AsyncSession, task_id: int) -> Optional[Task]:
@@ -95,18 +95,18 @@ class TaskService:
             }
 
         total_tasks = len(tasks)
-        total_hours = sum(task.timeSpent for task in tasks if task.timeSpent is not None)
+        total_hours = sum(task.time_spent for task in tasks if task.time_spent is not None)
         average_hours_per_task = total_hours / total_tasks if total_tasks > 0 else 0
 
         focus_count = {}
         focus_hours = {}
 
         for task in tasks:
-            focus = task.focusLevel.value if hasattr(task.focusLevel, 'value') else task.focusLevel # Handle Enum
+            focus = task.focus_level.value if hasattr(task.focus_level, 'value') else task.focus_level # Handle Enum
             if focus: # Ensure focus is not None
                 focus_count[focus] = focus_count.get(focus, 0) + 1
-                if task.timeSpent is not None:
-                    focus_hours[focus] = focus_hours.get(focus, 0) + task.timeSpent
+                if task.time_spent is not None:
+                    focus_hours[focus] = focus_hours.get(focus, 0) + task.time_spent
 
         focus_count_percentages = {
             focus: (count / total_tasks) * 100 for focus, count in focus_count.items()

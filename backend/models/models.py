@@ -130,6 +130,7 @@ class WeeklySummary(SQLModel, table=True):
 
     class Config:
         arbitrary_types_allowed = True
+        extra = "allow"  # Allow additional fields like relevance_score
 
 class SummaryResponse(BaseModel):
     """Response model for AI-generated summaries."""

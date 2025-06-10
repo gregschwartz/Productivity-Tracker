@@ -24,13 +24,19 @@ class TaskService:
 
     async def get_tasks(self, session: AsyncSession, start_date: Optional[str] = None, end_date: Optional[str] = None) -> List[Task]:
         """Get tasks, optionally filtered by date range."""
+        from datetime import date
+        
         query = select(Task)
         if start_date and end_date:
-            query = query.where(Task.date_worked >= start_date, Task.date_worked < end_date)
+            start_date_obj = date.fromisoformat(start_date)
+            end_date_obj = date.fromisoformat(end_date)
+            query = query.where(Task.date_worked >= start_date_obj, Task.date_worked < end_date_obj)
         elif start_date:
-            query = query.where(Task.date_worked >= start_date)
+            start_date_obj = date.fromisoformat(start_date)
+            query = query.where(Task.date_worked >= start_date_obj)
         elif end_date:
-            query = query.where(Task.date_worked < end_date)
+            end_date_obj = date.fromisoformat(end_date)
+            query = query.where(Task.date_worked < end_date_obj)
         result = await session.execute(query.order_by(Task.date_worked.desc()))
         return result.scalars().all()
 

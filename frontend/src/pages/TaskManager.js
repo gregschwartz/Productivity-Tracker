@@ -12,6 +12,7 @@ import EmptyState from '../components/EmptyState';
 import TaskCard from '../components/TaskCard';
 import MetaItem from '../components/MetaItem';
 import { TaskLoadingIndicator } from '../components/loading';
+import { getApiUrl } from '../utils/api';
 
 /**
  * Main container for task management
@@ -141,17 +142,17 @@ const TaskMeta = styled.div.attrs({
  * TaskManager component for managing daily productivity tasks
  */
 function TaskManager({ 
-  tasks = [], 
-  onAddTask = () => {}, 
-  onUpdateTask = () => {}, 
-  onDeleteTask = () => {},
   selectedDate = null,
   onDateChange = () => {},
-  onClearDateFilter = () => {},
-  isLoading
+  onClearDateFilter = () => {}
 }) {
   const theme = useTheme();
   let currentTheme = theme.name || 'Ready';
+
+  // Local state for task management
+  const [tasks, setTasks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Debug logging to check tasks loaded from API
   console.debug('TaskManager tasks:', tasks);
@@ -166,6 +167,136 @@ function TaskManager({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [submitStatus, setSubmitStatus] = useState('idle'); // 'idle', 'submitting', 'success'
   const [justUpdatedTaskId, setJustUpdatedTaskId] = useState(null);
+
+  /**
+   * Load tasks from the backend API for current date
+   */
+  const loadTasks = async (dateFilter = null) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const apiUrl = getApiUrl();
+      let url = `${apiUrl}/tasks/`;
+      
+      // Always apply a date filter - use selectedDate or today
+      const targetDate = dateFilter || new Date().toISOString().split('T')[0];
+      const nextDay = new Date(targetDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      url += `?start_date=${targetDate}&end_date=${nextDay.toISOString().split('T')[0]}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to load tasks: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      setTasks(data);
+    } catch (error) {
+      console.error('Error loading tasks:', error);
+      setError('Failed to load tasks from server.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Add a new task to the backend and local state
+   */
+  const addTask = async (task, targetDate = null) => {
+    let dateToUse;
+    if (task.date_worked && task.date_worked.includes('T')) {
+      // Already a full datetime string
+      dateToUse = task.date_worked;
+    } else {
+      dateToUse = targetDate || task.date_worked || selectedDate || new Date().toISOString().split('T')[0];
+    }
+    const newTask = {
+      ...task,
+      date_worked: dateToUse,
+      id: undefined
+    };
+
+    try {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/tasks/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTask),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create task: ${response.status} ${response.statusText}`);
+      }
+
+      const createdTask = await response.json();
+      setTasks(prev => Array.isArray(prev) ? [...prev, createdTask] : [createdTask]);
+    } catch (error) {
+      console.error('Error adding task:', error);
+      setError('Failed to save task to server. Please try again.');
+      throw error; // Re-throw so calling code knows the operation failed
+    }
+  };
+
+  /**
+   * Update an existing task in the backend and local state
+   */
+  const updateTask = async (taskId, updatedTask) => {
+    try {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/tasks/${taskId}/`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedTask),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update task: ${response.status} ${response.statusText}`);
+      }
+
+      const updatedTaskFromServer = await response.json();
+      setTasks(prev => prev.map(task => 
+        task.id === taskId ? updatedTaskFromServer : task
+      ));
+    } catch (error) {
+      console.error('Error updating task:', error);
+      setError('Failed to update task on server. Please try again.');
+      throw error; // Re-throw so calling code knows the operation failed
+    }
+  };
+
+  /**
+   * Delete a task from the backend and local state
+   */
+  const deleteTask = async (taskId) => {
+    try {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/tasks/${taskId}/`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete task: ${response.status} ${response.statusText}`);
+      }
+
+      setTasks(prev => prev.filter(task => task.id !== taskId));
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      setError('Failed to delete task on server. Please try again.');
+      throw error; // Re-throw so calling code knows the operation failed
+    }
+  };
+
+  /**
+   * Load tasks when component mounts or date changes
+   */
+  useEffect(() => {
+    loadTasks(selectedDate);
+  }, [selectedDate]);
 
 
   /**
@@ -236,8 +367,8 @@ function TaskManager({
     setEditingTask(task);
     setFormData({
       name: task.name,
-      timeSpent: task.timeSpent.toString(),
-      focusLevel: task.focusLevel
+      timeSpent: task.time_spent.toString(),
+      focusLevel: task.focus_level
     });
   };
 
@@ -260,10 +391,10 @@ function TaskManager({
     
     try {
       if (editingTask) {
-        await onUpdateTask(editingTask.id, {
+        await updateTask(editingTask.id, {
           name: formData.name.trim(),
-          timeSpent: parseFloat(formData.timeSpent),
-          focusLevel: formData.focusLevel
+          time_spent: parseFloat(formData.timeSpent),
+          focus_level: formData.focusLevel
         });
         setJustUpdatedTaskId(editingTask.id); // Trigger update animation
         setEditingTask(null);
@@ -274,7 +405,7 @@ function TaskManager({
           time_spent: parseFloat(formData.timeSpent),
           focus_level: formData.focusLevel,
           date_worked: currentDateString };
-        await onAddTask(taskPayload, currentDateString);
+        await addTask(taskPayload, currentDateString);
       }
       
       // Only clear form and show success if operation succeeded
@@ -288,11 +419,7 @@ function TaskManager({
     }
   };
 
-  const filteredTasks = selectedDate
-    ? tasks.filter(task => task.date_worked === selectedDate)
-    : tasks;
-
-  const sortedTasks = filteredTasks.sort((a, b) => new Date(b.date_worked) - new Date(a.date_worked));
+  const sortedTasks = Array.isArray(tasks) ? tasks.sort((a, b) => new Date(b.date_worked) - new Date(a.date_worked)) : [];
 
   return (
     <TaskContainer>
@@ -357,6 +484,14 @@ function TaskManager({
           </DateNavControls>
         </DateNavHeader>
       </DateNavigation>
+      
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <div className="text-red-800 dark:text-red-200 text-sm">
+            ⚠️ {error}
+          </div>
+        </div>
+      )}
       
       <AddTaskSection $theme={currentTheme}>
         <TaskForm onSubmit={handleSubmit}>
@@ -457,10 +592,10 @@ function TaskManager({
                 }}
                 exit={{ opacity: 0, scale: 0.5, x: 300, transition: { duration: 0.3 } }}
                 data-testid="task-card"
-                data-focus-level={task.focusLevel}
+                data-focus-level={task.focus_level}
                 data-completed={task.completed} // Assuming task.completed exists
                 $isEditing={editingTask && editingTask.id === task.id}
-                $focusLevel={task.focusLevel}
+                $focusLevel={task.focus_level}
                 $theme={currentTheme} // Pass theme for potential Tron glow on edit
               >
                 <TaskHeader>
@@ -474,7 +609,7 @@ function TaskManager({
                       <Edit2 />
                     </IconButton>
                     <IconButton
-                      onClick={() => onDeleteTask(task.id)}
+                      onClick={() => deleteTask(task.id)}
                       title="Delete task"
                       $theme={currentTheme}
                     >
@@ -486,10 +621,10 @@ function TaskManager({
                 <TaskMeta>
                   <MetaItem>
                     <Clock />
-                    {task.timeSpent} {task.timeSpent === 1 ? 'hour' : 'hours'}
+                    {task.time_spent} {task.time_spent === 1 ? 'hour' : 'hours'}
                   </MetaItem>
                   <MetaItem>
-                    {task.focusLevel} focus
+                    {task.focus_level} focus
                   </MetaItem>
                 </TaskMeta>
               </TaskCard>

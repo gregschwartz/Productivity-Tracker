@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
@@ -138,59 +138,41 @@ function Visualizations({ tasks = [], summaries = [], onNavigateToDate, onAddSum
   }, [tasks, getDateRange]);
 
   /**
-   * Calculate productivity statistics
+   * Calculate productivity statistics using backend API
    */
-  const stats = useMemo(() => {
-    const totalTasks = filteredTasks.length;
-    const totalHours = filteredTasks.reduce((sum, task) => sum + task.timeSpent, 0);
-    const avgFocus = filteredTasks.length > 0 
-      ? filteredTasks.reduce((sum, task) => {
-          const focusValues = { low: 1, medium: 2, high: 3 };
-          return sum + focusValues[task.focusLevel];
-        }, 0) / filteredTasks.length
-      : 0;
-    
-    const focusLabel = avgFocus < 1.5 ? 'Low' : avgFocus < 2.5 ? 'Medium' : 'High';
-    
-    // Calculate focus level breakdowns
-    const focusBreakdown = { low: [], medium: [], high: [] };
-    filteredTasks.forEach(task => {
-      // Handle invalid focus levels by defaulting to 'medium'
-      const focusLevel = task.focusLevel && focusBreakdown[task.focusLevel] ? task.focusLevel : 'medium';
-      focusBreakdown[focusLevel].push(task);
-    });
-    
-    const focusStats = {
-      low: {
-        tasks: focusBreakdown.low.length,
-        hours: focusBreakdown.low.reduce((sum, task) => sum + task.timeSpent, 0),
-        avgHours: focusBreakdown.low.length > 0 
-          ? focusBreakdown.low.reduce((sum, task) => sum + task.timeSpent, 0) / focusBreakdown.low.length
-          : 0
-      },
-      medium: {
-        tasks: focusBreakdown.medium.length,
-        hours: focusBreakdown.medium.reduce((sum, task) => sum + task.timeSpent, 0),
-        avgHours: focusBreakdown.medium.length > 0 
-          ? focusBreakdown.medium.reduce((sum, task) => sum + task.timeSpent, 0) / focusBreakdown.medium.length
-          : 0
-      },
-      high: {
-        tasks: focusBreakdown.high.length,
-        hours: focusBreakdown.high.reduce((sum, task) => sum + task.timeSpent, 0),
-        avgHours: focusBreakdown.high.length > 0 
-          ? focusBreakdown.high.reduce((sum, task) => sum + task.timeSpent, 0) / focusBreakdown.high.length
-          : 0
+  const [stats, setStats] = useState({
+    total_tasks: 0,
+    total_hours: 0,
+    average_hours_per_task: 0,
+    focus_hours: {}
+  });
+
+  useEffect(() => {
+    const updateStats = async () => {
+      if (filteredTasks.length === 0) {
+        setStats({ total_tasks: 0, total_hours: 0, average_hours_per_task: 0, focus_hours: {} });
+        return;
+      }
+
+      try {
+        const { calculateTaskStatistics } = await import('../utils/api');
+        const backendStats = await calculateTaskStatistics(filteredTasks);
+        setStats(backendStats);
+      } catch (error) {
+        console.error('Failed to get task statistics:', error);
+        // Simple fallback
+        const totalTasks = filteredTasks.length;
+        const totalHours = filteredTasks.reduce((sum, task) => sum + task.timeSpent, 0);
+        setStats({
+          total_tasks: totalTasks,
+          total_hours: totalHours,
+          average_hours_per_task: totalTasks > 0 ? totalHours / totalTasks : 0,
+          focus_hours: {}
+        });
       }
     };
-    
-    return {
-      totalTasks,
-      totalHours: totalHours.toFixed(1),
-      avgFocus: focusLabel,
-      productivity: totalTasks > 0 ? (totalHours / totalTasks).toFixed(1) : '0',
-      focusStats
-    };
+
+    updateStats();
   }, [filteredTasks]);
 
   /**
@@ -352,246 +334,247 @@ function Visualizations({ tasks = [], summaries = [], onNavigateToDate, onAddSum
             {option.label}
           </TimeRangeButton>
         ))}
-      </TimeRangeSelector>
+          </TimeRangeSelector>
 
-      {/* Overview Stats */}
-      <AllStatsWrapper>
-        <OverviewStatsRow>
-          <StatCard
-            title="Total"
-            stats={[
-              { value: stats.totalTasks, label: 'Tasks' },
-              { value: `${stats.totalHours}h`, label: 'Hours' }
-            ]}
-          />
-          
-          <StatCard
-            title="Average"
-            stats={[
-              { value: stats.avgFocus, label: 'Focus' },
-              { value: `${stats.productivity}h`, label: 'Hours/Task' }
-            ]}
-          />
-        </OverviewStatsRow>
-        
-        <FocusStatsRow>
-          <StatCard
-            title="Low Focus"
-            stats={[
-              { value: `${stats.focusStats.low.hours.toFixed(1)}h`, label: 'Total Hours' },
-              { value: `${stats.focusStats.low.avgHours.toFixed(1)}h`, label: 'Per Task' }
-            ]}
-          />
-          
-          <StatCard
-            title="Medium Focus"
-            stats={[
-              { value: `${stats.focusStats.medium.hours.toFixed(1)}h`, label: 'Total Hours' },
-              { value: `${stats.focusStats.medium.avgHours.toFixed(1)}h`, label: 'Per Task' }
-            ]}
-          />
-          
-          <StatCard
-            title="High Focus"
-            stats={[
-              { value: `${stats.focusStats.high.hours.toFixed(1)}h`, label: 'Total Hours' },
-              { value: `${stats.focusStats.high.avgHours.toFixed(1)}h`, label: 'Per Task' }
-            ]}
-          />
-        </FocusStatsRow>
-      </AllStatsWrapper>
-
-      {/* Weekly Summaries Section */}
-      <ChartSection
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-      >
-        <SectionSummary title="Summary" />
-        
-        <WeeklySummaries 
-          tasks={tasks} 
-          summaries={summaries} 
-          timeRange={getDateRange}
-          onAddSummary={onAddSummary}
-        />
-      </ChartSection>
-
-      {/* Daily Productivity Trend */}
-      <ChartSection
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <SectionHeaderWithControls>
-          <SectionHeader>
-            <SectionTitle>
-              <TrendingUp />
-              How you spent your days
-            </SectionTitle>
-            <SectionDescription>
-              {taskViewMode === 'tasks' ? 'The number of tasks you completed' : 'The number of hours you spent'} over {getTimeRangeLabel().toLowerCase()}
-            </SectionDescription>
-          </SectionHeader>
-          
-          <ChartViewToggle>
-            <TimeRangeButton
-              $active={taskViewMode === 'tasks'}
-              onClick={() => setTaskViewMode('tasks')}
-            >
-              Tasks
-            </TimeRangeButton>
-            <TimeRangeButton
-              $active={taskViewMode === 'time'}
-              onClick={() => setTaskViewMode('time')}
-            >
-              Time
-            </TimeRangeButton>
-          </ChartViewToggle>
-        </SectionHeaderWithControls>
-
-        <ChartContainer>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={dailyData}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-              <XAxis 
-                dataKey="date" 
-                tick={{ fontSize: 12 }}
-                axisLine={false}
+          {/* Overview Stats */}
+          <AllStatsWrapper>
+            <OverviewStatsRow>
+              <StatCard
+                title="Total"
+                stats={[
+                  { value: stats.total_tasks, label: 'Tasks' },
+                  { value: `${stats.total_hours}h`, label: 'Hours' }
+                ]}
               />
-              <YAxis 
-                tick={{ fontSize: 12 }}
-                axisLine={false}
-                allowDecimals={taskViewMode === 'tasks' ? false : true}
-                label={{ 
-                  value: taskViewMode === 'tasks' ? 'Tasks' : 'Hours', 
-                  angle: -90, 
-                  position: 'insideLeft',
-                  style: { textAnchor: 'middle', fontSize: '12px' }
-                }}
+              
+              <StatCard
+                title="Average"
+                stats={[
+                  { value: 'Medium', label: 'Focus Level' },
+                  { value: `${(stats.average_hours_per_task || 0).toFixed(1)}h`, label: 'Hours/Task' }
+                ]}
               />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar 
-                dataKey={taskViewMode === 'tasks' ? 'low' : 'lowTime'}
-                stackId="focus"
-                fill={`${theme?.colors?.primary || '#6366f1'}60`}
-                name="Low Focus"
+            </OverviewStatsRow>
+            
+            <FocusStatsRow>
+              <StatCard
+                title="Low Focus"
+                stats={[
+                  { value: `${(stats.focus_hours?.low || 0).toFixed(1)}h`, label: 'Total Hours' },
+                  { value: `${stats.focus_count_percentages?.low?.toFixed(0) || '0'}%`, label: 'Of Tasks' }
+                ]}
               />
-              <Bar 
-                dataKey={taskViewMode === 'tasks' ? 'medium' : 'mediumTime'}
-                stackId="focus"
-                fill={`${theme?.colors?.primary || '#6366f1'}A0`}
-                name="Medium Focus"
+              
+              <StatCard
+                title="Medium Focus"
+                stats={[
+                  { value: `${(stats.focus_hours?.medium || 0).toFixed(1)}h`, label: 'Total Hours' },
+                  { value: `${stats.focus_count_percentages?.medium?.toFixed(0) || '0'}%`, label: 'Of Tasks' }
+                ]}
               />
-              <Bar 
-                dataKey={taskViewMode === 'tasks' ? 'high' : 'highTime'}
-                stackId="focus"
-                fill={`${theme?.colors?.primary || '#6366f1'}`}
-                radius={[4, 4, 0, 0]}
-                name="High Focus"
+              
+              <StatCard
+                title="High Focus"
+                stats={[
+                  { value: `${(stats.focus_hours?.high || 0).toFixed(1)}h`, label: 'Total Hours' },
+                  { value: `${stats.focus_count_percentages?.high?.toFixed(0) || '0'}%`, label: 'Of Tasks' }
+                ]}
               />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartContainer>
-        
-        <ChartLegend>
-          <LegendItem>
-            <LegendColorBox color={`${theme?.colors?.primary || '#6366f1'}60`} />
-            <span>Low Focus</span>
-          </LegendItem>
-          <LegendItem>
-            <LegendColorBox color={`${theme?.colors?.primary || '#6366f1'}A0`} />
-            <span>Medium Focus</span>
-          </LegendItem>
-          <LegendItem>
-            <LegendColorBox color={`${theme?.colors?.primary || '#6366f1'}`} />
-            <span>High Focus</span>
-          </LegendItem>
-        </ChartLegend>
-      </ChartSection>
+            </FocusStatsRow>
+          </AllStatsWrapper>
 
-      {/* Focus Level Distribution */}
-      <ChartSection
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-      >
-        <SectionHeader>
-          <SectionTitle>
-            <Focus />
-            Focus Level Distribution
-          </SectionTitle>
-          <SectionDescription>
-            Understand your focus patterns across different tasks
-          </SectionDescription>
-        </SectionHeader>
-        <ChartContainer>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={focusData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={120}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {focusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip content={(props) => <CustomTooltip {...props} />} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </ChartContainer>
-      </ChartSection>
+          {/* Weekly Summaries Section */}
+          <ChartSection
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+          >
+            <SectionSummary title="Summary" />
+            
+            <WeeklySummaries 
+              tasks={tasks} 
+              summaries={summaries} 
+              timeRange={getDateRange}
+              onAddSummary={onAddSummary}
+            />
+          </ChartSection>
 
-      {/* Daily Productivity Heatmap */}
-      <ChartSection
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.3 }}
-      >
-        <SectionHeader>
-          <SectionTitle>
-            <Calendar />
-            Productivity Per Day
-          </SectionTitle>
-          <SectionDescription>
-            Visual overview of your daily productivity intensity over {getTimeRangeLabel().toLowerCase()}
-          </SectionDescription>
-        </SectionHeader>
-                          <HeatmapContainer>
-          {heatmapData.map((day, index) => (
-            <HeatmapCell
-              key={day.date}
-              intensity={day.intensity}
-              title={`${day.date}: ${day.tasks} tasks, ${day.intensity.toFixed(1)}h${day.tasks > 0 ? ' - Click to view tasks' : ''}`}
-              clickable={day.tasks > 0 && onNavigateToDate}
-              onClick={() => {
-                if (day.tasks > 0 && onNavigateToDate) {
-                  onNavigateToDate(day.date);
-                }
-              }}
-              monthName={day.monthName}
-              isFirstOfMonth={day.isFirstOfMonth}
-            >
-              {day.day}
-            </HeatmapCell>
-          ))}
-        </HeatmapContainer>
-        <HeatmapLegend>
-          {generateLegendData(theme).map((item, index) => (
-            <LegendItem key={index}>
-              <LegendColorBox color={item.color} />
-              <span>{item.label}</span>
-            </LegendItem>
-          ))}
-        </HeatmapLegend>
-      </ChartSection>
+          {/* Daily Productivity Trend */}
+          <ChartSection
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <SectionHeaderWithControls>
+              <SectionHeader>
+                <SectionTitle>
+                  <TrendingUp />
+                  How you spent your days
+                </SectionTitle>
+                <SectionDescription>
+                  {taskViewMode === 'tasks' ? 'The number of tasks you completed' : 'The number of hours you spent'} over {getTimeRangeLabel().toLowerCase()}
+                </SectionDescription>
+              </SectionHeader>
+              
+              <ChartViewToggle>
+                <TimeRangeButton
+                  $active={taskViewMode === 'tasks'}
+                  onClick={() => setTaskViewMode('tasks')}
+                >
+                  Tasks
+                </TimeRangeButton>
+                <TimeRangeButton
+                  $active={taskViewMode === 'time'}
+                  onClick={() => setTaskViewMode('time')}
+                >
+                  Time
+                </TimeRangeButton>
+              </ChartViewToggle>
+            </SectionHeaderWithControls>
 
+            <ChartContainer>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dailyData}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 12 }}
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 12 }}
+                    axisLine={false}
+                    allowDecimals={taskViewMode === 'tasks' ? false : true}
+                    label={{ 
+                      value: taskViewMode === 'tasks' ? 'Tasks' : 'Hours', 
+                      angle: -90, 
+                      position: 'insideLeft',
+                      style: { textAnchor: 'middle', fontSize: '12px' }
+                    }}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar 
+                    dataKey={taskViewMode === 'tasks' ? 'low' : 'lowTime'}
+                    stackId="focus"
+                    fill={`${theme?.colors?.primary || '#6366f1'}60`}
+                    name="Low Focus"
+                  />
+                  <Bar 
+                    dataKey={taskViewMode === 'tasks' ? 'medium' : 'mediumTime'}
+                    stackId="focus"
+                    fill={`${theme?.colors?.primary || '#6366f1'}A0`}
+                    name="Medium Focus"
+                  />
+                  <Bar 
+                    dataKey={taskViewMode === 'tasks' ? 'high' : 'highTime'}
+                    stackId="focus"
+                    fill={`${theme?.colors?.primary || '#6366f1'}`}
+                    radius={[4, 4, 0, 0]}
+                    name="High Focus"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+            
+            <ChartLegend>
+              <LegendItem>
+                <LegendColorBox color={`${theme?.colors?.primary || '#6366f1'}60`} />
+                <span>Low Focus</span>
+              </LegendItem>
+              <LegendItem>
+                <LegendColorBox color={`${theme?.colors?.primary || '#6366f1'}A0`} />
+                <span>Medium Focus</span>
+              </LegendItem>
+              <LegendItem>
+                <LegendColorBox color={`${theme?.colors?.primary || '#6366f1'}`} />
+                <span>High Focus</span>
+              </LegendItem>
+            </ChartLegend>
+          </ChartSection>
+
+          {/* Focus Level Distribution */}
+          <ChartSection
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+          >
+            <SectionHeader>
+              <SectionTitle>
+                <Focus />
+                Focus Level Distribution
+              </SectionTitle>
+              <SectionDescription>
+                Understand your focus patterns across different tasks
+              </SectionDescription>
+            </SectionHeader>
+            <ChartContainer>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={focusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={120}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {focusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={(props) => <CustomTooltip {...props} />} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </ChartSection>
+
+          {/* Daily Productivity Heatmap */}
+          <ChartSection
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.3 }}
+          >
+            <SectionHeader>
+              <SectionTitle>
+                <Calendar />
+                Productivity Per Day
+              </SectionTitle>
+              <SectionDescription>
+                Visual overview of your daily productivity intensity over {getTimeRangeLabel().toLowerCase()}
+              </SectionDescription>
+            </SectionHeader>
+                              <HeatmapContainer>
+              {heatmapData.map((day, index) => (
+                <HeatmapCell
+                  key={day.date}
+                  intensity={day.intensity}
+                  title={`${day.date}: ${day.tasks} tasks, ${day.intensity.toFixed(1)}h${day.tasks > 0 ? ' - Click to view tasks' : ''}`}
+                  clickable={day.tasks > 0 && onNavigateToDate}
+                  onClick={() => {
+                    if (day.tasks > 0 && onNavigateToDate) {
+                      onNavigateToDate(day.date);
+                    }
+                  }}
+                  monthName={day.monthName}
+                  isFirstOfMonth={day.isFirstOfMonth}
+                >
+                  {day.day}
+                </HeatmapCell>
+              ))}
+            </HeatmapContainer>
+            <HeatmapLegend>
+              {generateLegendData(theme).map((item, index) => (
+                <LegendItem key={index}>
+                  <LegendColorBox color={item.color} />
+                  <span>{item.label}</span>
+                </LegendItem>
+              ))}
+            </HeatmapLegend>
+          </ChartSection>
+        </>
+      )}
     </VisualizationContainer>
   );
 }

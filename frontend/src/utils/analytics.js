@@ -1,74 +1,60 @@
 /**
  * Analytics utilities for productivity data processing
  */
+import { calculateTaskStatistics } from './api';
 
 /**
- * Calculate productivity insights based on task data
+ * Calculate productivity insightsi
  * @param {Array} tasks - Array of task objects
- * @returns {Object} Insights object with metrics
+ * @returns {Promise<Object>} Insights object with metrics
  */
-export function getProductivityInsights(tasks) {
+export async function getProductivityInsights(tasks) {
   if (!tasks || tasks.length === 0) {
     return {
-      completionRate: 0,
-      totalHours: 0,
-      averageHours: 0,
-      mostCommonFocus: 'medium',
-      mostCommonCategory: 'Development',
-      focusDistribution: { low: 0, medium: 0, high: 0 },
-      categoryDistribution: {}
+      total_tasks: 0,
+      total_hours: 0.0,
+      average_hours_per_task: 0.0,
+      focus_count_percentages: {},
+      focus_hours: {},
+      focus_with_most_hours: 'N/A'
     };
   }
 
-  const completedTasks = tasks.filter(task => task.completed);
-  const totalHours = tasks.reduce((sum, task) => sum + (task.timeSpent || 0), 0);
-  
-  const focusLevels = tasks.reduce((acc, task) => {
-    acc[task.focusLevel] = (acc[task.focusLevel] || 0) + 1;
-    return acc;
-  }, {});
-  
-  const categories = tasks.reduce((acc, task) => {
-    const category = task.category || 'Development';
-    acc[category] = (acc[category] || 0) + 1;
-    return acc;
-  }, {});
-  
-  return {
-    completionRate: tasks.length > 0 ? (completedTasks.length / tasks.length) * 100 : 0,
-    totalHours,
-    averageHours: tasks.length > 0 ? totalHours / tasks.length : 0,
-    mostCommonFocus: Object.keys(focusLevels).reduce((a, b) => 
-      focusLevels[a] > focusLevels[b] ? a : b, 'medium'
-    ),
-    mostCommonCategory: Object.keys(categories).reduce((a, b) => 
-      categories[a] > categories[b] ? a : b, 'Development'
-    ),
-    focusDistribution: focusLevels,
-    categoryDistribution: categories
-  };
+  try {
+    // Use backend API to calculate statistics
+    return await calculateTaskStatistics(tasks);
+  } catch (error) {
+    console.error('Failed to calculate task statistics:', error);
+    // Fallback to basic local calculation
+    return {
+      total_tasks: tasks.length,
+      total_hours: tasks.reduce((sum, task) => sum + (task.timeSpent || 0), 0),
+      average_hours_per_task: tasks.length > 0 ? tasks.reduce((sum, task) => sum + (task.timeSpent || 0), 0) / tasks.length : 0,
+      focus_count_percentages: {},
+      focus_hours: {},
+      focus_with_most_hours: 'N/A'
+    };
+  }
 }
 
 /**
  * Get weekly summary data
  * @param {Array} tasks - Array of task objects
- * @returns {Object} Weekly summary
+ * @returns {Promise<Object>} Weekly summary
  */
-export function getWeeklySummary(tasks) {
-  const insights = getProductivityInsights(tasks);
-  const completedTasks = tasks.filter(task => task.completed);
+export async function getWeeklySummary(tasks) {
+  const insights = await getProductivityInsights(tasks);
   
   return {
     weekRange: 'This Week',
-    totalTasks: tasks.length,
-    completedTasks: completedTasks.length,
-    totalHours: insights.totalHours,
-    completionRate: insights.completionRate,
-    topCategory: insights.mostCommonCategory,
-    dominantFocus: insights.mostCommonFocus,
-    summary: `You completed ${completedTasks.length} out of ${tasks.length} tasks this week, ` +
-             `spending ${insights.totalHours} hours on productivity. Your focus was primarily ` +
-             `${insights.mostCommonFocus} level, with most time spent on ${insights.mostCommonCategory} tasks.`,
+    totalTasks: insights.total_tasks,
+    completedTasks: insights.completed_tasks,
+    totalHours: insights.total_hours,
+    completionRate: insights.completion_rate,
+    mostProductiveFocus: insights.most_productive_focus,
+    summary: `You completed ${insights.completed_tasks} out of ${insights.total_tasks} tasks this week, ` +
+             `spending ${insights.total_hours} hours on productivity. Your most productive focus level was ` +
+             `${insights.most_productive_focus}.`,
     suggestions: [
       "Consider time-blocking for deep focus sessions",
       "Take regular breaks to maintain high productivity",

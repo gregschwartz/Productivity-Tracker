@@ -78,7 +78,7 @@ class TaskService:
         count = result.scalar()
         return count if count is not None else 0
 
-    def analyze_task_patterns(self, tasks: List[Task]) -> dict:
+    def analyze_task_statistics(self, tasks: List[Task]) -> dict:
         """
         Analyzes a list of tasks to extract productivity patterns.
         Calculations include: total tasks, total hours, avg hours per task,
@@ -87,49 +87,40 @@ class TaskService:
         if not tasks:
             return {
                 "total_tasks": 0,
-                "completed_tasks": 0, # Assuming all provided tasks are 'completed' for now
-                "completion_rate": 0,
                 "total_hours": 0.0,
                 "average_hours_per_task": 0.0,
-                "focus_distribution": {}, # e.g., {'high': 0.5, 'medium': 0.3, 'low': 0.2}
-                "time_by_focus": {},    # e.g., {'high': 10.5, 'medium': 5.0, 'low': 3.0}
-                "most_productive_focus": "N/A", # Focus level with most hours
+                "focus_count": {}, # e.g., {'high': 0.5, 'medium': 0.3, 'low': 0.2}
+                "focus_hours": {},    # e.g., {'high': 10.5, 'medium': 5.0, 'low': 3.0}
+                "focus_with_most_hours": "N/A",
             }
 
         total_tasks = len(tasks)
-        # Assuming all tasks in the list are "completed" for this analysis
-        # If Task model had a status, filter by status == 'completed'
-        completed_tasks = total_tasks
-        completion_rate = (completed_tasks / total_tasks) * 100 if total_tasks > 0 else 0
-
         total_hours = sum(task.timeSpent for task in tasks if task.timeSpent is not None)
         average_hours_per_task = total_hours / total_tasks if total_tasks > 0 else 0
 
-        focus_distribution_counts = {}
-        time_by_focus = {}
+        focus_count = {}
+        focus_hours = {}
 
         for task in tasks:
             focus = task.focusLevel.value if hasattr(task.focusLevel, 'value') else task.focusLevel # Handle Enum
             if focus: # Ensure focus is not None
-                focus_distribution_counts[focus] = focus_distribution_counts.get(focus, 0) + 1
+                focus_count[focus] = focus_count.get(focus, 0) + 1
                 if task.timeSpent is not None:
-                    time_by_focus[focus] = time_by_focus.get(focus, 0) + task.timeSpent
+                    focus_hours[focus] = focus_hours.get(focus, 0) + task.timeSpent
 
-        focus_distribution_percentages = {
-            focus: (count / total_tasks) * 100 for focus, count in focus_distribution_counts.items()
+        focus_count_percentages = {
+            focus: (count / total_tasks) * 100 for focus, count in focus_count.items()
         } if total_tasks > 0 else {}
 
-        most_productive_focus = "N/A"
-        if time_by_focus:
-            most_productive_focus = max(time_by_focus, key=time_by_focus.get)
+        focus_with_most_hours = "N/A"
+        if focus_hours:
+            focus_with_most_hours = max(focus_hours, key=focus_hours.get)
 
         return {
             "total_tasks": total_tasks,
-            "completed_tasks": completed_tasks,
-            "completion_rate": round(completion_rate, 2),
             "total_hours": round(total_hours, 2),
             "average_hours_per_task": round(average_hours_per_task, 2),
-            "focus_distribution_percentages": focus_distribution_percentages,
-            "time_by_focus": time_by_focus,
-            "most_productive_focus": most_productive_focus,
+            "focus_count_percentages": focus_count_percentages,
+            "focus_hours": focus_hours,
+            "focus_with_most_hours": focus_with_most_hours,
         }

@@ -103,6 +103,7 @@ class WeeklySummary(SQLModel, table=True):
     stats: Dict[str, Any] = SQLField(default_factory=dict, sa_type=sqlalchemy.JSON, description="Weekly statistics")
     recommendations: List[str] = SQLField(default_factory=list, sa_type=sqlalchemy.JSON, description="Recommendations to improve efficiency or focus for the next week")
     embedding: Optional[List[float]] = SQLField(None, sa_type=Vector(1536), description="Embedding of the summary for vector search")
+    similarity: Optional[float] = SQLField(None, description="LLM shoulld ignore, only used for vector search result's cosine similarity score e.g. confidence")
     created_at: Optional[datetime] = SQLField(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = SQLField(default_factory=datetime.utcnow)
 

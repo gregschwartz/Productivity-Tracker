@@ -90,3 +90,28 @@ async def get_task_count_route(db: AsyncSession = Depends(get_session)):
         return {"total_tasks": count}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get task count: {str(e)}")
+
+
+@router.post("/stats/calculate", response_model=dict)
+@weave.op()
+async def calculate_task_statistics_route(
+    tasks: List[Task]
+):
+    """
+    Calculates statistics from a list of provided tasks.
+    """
+    if not tasks:
+        raise HTTPException(
+            status_code=400,
+            detail="No tasks provided for statistics analysis."
+        )
+
+    try:
+        analysis_results = task_service.analyze_task_statistics(tasks=tasks)
+        return analysis_results
+    except Exception as e:
+        # Log the exception e for debugging
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to analyze task patterns: {str(e)}"
+        )

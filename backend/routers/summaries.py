@@ -6,7 +6,7 @@ from typing import List, Optional
 import weave
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.models import WeeklySummary, SummaryRequest
+from models.models import Task, WeeklySummary, SummaryRequest
 from services.summary_service import SummaryService
 from services.ai_service import AIService
 from services.task_service import TaskService # Import TaskService
@@ -78,7 +78,6 @@ async def get_summaries_route(
     limit: int = 10,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    query: Optional[str] = None, # This is the search query text
     db: AsyncSession = Depends(get_session)
 ):
     """
@@ -86,17 +85,16 @@ async def get_summaries_route(
     - No params: paginated list
     - start_date: get summary for specific week
     - start_date + end_date: get summaries in date range
-    - query: semantic search using vector similarity
+    
+    Note: For vector search, use the /search endpoint instead.
     """
     try:
-        # The service method get_weekly_summaries now handles the query_text parameter for search
         summaries = await summary_service.get_weekly_summaries(
             session=db,
             skip=skip,
             limit=limit,
             start_date=start_date,
-            end_date=end_date,
-            query_text=query # Pass the query parameter as query_text
+            end_date=end_date
         )
         return summaries
         
@@ -158,30 +156,18 @@ async def get_summary_count_route(db: AsyncSession = Depends(get_session)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get summary count: {str(e)}")
 
-@router.post("/analyze-patterns", response_model=dict) # Define a response model if known, or use dict
+@router.get("/search", response_model=List[WeeklySummary])
 @weave.op()
-async def analyze_task_patterns_route(
-    request: SummaryRequest, # Reusing SummaryRequest for its 'tasks' field
-    # db: AsyncSession = Depends(get_session) # No DB session needed if tasks are passed directly
+async def search_summaries_route(
+    query: str,
+    db: AsyncSession = Depends(get_session)
 ):
-    """
-    Analyzes productivity patterns from a list of provided tasks.
-    The tasks are taken from the SummaryRequest model.
-    """
-    if not request.tasks:
-        raise HTTPException(
-            status_code=400,
-            detail="No tasks provided for pattern analysis."
-        )
-
+    """Search for summaries using vector similarity."""
     try:
-        # The analyze_task_patterns method in TaskService expects List[Task]
-        # SummaryRequest.tasks is List[Task] (SQLModel objects)
-        analysis_results = task_service.analyze_task_patterns(tasks=request.tasks)
-        return analysis_results
+        summaries = await summary_service.vector_search_week_summaries(session=db, query_text=query)
+        return summaries
     except Exception as e:
-        # Log the exception e for debugging
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to analyze task patterns: {str(e)}"
+            detail=f"Failed to search summaries: {str(e)}"
         )

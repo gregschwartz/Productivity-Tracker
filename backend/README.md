@@ -22,29 +22,29 @@ Using **Alembic** for database schema migrations, as is standard.
 1. **Make model changes** in `models/models.py`
 2. **Generate migration** for your changes:
    ```bash
-   alembic revision --autogenerate -m "Description of changes"
+   docker exec -it [backend_container_name] alembic revision --autogenerate -m "Description of changes"
    ```
 3. **Review the generated migration** in `alembic/versions/`
 4. **Run the migration**:
    ```bash
-   alembic upgrade head
+   docker exec -it [backend_container_name] alembic upgrade head
    ```
 
 ### Other Helpful Commands
 
 Check current version
 ```bash
-alembic current
+docker exec -it [backend_container_name] alembic current
 ```
 
 Rollback one migration
 ```bash
-alembic downgrade -1
+docker exec -it [backend_container_name] alembic downgrade -1
 ```
 
 View history
 ```bash
-alembic history --verbose
+docker exec -it [backend_container_name] alembic history --verbose
 ```
 
 ## Sample Data Generation
@@ -52,7 +52,7 @@ alembic history --verbose
 For development and demo purposes, you can generate sample tasks and AI-powered summaries.
 
 ```bash
-python scripts/seed_data.py
+docker exec -it [backend_container_name] python scripts/seed_data.py
 ```
 
 or

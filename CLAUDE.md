@@ -93,6 +93,7 @@ cd backend && alembic downgrade -1 && cd ..
 ## Important Development Notes
 
 ### From Cursor Rules
+- Whenever possible, use test-driven development. Always start with changes by writing tests 
 - Always run tests after making changes
 - Never change quote styles in existing code
 - Include comments explaining non-obvious logic decisions

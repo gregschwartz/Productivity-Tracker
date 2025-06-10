@@ -4,7 +4,7 @@ from unittest.mock import patch, AsyncMock, MagicMock
 
 from main import app  # Import your FastAPI app
 from models.models import WeeklySummary, Task
-from models.pydantic_models import SummaryResponse, WeeklyStats, TaskData, FocusLevel # For AIService mock
+from models.models import SummaryResponse, WeeklyStats, Task, FocusLevel
 from services.ai_service import AIService # To mock its methods
 
 # Fixture for TestClient
@@ -19,14 +19,12 @@ SAMPLE_TASKS_PAYLOAD = [
     {"id": "1", "name": "Task 1", "timeSpent": 5.0, "focusLevel": "high", "date": "2024-03-05"},
     {"id": "2", "name": "Task 2", "timeSpent": 3.0, "focusLevel": "medium", "date": "2024-03-07"},
 ]
-SAMPLE_WEEKLY_STATS_PAYLOAD = {"totalTasks": 2, "totalHours": "8.0", "avgFocus": "High"}
+SAMPLE_WEEKLY_STATS_PAYLOAD = {"total_tasks": 2, "total_hours": "8.0", "avg_focus": "medium"}
 
 # This is what AIService.generate_weekly_summary is expected to return (pydantic model)
 AI_GENERATED_SUMMARY = SummaryResponse(
-    summary="Great week with high focus!",
-    insights=["Insight 1"],
-    recommendations=["Recommendation 1"],
-    stats=WeeklyStats(totalTasks=2, totalHours="8.0", avgFocus="High")
+    summary="Great week with high <mark>focus</mark>!",
+    recommendations=["Keep your <mark>focus</mark> by touching grass."]
 )
 
 # This is what the endpoint will store and return (database model)
@@ -35,7 +33,7 @@ STORED_SUMMARY_DB_MODEL = WeeklySummary(
     week_start=SAMPLE_WEEK_START,
     week_end=SAMPLE_WEEK_END,
     summary=AI_GENERATED_SUMMARY.summary,
-    stats=AI_GENERATED_SUMMARY.stats.dict(), # Stored as dict in DB model
+    stats={"total_tasks": 2, "total_hours": "8.0", "avg_focus": "medium"}, # Stored as dict in DB model
     recommendations=AI_GENERATED_SUMMARY.recommendations
 )
 
@@ -46,7 +44,7 @@ def test_generate_summary_success(client, sample_tasks, sample_weekly_stats, sam
     # sample_summary_response is a SummaryResponse Pydantic model
 
     # Prepare the request payload for the endpoint
-    # The endpoint expects a list of Task dicts, not TaskData objects directly in payload
+    # The endpoint expects a list of Task dicts, not Task objects directly in payload
     tasks_for_payload = [t.dict() for t in sample_tasks]
 
     summary_request_payload = {
@@ -83,9 +81,9 @@ def test_generate_summary_success(client, sample_tasks, sample_weekly_stats, sam
         assert json_response["id"] == 1 # ID from mock_db_create_summary
 
         mock_ai_generate.assert_called_once()
-        # Check that AI service was called with TaskData objects
+        # Check that AI service was called with Task objects
         call_args = mock_ai_generate.call_args[1] # keyword arguments
-        assert isinstance(call_args['tasks'][0], TaskData)
+        assert isinstance(call_args['tasks'][0], Task)
         assert call_args['week_stats'] == sample_weekly_stats
 
 
@@ -187,7 +185,7 @@ def test_get_summaries_with_query_rag_search(client, sample_rag_response):
         mock_get_summaries_rag.return_value = mock_rag_matched_summaries
 
         search_query = "improve focus"
-        response = client.get(f"/api/summaries/?query={search_query}")
+        response = client.get(f"/api/summaries/search?query={search_query}")
         
         assert response.status_code == 200
         json_response = response.json()

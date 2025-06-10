@@ -16,8 +16,8 @@ SUMMARY_PROMPT = """You are a productivity coach for software engineers at a sta
 Analyze this week's productivity data and generate:
   1. A concise summary (2-3 sentences) of the week's tasks and productivity metrics. The summary should not mention the dates nor that this is a summary; focus on summarizing the actions taken and any correlation between action, focus, and time spent.
   2. 1-3 specific, actionable recommendations to improve efficiency or focus for the next week BASED UPON THE WEEK'S TASKS AND PRODUCTIVITY METRICS. Each should be a single sentence, with the most important part in bold HTML tags e.g. 
-    - Set aside <b>1-2 days free from lower focus tasks</b> to help your concentration.
-    - Try to <b>pair up during low-focus tasks</b> so you can help each other stay on track.
+    - Set aside <strong>1-2 days free from lower focus tasks</strong> to help your concentration.
+    - Try to <strong>pair up during low-focus tasks</strong> so you can help each other stay on track.
 
 
 Week: {week_start} to {week_end}

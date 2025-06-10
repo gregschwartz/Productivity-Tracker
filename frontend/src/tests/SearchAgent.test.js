@@ -45,7 +45,7 @@ describe('SearchAgent Component', () => {
     });
   });
 
-  test('renders search input and a search button', () => {
+  test('renders search input', () => {
     render(
       <BrowserRouter>
         <ThemeProvider theme={themes.Ready}>
@@ -54,8 +54,10 @@ describe('SearchAgent Component', () => {
       </BrowserRouter>
     );
     
-    expect(screen.getByPlaceholderText(/search through past productivity insights/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /search/i })).toBeInTheDocument();
+    expect(screen.getByText(/productivity history/i)).toBeInTheDocument();
+    // 1 Input with placeholder that has both of these pieces of text: "productivity patterns" and "search" 
+    expect(screen.getByPlaceholderText(/productivity patterns/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/search/i)).toBeInTheDocument();
   });
 
   test('allows typing a query into the search input', async () => {
@@ -68,12 +70,12 @@ describe('SearchAgent Component', () => {
       </BrowserRouter>
     );
     
-    const searchInput = screen.getByPlaceholderText(/search through past productivity insights/i);
+    const searchInput = screen.getByText(/productivity history/i);
     await user.type(searchInput, 'how to improve focus');
     expect(searchInput).toHaveValue('how to improve focus');
   });
 
-  test('clicking search button triggers API call with the query', async () => {
+  test('Typing in search box  triggers API call with the query', async () => {
     const user = userEvent.setup();
     
     render(
@@ -84,9 +86,8 @@ describe('SearchAgent Component', () => {
       </BrowserRouter>
     );
     
-    const searchInput = screen.getByPlaceholderText(/search through past productivity insights/i);
-    await user.type(searchInput, 'productivity tips');
-    await user.click(screen.getByRole('button', { name: /search/i }));
+    const searchInput = screen.getByRole('textbox');
+    await user.type(searchInput, 'code');
 
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/summaries/rag/search'),
@@ -95,7 +96,7 @@ describe('SearchAgent Component', () => {
         headers: expect.objectContaining({
           'Content-Type': 'application/json',
         }),
-        body: JSON.stringify({ query: 'productivity tips' }),
+        body: JSON.stringify({ query: 'code reviews' }),
       })
     );
   });
@@ -115,9 +116,8 @@ describe('SearchAgent Component', () => {
       </BrowserRouter>
     );
     
-    const searchInput = screen.getByPlaceholderText(/search through past productivity insights/i);
-    await user.type(searchInput, 'focus techniques');
-    await user.click(screen.getByRole('button', { name: /search/i }));
+    const searchInput = screen.getByRole('textbox');
+    await user.type(searchInput, 'meeting');
 
     await waitFor(() => {
       // Check for the answer
@@ -144,7 +144,7 @@ describe('SearchAgent Component', () => {
       </BrowserRouter>
     );
     
-    const searchInput = screen.getByPlaceholderText(/search through past productivity insights/i);
+    const searchInput = screen.getByPlaceholderText(/productivity history/i);
     await user.type(searchInput, 'unknown query');
     await user.click(screen.getByRole('button', { name: /search/i }));
 
@@ -169,7 +169,7 @@ describe('SearchAgent Component', () => {
       </BrowserRouter>
     );
     
-    const searchInput = screen.getByPlaceholderText(/search through past productivity insights/i);
+    const searchInput = screen.getByPlaceholderText(/productivity history/i);
     await user.type(searchInput, 'trigger error');
     await user.click(screen.getByRole('button', { name: /search/i }));
 

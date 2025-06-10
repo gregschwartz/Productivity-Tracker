@@ -1,5 +1,6 @@
 import os
-from typing import List, Optional
+import re
+from typing import List, Optional, Union
 import weave
 from openai import AsyncOpenAI
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,6 +10,8 @@ from sqlmodel import select
 from models.models import WeeklySummary
 
 class SummaryService:
+    """Service for managing weekly summaries with AI-powered search and embeddings."""
+    
     def __init__(self):
         self.client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     
@@ -145,7 +148,83 @@ class SummaryService:
             # Convert row_data (which is a RowMapping) to a dict for WeeklySummary unpacking
             summary_dict = dict(row_data)
 
-            # Create WeeklySummary object from the dict
-            summaries.append(WeeklySummary(**summary_dict))
+            # Extract similarity score as relevance score
+            relevance_score = summary_dict.pop('similarity', 0.0)
+
+            # Apply keyword highlighting to text fields
+            summary_dict['summary'] = self.highlight_keywords(summary_dict['summary'], query_text)
+            summary_dict['recommendations'] = self.highlight_keywords(summary_dict['recommendations'], query_text)
+
+            # Create WeeklySummary object and add relevance score as additional attribute
+            summary_obj = WeeklySummary(**summary_dict)
+            summary_obj.relevance_score = relevance_score  # Add similarity as relevance score
+            
+            summaries.append(summary_obj)
 
         return summaries
+
+    def highlight_keywords(self, text: Union[str, List[str]], query_text: str) -> Union[str, List[str]]:
+        """
+        Highlight keywords in text based on query terms.
+        
+        Parameters:
+            text: The text to highlight (can be string or list of strings)
+            query_text: The search query containing keywords to highlight
+            
+        Returns:
+            The text with highlighted keywords wrapped in <mark> tags
+        """
+        if not text or not query_text:
+            return text
+            
+        # Extract keywords from query, filtering out short words
+        keywords = [word.strip() for word in query_text.lower().split() if len(word.strip()) > 2]
+        
+        # Expand keywords with synonyms for better matching
+        expanded_keywords = []
+        synonyms = {
+            'coding': ['programming', 'development', 'software', 'code'],
+            'meeting': ['meetings', 'call', 'discussion', 'collaboration'],
+            'design': ['ui', 'ux', 'interface', 'mockup', 'wireframe'],
+            'testing': ['qa', 'debug', 'bug', 'test'],
+            'focus': ['concentration', 'productivity', 'deep work'],
+            'planning': ['strategy', 'roadmap', 'organize']
+        }
+        
+        for keyword in keywords:
+            expanded_keywords.append(keyword)
+            if keyword in synonyms:
+                expanded_keywords.extend(synonyms[keyword])
+        
+        def highlight_text(input_text: str) -> str:
+            """Helper function to highlight keywords in a single text string."""
+            if not input_text:
+                return input_text
+                
+            highlighted_text = input_text
+
+            # Remove any existing <strong> tags
+            highlighted_text = re.sub(r'<strong>', '', highlighted_text)
+            highlighted_text = re.sub(r'</strong>', '', highlighted_text)
+            
+            # Sort keywords by length (longest first) to avoid partial replacements
+            sorted_keywords = sorted(set(expanded_keywords), key=len, reverse=True)
+            
+            for keyword in sorted_keywords:
+                # Use word boundaries to match whole words only
+                pattern = re.compile(rf'\b{re.escape(keyword)}\w*', re.IGNORECASE)
+                highlighted_text = pattern.sub(lambda m: f'<mark>{m.group()}</mark>', highlighted_text)
+            
+            # Clean up any double highlighting
+            highlighted_text = re.sub(r'<mark><mark>', '<mark>', highlighted_text)
+            highlighted_text = re.sub(r'</mark></mark>', '</mark>', highlighted_text)
+            
+            return highlighted_text
+        
+        # Handle both string and list inputs
+        if isinstance(text, str):
+            return highlight_text(text)
+        elif isinstance(text, list):
+            return [highlight_text(item) for item in text if item]
+        else:
+            return text

@@ -24,17 +24,28 @@ def upgrade() -> None:
     # Enable pgvector extension
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
     
-    # Create tasks table
-    op.create_table('tasks',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('name', sa.String(), nullable=False),
-        sa.Column('time_spent', sa.Float(), nullable=True),
-        sa.Column('focus_level', sa.Enum('low', 'medium', 'high', 'no_tasks', name='focuslevel'), nullable=False),
-        sa.Column('date_worked', sa.Date(), nullable=False),
-        sa.Column('created_at', sa.DateTime(), nullable=True),
-        sa.Column('updated_at', sa.DateTime(), nullable=True),
-        sa.PrimaryKeyConstraint('id')
-    )
+    # Create enum type manually to avoid SQLAlchemy auto-creation
+    op.execute("""
+        DO $$ 
+        BEGIN 
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'focuslevel') THEN
+                CREATE TYPE focuslevel AS ENUM ('low', 'medium', 'high', 'no_tasks');
+            END IF;
+        END $$
+    """)
+    
+    # Create tasks table using raw SQL to have better control
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS tasks (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR NOT NULL,
+            time_spent FLOAT,
+            focus_level focuslevel NOT NULL,
+            date_worked DATE NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     op.create_index(op.f('ix_tasks_date_worked'), 'tasks', ['date_worked'], unique=False)
     
     # Create weekly_summaries table
@@ -46,6 +57,7 @@ def upgrade() -> None:
         sa.Column('stats', sa.JSON(), nullable=True),
         sa.Column('recommendations', sa.JSON(), nullable=True),
         sa.Column('embedding', Vector(1536), nullable=True),
+        sa.Column('similarity', sa.Float(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=True),
         sa.Column('updated_at', sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint('id')
@@ -71,5 +83,8 @@ def downgrade() -> None:
     op.drop_table('weekly_summaries')
     op.drop_index(op.f('ix_tasks_date_worked'), table_name='tasks')
     op.drop_table('tasks')
+    
+    # Drop the enum type
+    op.execute("DROP TYPE IF EXISTS focuslevel")
     
     # Note: We don't drop the vector extension as it might be used by other applications

@@ -77,7 +77,7 @@ function Navigation({
       ))}
       <NavButton
         onClick={onThemeToggle}
-        title={currentTheme === 'Tron' ? 'Exit TRON Mode' : (isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode (Shift+Click for TRON)')}
+        title={currentTheme === 'Tron' ? 'Exit TRON Mode' : (isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode')}
         $theme={currentTheme}
       >
         {currentTheme === 'Tron' ? (

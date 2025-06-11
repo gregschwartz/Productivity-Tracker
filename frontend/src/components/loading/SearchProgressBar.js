@@ -1,42 +1,68 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const shimmer = keyframes`
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+`;
 
 const ProgressBarContainer = styled.div`
   width: 100%;
-  padding: 16px;
+  padding: 24px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 20px;
 `;
 
 const BarBackground = styled.div`
   width: 100%;
-  max-width: 400px;
-  height: 12px;
+  height: 24px;
   background-color: ${({ theme }) => theme.colors.border || '#e0e0e0'};
-  border-radius: 6px;
+  border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 12px;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
 const IndeterminateBar = styled(motion.div)`
-  width: 40%;
+  width: 30%;
   height: 100%;
-  background-color: ${({ theme }) => theme.colors.primary || '#007bff'};
-  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    ${({ theme }) => theme.colors.primary || '#007bff'} 0%,
+    ${({ theme }) => theme.colors.primary || '#007bff'}aa 50%,
+    ${({ theme }) => theme.colors.primary || '#007bff'} 100%
+  );
+  background-size: 200% 100%;
+  animation: ${shimmer} 2s ease-in-out infinite;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
 `;
 
 const MessagesContainer = styled.div`
-  height: 20px; /* Fixed height to prevent layout shifts */
-  text-align: center;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-weight: 500;
 `;
 
 const messages = [
-  "brewing coffee",
-  "fighting for the user",
-  "searching for Kevin Flynn",
-  "gathering results"
+  "🔍 Reticulating splines...",
+  "⚡ Fighting for the user...",
+  "🎮 Searching for Kevin Flynn...",
+  "🌐 Entering the Grid...",
+  "☕ Brewing coffee...",
+  "🚀 Optimizing search algorithms...",
+  "📊 Gathering results..."
 ];
 
 const SearchProgressBar = () => {
@@ -45,7 +71,7 @@ const SearchProgressBar = () => {
   useEffect(() => {
     const intervalId = setInterval(() => {
       setCurrentMessageIndex((prevIndex) => (prevIndex + 1) % messages.length);
-    }, 2500); // Change message every 2.5 seconds
+    }, 1000);
 
     return () => clearInterval(intervalId);
   }, []);
@@ -55,11 +81,11 @@ const SearchProgressBar = () => {
       <BarBackground>
         <IndeterminateBar
           initial={{ x: '-100%' }}
-          animate={{ x: '250%' }} // 100% (bar width) + 150% (to go across)
+          animate={{ x: '370%' }}
           transition={{
             repeat: Infinity,
-            duration: 1.5,
-            ease: 'linear',
+            duration: 3,
+            ease: 'easeInOut',
           }}
         />
       </BarBackground>
@@ -69,7 +95,7 @@ const SearchProgressBar = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.8 }}
         >
           {messages[currentMessageIndex]}
         </motion.div>

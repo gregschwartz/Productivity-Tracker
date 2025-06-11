@@ -1,7 +1,7 @@
 import React from 'react';
 import { AnimatePresence } from 'framer-motion';
 import EmptyState from '../EmptyState';
-import { TaskLoadingIndicator } from '../loading';
+import { TaskManagerLoading } from '../loading';
 import TaskItem from './TaskItem';
 import { TaskList as StyledTaskList } from './TaskManager.styles';
 
@@ -18,11 +18,7 @@ function TaskList({
 }) {
   return (
     <StyledTaskList>
-      {isLoading && tasks.length === 0 && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
-          <TaskLoadingIndicator />
-        </div>
-      )}
+      {isLoading && tasks.length === 0 && <TaskManagerLoading />}
       <AnimatePresence>
         {tasks.length === 0 ? (
           <EmptyState

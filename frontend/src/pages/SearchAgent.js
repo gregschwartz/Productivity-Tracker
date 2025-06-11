@@ -258,10 +258,11 @@ function SearchAgent({ summaries = [] }) {
 
       {query.trim() && (
         <SearchResults>
+          {isSearching ? (
+            <SearchProgressBar />
+          ) : (
           <ResultsHeader>
-            <ResultsCount>
-              {isSearching ? <SearchProgressBar /> : `${searchResults.length} results found`}
-            </ResultsCount>
+              <ResultsCount>{`${searchResults.length} results found`}</ResultsCount>
             <SortSelect value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
               <option value="relevance">Sort by Relevance</option>
               <option value="date">Sort by Date</option>
@@ -269,6 +270,7 @@ function SearchAgent({ summaries = [] }) {
               <option value="hours">Sort by Hours</option>
             </SortSelect>
           </ResultsHeader>
+          )}
 
           <AnimatePresence>
             {searchError ? (

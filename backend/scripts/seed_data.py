@@ -58,6 +58,13 @@ async def generate_sample_data(reference_date: datetime = None) -> tuple[List[Ta
         {"name": "API endpoint design", "timeMinMax": [2, 4], "focus_level": FocusLevel.high},
         {"name": "Unit testing implementation", "timeMinMax": [1, 3], "focus_level": FocusLevel.medium},
         {"name": "Integration testing setup", "timeMinMax": [2, 4], "focus_level": FocusLevel.medium},
+        {"name": "Microservices architecture implementation", "timeMinMax": [4, 8], "focus_level": FocusLevel.high},
+        {"name": "GraphQL schema development", "timeMinMax": [2, 4], "focus_level": FocusLevel.high},
+        {"name": "CI/CD pipeline optimization", "timeMinMax": [3, 5], "focus_level": FocusLevel.high},
+        {"name": "Cloud infrastructure setup", "timeMinMax": [4, 6], "focus_level": FocusLevel.high},
+        {"name": "Security vulnerability fixes", "timeMinMax": [2, 4], "focus_level": FocusLevel.high},
+        {"name": "Mobile app feature development", "timeMinMax": [3, 6], "focus_level": FocusLevel.high},
+        {"name": "Database migration script", "timeMinMax": [2, 4], "focus_level": FocusLevel.high},
         
         # Meetings and collaboration
         {"name": "Team standup meeting", "timeMinMax": [0.25, 0.5], "focus_level": FocusLevel.medium},
@@ -68,6 +75,14 @@ async def generate_sample_data(reference_date: datetime = None) -> tuple[List[Ta
         {"name": "Code review session", "timeMinMax": [1, 2], "focus_level": FocusLevel.medium},
         {"name": "Mentoring junior developer", "timeMinMax": [0.5, 1.5], "focus_level": FocusLevel.medium},
         {"name": "Cross-team collaboration", "timeMinMax": [1, 2], "focus_level": FocusLevel.high},
+        {"name": "Product roadmap planning", "timeMinMax": [2, 3], "focus_level": FocusLevel.high},
+        {"name": "Tech debt discussion", "timeMinMax": [1, 2], "focus_level": FocusLevel.medium},
+        {"name": "Team performance review", "timeMinMax": [1, 2], "focus_level": FocusLevel.medium},
+        {"name": "Project kickoff meeting", "timeMinMax": [1.5, 2.5], "focus_level": FocusLevel.medium},
+        {"name": "Stakeholder presentation", "timeMinMax": [1, 2], "focus_level": FocusLevel.high},
+        {"name": "Team building workshop", "timeMinMax": [2, 3], "focus_level": FocusLevel.low},
+        {"name": "Technical interview", "timeMinMax": [1, 1.5], "focus_level": FocusLevel.high},
+        {"name": "Release planning meeting", "timeMinMax": [1, 2], "focus_level": FocusLevel.medium},
         
         # Documentation and admin
         {"name": "Design system documentation", "timeMinMax": [1, 3], "focus_level": FocusLevel.medium},
@@ -77,6 +92,13 @@ async def generate_sample_data(reference_date: datetime = None) -> tuple[List[Ta
         {"name": "Weekly planning session", "timeMinMax": [1, 2], "focus_level": FocusLevel.low},
         {"name": "Project status reporting", "timeMinMax": [0.5, 1], "focus_level": FocusLevel.low},
         {"name": "Time tracking and reporting", "timeMinMax": [0.25, 0.5], "focus_level": FocusLevel.low},
+        {"name": "API documentation writing", "timeMinMax": [2, 4], "focus_level": FocusLevel.medium},
+        {"name": "Architecture decision records", "timeMinMax": [1, 2], "focus_level": FocusLevel.high},
+        {"name": "Release notes preparation", "timeMinMax": [1, 2], "focus_level": FocusLevel.medium},
+        {"name": "Team process documentation", "timeMinMax": [1, 3], "focus_level": FocusLevel.medium},
+        {"name": "Onboarding guide updates", "timeMinMax": [2, 3], "focus_level": FocusLevel.medium},
+        {"name": "Security compliance report", "timeMinMax": [2, 4], "focus_level": FocusLevel.high},
+        {"name": "Performance metrics report", "timeMinMax": [1, 2], "focus_level": FocusLevel.medium},
         
         # Research and learning
         {"name": "Research new React patterns", "timeMinMax": [1, 3], "focus_level": FocusLevel.high},
@@ -84,13 +106,31 @@ async def generate_sample_data(reference_date: datetime = None) -> tuple[List[Ta
         {"name": "Learning new framework", "timeMinMax": [2, 5], "focus_level": FocusLevel.low},
         {"name": "Security research and analysis", "timeMinMax": [2, 4], "focus_level": FocusLevel.high},
         {"name": "Industry best practices review", "timeMinMax": [1, 3], "focus_level": FocusLevel.medium},
+        {"name": "ChatGPT prompt engineering", "timeMinMax": [1, 2], "focus_level": FocusLevel.high},
+        {"name": "Claude API integration research", "timeMinMax": [2, 3], "focus_level": FocusLevel.high},
+        {"name": "Gemini Pro capabilities exploration", "timeMinMax": [1.5, 3], "focus_level": FocusLevel.medium},
+        {"name": "AI model fine-tuning research", "timeMinMax": [2, 4], "focus_level": FocusLevel.high},
+        {"name": "LLM performance benchmarking", "timeMinMax": [2, 4], "focus_level": FocusLevel.high},
+        {"name": "AI ethics and safety review", "timeMinMax": [1, 2], "focus_level": FocusLevel.medium},
+        {"name": "ML model deployment patterns", "timeMinMax": [2, 4], "focus_level": FocusLevel.high},
+        {"name": "AI cost optimization research", "timeMinMax": [1, 2], "focus_level": FocusLevel.medium},
+        {"name": "Vector database evaluation", "timeMinMax": [2, 3], "focus_level": FocusLevel.high},
         
         # QA and testing
         {"name": "Testing and QA session", "timeMinMax": [1, 3], "focus_level": FocusLevel.medium},
         {"name": "Manual testing workflow", "timeMinMax": [1, 2], "focus_level": FocusLevel.medium},
         {"name": "Automated test maintenance", "timeMinMax": [1, 3], "focus_level": FocusLevel.medium},
         {"name": "Bug investigation and analysis", "timeMinMax": [1, 4], "focus_level": FocusLevel.low},
-        {"name": "Performance optimization", "timeMinMax": [1, 3], "focus_level": FocusLevel.high}
+        {"name": "Performance optimization", "timeMinMax": [1, 3], "focus_level": FocusLevel.high},
+        {"name": "Load testing implementation", "timeMinMax": [2, 4], "focus_level": FocusLevel.high},
+        {"name": "Security penetration testing", "timeMinMax": [3, 5], "focus_level": FocusLevel.high},
+        {"name": "Cross-browser compatibility testing", "timeMinMax": [2, 3], "focus_level": FocusLevel.medium},
+        {"name": "API integration testing", "timeMinMax": [2, 4], "focus_level": FocusLevel.medium},
+        {"name": "User acceptance testing", "timeMinMax": [1, 3], "focus_level": FocusLevel.medium},
+        {"name": "Test automation framework setup", "timeMinMax": [3, 5], "focus_level": FocusLevel.high},
+        {"name": "Performance benchmark testing", "timeMinMax": [2, 4], "focus_level": FocusLevel.high},
+        {"name": "Mobile app testing", "timeMinMax": [2, 3], "focus_level": FocusLevel.medium},
+        {"name": "Accessibility testing", "timeMinMax": [1, 2], "focus_level": FocusLevel.medium}
     ]
 
     sample_tasks = []

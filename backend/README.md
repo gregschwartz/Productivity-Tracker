@@ -55,11 +55,6 @@ For development and demo purposes, you can generate sample tasks and AI-powered 
 docker exec -it [backend_container_name] python scripts/seed_data.py
 ```
 
-or
-```bash
-curl -X POST http://localhost:8000/api/tasks/generate-sample-data
-```
-
 This will:
 - Clear all existing tasks and summaries
 - Generate many days of sample tasks (working backwards from today)

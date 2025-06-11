@@ -1,9 +1,15 @@
+"""
+Integration test configuration with transaction rollback.
+Uses persistent test database with automatic cleanup via transaction rollback.
+"""
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from typing import List
-import sys
+import asyncio
 import os
 import warnings
+import sys
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -13,110 +19,126 @@ warnings.filterwarnings("ignore", category=DeprecationWarning, module="weave.*")
 warnings.filterwarnings("ignore", message=".*sentry_sdk.Hub.*")
 warnings.filterwarnings("ignore", message=".*warn.*method.*deprecated.*")
 
-# Configure pytest to ignore weave warnings at the start of testing
 def pytest_configure(config):
     warnings.filterwarnings("ignore", category=DeprecationWarning, module="weave")
     warnings.filterwarnings("ignore", message=".*sentry_sdk.Hub.*")
     warnings.filterwarnings("ignore", message=".*warn.*method.*deprecated.*")
 
-from models.models import Task, FocusLevel, WeeklyStats, SummaryResponse
+from main import app
+from services.database import get_session
+from models.models import Base, Task, FocusLevel
+from config.database import get_database_config
 
-@pytest.fixture
-def sample_tasks() -> List[Task]:
-    """Sample task data for testing."""
-    return [
-        Task(
-            id=1,
-            name="Code review",
-            time_spent=2.5,
-            focus_level=FocusLevel.high,
-            date_worked="2024-01-15"
-        ),
-        Task(
-            id=2,
-            name="Bug fixing",
-            time_spent=3.0,
-            focus_level=FocusLevel.medium,
-            date_worked="2024-01-16"
-        ),
-        Task(
-            id=3,
-            name="Documentation",
-            time_spent=1.5,
-            focus_level=FocusLevel.low,
-            date_worked="2024-01-17"
-        )
-    ]
+def get_test_database_url():
+    """Get test database URL by appending _test to the database name."""
+    config = get_database_config()
+    test_db_name = f"{config['database']}_test"
+    return f"postgresql+asyncpg://{config['user']}:{config['password']}@{config['host']}:{config['port']}/{test_db_name}"
 
-@pytest.fixture
-def sample_weekly_stats() -> WeeklyStats:
-    """Sample weekly stats for testing."""
-    return WeeklyStats(
-        total_tasks=3,
-        total_hours="7.0",
-        avg_focus=FocusLevel.medium
-    )
+# Create test engine
+test_engine = create_async_engine(
+    get_test_database_url(),
+    echo=False,  # Set to True for SQL debugging
+    pool_pre_ping=True
+)
 
-@pytest.fixture
-def sample_summary_response() -> SummaryResponse:
-    """Sample summary response for testing."""
-    return SummaryResponse(
-        summary="This week showed good productivity with 3 tasks completed.",
-        recommendations=[
-            "Allocate more time for documentation",
-            "Maintain high focus for code reviews",
-            "Consider time-boxing bug fixes"
-        ]
-    )
-
-# RAG-related fixtures removed as models not defined in current schema
-
-@pytest.fixture
-def mock_openai_response():
-    """Mock OpenAI response for testing."""
-    mock_response = MagicMock()
-    mock_response.choices = [MagicMock()]
-    mock_response.choices[0].message.content = '{"summary": "Test summary", "insights": ["Test insight"], "recommendations": ["Test recommendation"]}'
-    return mock_response
-
-@pytest.fixture
-def mock_chroma_collection():
-    """Mock ChromaDB collection for testing."""
-    mock_collection = MagicMock()
-    mock_collection.count.return_value = 10
-    mock_collection.query.return_value = {
-        'documents': [['Test document content']],
-        'metadatas': [[{'week_start': '2024-01-08', 'week_end': '2024-01-14', 'summary': 'Test summary'}]],
-        'distances': [[0.1]]
-    }
-    mock_collection.add.return_value = None
-    mock_collection.get.return_value = {'documents': ['doc1', 'doc2']}
-    return mock_collection
-
-@pytest.fixture
-def mock_chroma_client(mock_chroma_collection):
-    """Mock ChromaDB client for testing."""
-    mock_client = MagicMock()
-    mock_client.get_collection.return_value = mock_chroma_collection
-    mock_client.create_collection.return_value = mock_chroma_collection
-    return mock_client
-
-import tempfile
-import shutil
+# Test session factory
+TestSessionLocal = sessionmaker(
+    test_engine, 
+    class_=AsyncSession, 
+    expire_on_commit=False
+)
 
 @pytest.fixture(scope="session")
-def temp_chromadb_dir():
-    temp_dir = tempfile.mkdtemp(prefix="chroma_test_")
-    original_env_var = os.environ.get("CHROMA_PERSIST_DIRECTORY")
-    os.environ["CHROMA_PERSIST_DIRECTORY"] = temp_dir
-    print(f"ChromaDB persistence directory set to: {temp_dir}")
+def event_loop():
+    """Create an instance of the default event loop for the test session."""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
-    yield temp_dir
+@pytest.fixture
+async def test_db():
+    """
+    Provide a test database session with automatic transaction rollback.
+    
+    Each test gets a fresh database state:
+    1. Starts a transaction
+    2. Creates session bound to transaction
+    3. Runs test with real database operations
+    4. Rolls back transaction (undoes all changes)
+    5. Next test starts with empty database
+    """
+    # Create connection and start transaction
+    async with test_engine.connect() as connection:
+        # Start transaction
+        transaction = await connection.begin()
+        
+        # Create session bound to this transaction
+        session = AsyncSession(bind=connection, expire_on_commit=False)
+        
+        # Override the dependency injection
+        async def override_get_session():
+            yield session
+        
+        app.dependency_overrides[get_session] = override_get_session
+        
+        try:
+            # Yield session to the test
+            yield session
+        finally:
+            # Cleanup: close session and rollback transaction
+            await session.close()
+            await transaction.rollback()
+            
+            # Clear dependency overrides
+            app.dependency_overrides.clear()
 
-    shutil.rmtree(temp_dir)
-    if original_env_var is not None:
-        os.environ["CHROMA_PERSIST_DIRECTORY"] = original_env_var
-    else:
-        if "CHROMA_PERSIST_DIRECTORY" in os.environ: # Ensure key exists before deleting
-            del os.environ["CHROMA_PERSIST_DIRECTORY"]
-    print(f"ChromaDB persistence directory {temp_dir} removed.")
+@pytest.fixture
+async def test_client(test_db):
+    """
+    Provide HTTP client for testing API endpoints.
+    
+    This client will use the test database session via dependency injection.
+    All API calls go through the real FastAPI app with real database operations,
+    but everything gets rolled back after the test.
+    """
+    async with AsyncClient(app=app, base_url="http://testserver") as client:
+        yield client
+
+@pytest.fixture
+async def sample_tasks(test_db):
+    """Create sample tasks in the test database."""
+    from datetime import date
+    
+    tasks = [
+        Task(
+            name="Complete project documentation",
+            time_spent=2.0,
+            focus_level=FocusLevel.high,
+            date_worked=date.today()
+        ),
+        Task(
+            name="Team standup meeting", 
+            time_spent=0.5,
+            focus_level=FocusLevel.medium,
+            date_worked=date.today()
+        ),
+        Task(
+            name="Code review and testing",
+            time_spent=1.5, 
+            focus_level=FocusLevel.high,
+            date_worked=date.today()
+        )
+    ]
+    
+    # Add to database
+    for task in tasks:
+        test_db.add(task)
+    
+    await test_db.commit()
+    
+    # Refresh to get IDs
+    for task in tasks:
+        await test_db.refresh(task)
+    
+    return tasks

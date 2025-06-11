@@ -52,7 +52,7 @@ def test_generate_summary_success(client, sample_tasks, sample_weekly_stats, sam
         "week_start": SAMPLE_WEEK_START,
         "week_end": SAMPLE_WEEK_END,
         "week_stats": sample_weekly_stats.dict(), # Pass as dict
-        "context_summaries": [] # Assuming no context summaries for this test
+        "context_summaries": None
     }
 
     # Mock the AI service method
@@ -100,7 +100,7 @@ def test_generate_summary_no_tasks(client):
         "week_start": SAMPLE_WEEK_START,
         "week_end": SAMPLE_WEEK_END,
         "week_stats": SAMPLE_WEEKLY_STATS_PAYLOAD,
-        "context_summaries": []
+        "context_summaries": None
     }
     response = client.post("/api/summaries/", json=summary_request_payload)
     assert response.status_code == 400
@@ -114,7 +114,7 @@ def test_generate_summary_ai_failure(client, sample_tasks, sample_weekly_stats):
         "week_start": SAMPLE_WEEK_START,
         "week_end": SAMPLE_WEEK_END,
         "week_stats": sample_weekly_stats.dict(),
-        "context_summaries": []
+        "context_summaries": None
     }
     # Simulate AI returning an empty/invalid response
     empty_ai_response = SummaryResponse(summary="", insights=[], recommendations=[], stats=sample_weekly_stats)

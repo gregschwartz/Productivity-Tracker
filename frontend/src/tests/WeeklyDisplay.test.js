@@ -77,7 +77,6 @@ describe('WeekSummary Component', () => {
             tasks={mockTasks}
             summary={mockSummary}
             timeRange={mockTimeRange}
-            contextSummaries={{ before: [], after: [] }}
           />
         </ThemeProvider>
       </BrowserRouter>
@@ -95,7 +94,6 @@ describe('WeekSummary Component', () => {
             tasks={mockTasks}
             summary={null}
             timeRange={mockTimeRange}
-            contextSummaries={{ before: [], after: [] }}
           />
         </ThemeProvider>
       </BrowserRouter>
@@ -121,7 +119,6 @@ describe('WeekSummary Component', () => {
             tasks={mockTasks}
             summary={null}
             timeRange={mockTimeRange}
-            contextSummaries={{ before: [], after: [] }}
             onAddSummary={mockOnAddSummary}
           />
         </ThemeProvider>
@@ -161,7 +158,6 @@ describe('WeekSummary Component', () => {
             tasks={mockTasks}
             summary={null}
             timeRange={mockTimeRange}
-            contextSummaries={{ before: [], after: [] }}
           />
         </ThemeProvider>
       </BrowserRouter>
@@ -195,7 +191,6 @@ describe('WeekSummary Component', () => {
             tasks={mockTasks}
             summary={null}
             timeRange={mockTimeRange}
-            contextSummaries={{ before: [], after: [] }}
           />
         </ThemeProvider>
       </BrowserRouter>
@@ -216,7 +211,6 @@ describe('WeekSummary Component', () => {
             tasks={mockTasks}
             summary={null}
             timeRange={mockTimeRange}
-            contextSummaries={{ before: [], after: [] }}
           />
         </ThemeProvider>
       </BrowserRouter>

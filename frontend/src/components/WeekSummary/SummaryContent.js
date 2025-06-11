@@ -25,10 +25,19 @@ const StyledSummaryContent = styled.div.attrs(() => ({
   ul {
     margin: 8px 0 16px 0;
     padding-left: 20px;
+    list-style-type: disc;
   }
 
   li {
     margin-bottom: 4px;
+  }
+
+  strong {
+    background: ${(props) => props.theme.colors.primary}30;
+    color: ${(props) => props.theme.colors.primary};
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-weight: 600;
   }
 `;
 

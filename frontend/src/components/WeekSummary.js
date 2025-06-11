@@ -62,7 +62,6 @@ const SummaryMeta = styled.div.attrs(() => ({
 function WeekSummary({
   tasks = [],
   summary = null,
-  contextSummaries = { before: [], after: [] },
   timeRange,
   onAddSummary = () => {},
 }) {
@@ -151,7 +150,7 @@ function WeekSummary({
             week_start: startDate.toISOString().split("T")[0],
             week_end: endDate.toISOString().split("T")[0],
             week_stats: weekStats,
-            context_summaries: contextSummaries,
+            context_summaries: null,
           }),
         }
       );

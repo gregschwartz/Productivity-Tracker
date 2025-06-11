@@ -18,6 +18,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sqlmodel import Session, create_engine, select
 from models.models import Task, WeeklySummary, FocusLevel
 from config.database import SYNC_DATABASE_URL
+from utils.date_utils import get_week_boundaries
 
 async def generate_sample_data(reference_date: datetime = None) -> tuple[List[Task], List[WeeklySummary]]:
     """
@@ -103,9 +104,7 @@ async def generate_sample_data(reference_date: datetime = None) -> tuple[List[Ta
         task_date = reference_date - timedelta(days=day_offset)
         
         # Calculate week boundaries (Sunday to Saturday)
-        days_since_sunday = (task_date.weekday() + 1) % 7
-        week_start = task_date - timedelta(days=days_since_sunday)
-        week_end = week_start + timedelta(days=6)
+        week_start, week_end = get_week_boundaries(task_date)
         
         # If we've moved to a new week and have tasks from previous week, generate summary
         if current_week_start is not None and week_start != current_week_start and current_week_tasks:

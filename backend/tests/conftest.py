@@ -26,7 +26,8 @@ def pytest_configure(config):
 
 from main import app
 from services.database import get_session
-from models.models import Base, Task, FocusLevel
+from models.models import Task, FocusLevel, WeeklySummary, WeeklyStats, SummaryResponse
+from sqlmodel import SQLModel
 from config.database import get_database_config
 
 def get_test_database_url():
@@ -49,12 +50,6 @@ TestSessionLocal = sessionmaker(
     expire_on_commit=False
 )
 
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
 @pytest.fixture
 async def test_db():
@@ -102,7 +97,8 @@ async def test_client(test_db):
     All API calls go through the real FastAPI app with real database operations,
     but everything gets rolled back after the test.
     """
-    async with AsyncClient(app=app, base_url="http://testserver") as client:
+    from httpx import ASGITransport
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as client:
         yield client
 
 @pytest.fixture
@@ -142,3 +138,20 @@ async def sample_tasks(test_db):
         await test_db.refresh(task)
     
     return tasks
+
+@pytest.fixture
+def sample_weekly_stats():
+    """Create sample weekly stats for testing."""
+    return WeeklyStats(
+        total_tasks=3,
+        total_hours="4.0", 
+        avg_focus=FocusLevel.high
+    )
+
+@pytest.fixture  
+def sample_summary_response():
+    """Create sample AI summary response for testing."""
+    return SummaryResponse(
+        summary="Great week with high focus!",
+        recommendations=["Keep your focus by touching grass."]
+    )

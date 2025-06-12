@@ -13,7 +13,8 @@ from httpx import AsyncClient
 
 from main import app
 from services.database import get_session
-from models.models import Base
+from models.models import Task, WeeklySummary
+from sqlmodel import SQLModel
 from config.database import get_database_config
 
 # Test database configuration
@@ -69,7 +70,7 @@ async def test_db():
     """Provide a test database session with transaction rollback."""
     # Create tables
     async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(SQLModel.metadata.create_all)
     
     # Start transaction
     async with test_engine.connect() as connection:

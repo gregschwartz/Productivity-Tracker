@@ -123,7 +123,7 @@ class SummaryService:
         self, session: AsyncSession,
         query_text: str,
         limit: int = 5,
-        similarity_threshold: float = 0.7
+        similarity_threshold: float = 0
     ) -> List[WeeklySummary]:
         """Search for similar weeks using vector similarity (RAG requirement)."""
         query_embedding = await self.generate_embedding(query_text)
@@ -141,7 +141,7 @@ class SummaryService:
         """)
 
         result = await session.execute(sql_query, {
-            "embedding": str(query_embedding), # Convert list to string for pgvector
+            "embedding": str(query_embedding),
             "similarity_threshold": similarity_threshold,
             "limit": limit
         })

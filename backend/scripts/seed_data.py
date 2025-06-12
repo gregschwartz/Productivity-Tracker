@@ -323,6 +323,7 @@ if __name__ == "__main__":
     """
     try:
         import asyncio
+        print("Seeding database with sample data...")
         result = asyncio.run(seed_database())
         print(f"\nSeeding completed successfully!")
         print(f"Tasks created: {result['tasks_created']}")

@@ -253,6 +253,11 @@ function App() {
                 isDarkMode={isDarkMode}
                 onThemeToggle={handleThemeToggle}
                 tasksCount={tasksCount}
+                onTasksUpdate={(newTasks, isLoading) => {
+                  if (!isLoading && newTasks) {
+                    setTasks(newTasks);
+                  }
+                }}
               />
             </ErrorBoundary>
           </Router>

@@ -4,7 +4,7 @@ import { getApiUrl } from '../../utils/api';
 /**
  * Custom hook for managing task CRUD operations and state
  */
-export const useTaskManagement = (selectedDate) => {
+export const useTaskManagement = (selectedDate, onTasksChange) => {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -16,6 +16,7 @@ export const useTaskManagement = (selectedDate) => {
     try {
       setIsLoading(true);
       setError(null);
+      onTasksChange?.(tasks, true);
       
       const apiUrl = getApiUrl();
       let url = `${apiUrl}/tasks/`;
@@ -33,6 +34,7 @@ export const useTaskManagement = (selectedDate) => {
       
       const data = await response.json();
       setTasks(data);
+      onTasksChange?.(data, false);
     } catch (error) {
       setError('Failed to load tasks from server.');
     } finally {
@@ -72,7 +74,9 @@ export const useTaskManagement = (selectedDate) => {
       }
 
       const createdTask = await response.json();
-      setTasks(prev => Array.isArray(prev) ? [...prev, createdTask] : [createdTask]);
+      const newTasks = Array.isArray(tasks) ? [...tasks, createdTask] : [createdTask];
+      setTasks(newTasks);
+      onTasksChange?.(newTasks, false);
     } catch (error) {
       setError('Failed to save task to server. Please try again.');
       throw error; // Re-throw so calling code knows the operation failed
@@ -98,9 +102,11 @@ export const useTaskManagement = (selectedDate) => {
       }
 
       const updatedTaskFromServer = await response.json();
-      setTasks(prev => prev.map(task => 
+      const updatedTasks = tasks.map(task => 
         task.id === taskId ? updatedTaskFromServer : task
-      ));
+      );
+      setTasks(updatedTasks);
+      onTasksChange?.(updatedTasks, false);
     } catch (error) {
       setError('Failed to update task on server. Please try again.');
       throw error; // Re-throw so calling code knows the operation failed
@@ -121,7 +127,9 @@ export const useTaskManagement = (selectedDate) => {
         throw new Error(`Failed to delete task: ${response.status} ${response.statusText}`);
       }
 
-      setTasks(prev => prev.filter(task => task.id !== taskId));
+      const filteredTasks = tasks.filter(task => task.id !== taskId);
+      setTasks(filteredTasks);
+      onTasksChange?.(filteredTasks, false);
     } catch (error) {
       setError('Failed to delete task on server. Please try again.');
       throw error; // Re-throw so calling code knows the operation failed

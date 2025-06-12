@@ -45,7 +45,12 @@ function DateNavigation({
             >
               Today
             </TodayButton>
-            <NavButton onClick={handleNextDay} title="Next day" $theme={theme}>
+            <NavButton 
+              onClick={handleNextDay} 
+              title="Next day" 
+              $theme={theme}
+              disabled={isToday}
+            >
               <ChevronRight />
             </NavButton>
           </DateNavButtons>
@@ -73,6 +78,7 @@ function DateNavigation({
                   value={currentDate}
                   onChange={handleCalendarChange}
                   calendarType="iso8601"
+                  maxDate={new Date()}
                 />
               </div>
             )}

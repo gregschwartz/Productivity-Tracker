@@ -218,7 +218,7 @@ async def generate_week_summary(ai_service, week_tasks: List[Task], week_start: 
         total_hours = sum(task.time_spent for task in week_tasks)
         
         focus_values = {"low": 1, "medium": 2, "high": 3}
-        avg_focus_numeric = sum(focus_values[task.focus_level.value] for task in week_tasks) / total_tasks
+        avg_focus_numeric = sum(focus_values[task.focus_level.value if hasattr(task.focus_level, 'value') else task.focus_level] for task in week_tasks) / total_tasks
         
         if avg_focus_numeric < 1.5:
             avg_focus = "low"
@@ -249,7 +249,7 @@ async def generate_week_summary(ai_service, week_tasks: List[Task], week_start: 
         total_hours = sum(task.time_spent for task in week_tasks)
         
         focus_values = {"low": 1, "medium": 2, "high": 3}
-        avg_focus_numeric = sum(focus_values[task.focus_level.value] for task in week_tasks) / total_tasks
+        avg_focus_numeric = sum(focus_values[task.focus_level.value if hasattr(task.focus_level, 'value') else task.focus_level] for task in week_tasks) / total_tasks
         
         if avg_focus_numeric < 1.5:
             avg_focus = "low"

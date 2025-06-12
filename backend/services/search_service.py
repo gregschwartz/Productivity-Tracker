@@ -98,7 +98,7 @@ class SearchService:
         # First check for prompt injection
         if self.detect_prompt_injection(query):
             # Return a safe, generic search term
-            return "productivity summary"
+            return "work"
         
         # Sanitize the query
         sanitized_query = self.sanitize_query(query)
@@ -120,9 +120,9 @@ Rules:
 
 Examples:
 "Show me weeks when I completed a lot of coding tasks" → "completed coding tasks"
-"Find summaries about times I was stressed" → "stressed overwhelmed pressure"
+"Find summaries about times I was stressed" → "stressed"
 "Weeks with high productivity" → "high productivity focus"
-"When did I work on machine learning projects?" → "machine learning projects"
+"When did I work on machine learning projects?" → "machine learning"
 
 Query: {sanitized_query}
 

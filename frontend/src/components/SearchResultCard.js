@@ -52,24 +52,12 @@ const ResultMeta = styled.div.attrs(() => ({
 
 
 /**
- * Result snippet with highlighted keywords
+ * Result snippet
  */
 const SummaryResultSnippet = styled.p.attrs(() => ({
   className: 'text-sm leading-relaxed m-0'
 }))`
   color: ${props => props.theme.colors.text.secondary};
-  
-  mark {
-    background: ${props => props.theme.colors.primary}30;
-    color: ${props => props.theme.colors.text.primary};
-    padding: 2px 4px;
-    border-radius: 2px;
-    
-    ${props => props.theme.name === 'tron' && `
-      background: ${props.theme.colors.primary}40;
-      box-shadow: 0 0 4px ${props.theme.colors.primary}60;
-    `}
-  }
 `;
 
 /**
@@ -79,18 +67,6 @@ const SummaryRecommendationSnippet = styled.li.attrs(() => ({
   className: 'text-sm leading-relaxed m-0 list-disc list-inside'
 }))`
   color: ${props => props.theme.colors.text.secondary};
-
-  mark {
-    background: ${props => props.theme.colors.primary}30;
-    color: ${props => props.theme.colors.text.primary};
-    padding: 2px 4px;
-    border-radius: 2px;
-    
-    ${props => props.theme.name === 'tron' && `
-      background: ${props.theme.colors.primary}40;
-      box-shadow: 0 0 4px ${props.theme.colors.primary}60;
-    `}
-  }
 `;
 
 /**

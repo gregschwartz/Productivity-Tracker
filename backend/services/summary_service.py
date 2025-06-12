@@ -69,7 +69,7 @@ class SummaryService:
         db_summary.embedding = self.ensure_embedding_is_list(embedding)
 
         session.add(db_summary)
-        await session.commit() # Commit the transaction
+        await session.commit()
         await session.refresh(db_summary)
 
         return db_summary
@@ -180,10 +180,6 @@ class SummaryService:
             # Remove similarity score from dict (not needed for display)
             summary_dict.pop('similarity', 0.0)
 
-            # Apply keyword highlighting to text fields
-            summary_dict['summary'] = self.highlight_keywords(summary_dict['summary'], query_text)
-            summary_dict['recommendations'] = self.highlight_keywords(summary_dict['recommendations'], query_text)
-
             # Create WeeklySummary object
             summary_obj = WeeklySummary(**summary_dict)
             
@@ -191,68 +187,3 @@ class SummaryService:
 
         return summaries
 
-    def highlight_keywords(self, text: Union[str, List[str]], query_text: str) -> Union[str, List[str]]:
-        """
-        Highlight keywords in text based on query terms.
-        
-        Parameters:
-            text: The text to highlight (can be string or list of strings)
-            query_text: The search query containing keywords to highlight
-            
-        Returns:
-            The text with highlighted keywords wrapped in <mark> tags
-        """
-        if not text or not query_text:
-            return text
-            
-        # Extract keywords from query, filtering out short words
-        keywords = [word.strip() for word in query_text.lower().split() if len(word.strip()) > 2]
-        
-        # Expand keywords with synonyms for better matching
-        expanded_keywords = []
-        synonyms = {
-            'coding': ['programming', 'development', 'software', 'code'],
-            'meeting': ['meetings', 'call', 'discussion', 'collaboration'],
-            'design': ['ui', 'ux', 'interface', 'mockup', 'wireframe'],
-            'testing': ['qa', 'debug', 'bug', 'test'],
-            'focus': ['concentration', 'productivity', 'deep work'],
-            'planning': ['strategy', 'roadmap', 'organize']
-        }
-        
-        for keyword in keywords:
-            expanded_keywords.append(keyword)
-            if keyword in synonyms:
-                expanded_keywords.extend(synonyms[keyword])
-        
-        def highlight_text(input_text: str) -> str:
-            """Helper function to highlight keywords in a single text string."""
-            if not input_text:
-                return input_text
-                
-            highlighted_text = input_text
-
-            # Remove any existing <strong> tags
-            highlighted_text = re.sub(r'<strong>', '', highlighted_text)
-            highlighted_text = re.sub(r'</strong>', '', highlighted_text)
-            
-            # Sort keywords by length (longest first) to avoid partial replacements
-            sorted_keywords = sorted(set(expanded_keywords), key=len, reverse=True)
-            
-            for keyword in sorted_keywords:
-                # Use word boundaries to match whole words only
-                pattern = re.compile(rf'\b{re.escape(keyword)}\w*', re.IGNORECASE)
-                highlighted_text = pattern.sub(lambda m: f'<mark>{m.group()}</mark>', highlighted_text)
-            
-            # Clean up any double highlighting
-            highlighted_text = re.sub(r'<mark><mark>', '<mark>', highlighted_text)
-            highlighted_text = re.sub(r'</mark></mark>', '</mark>', highlighted_text)
-            
-            return highlighted_text
-        
-        # Handle both string and list inputs
-        if isinstance(text, str):
-            return highlight_text(text)
-        elif isinstance(text, list):
-            return [highlight_text(item) for item in text if item]
-        else:
-            return text

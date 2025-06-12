@@ -86,11 +86,6 @@ class SummaryRequest(BaseModel):
             raise ValueError('Week end cannot be empty')
         return v
 
-class SearchResult(BaseModel):
-    content: str
-    source: str
-    metadata: Optional[Dict[str, Any]] = None
-
 class WeeklySummary(SQLModel, table=True):
     """Weekly summary model - works for database, API input, and API output."""
     __tablename__ = "weekly_summaries"
@@ -102,7 +97,7 @@ class WeeklySummary(SQLModel, table=True):
     stats: Dict[str, Any] = SQLField(default_factory=dict, sa_type=sqlalchemy.JSON, description="Weekly statistics")
     recommendations: List[str] = SQLField(default_factory=list, sa_type=sqlalchemy.JSON, description="Recommendations to improve efficiency or focus for the next week")
     embedding: Optional[List[float]] = SQLField(None, sa_type=Vector(1536), exclude=True, description="Embedding of the summary for vector search")
-    similarity: Optional[float] = SQLField(None, description="LLM shoulld ignore, only used for vector search result's cosine similarity score e.g. confidence")
+    similarity: Optional[float] = SQLField(None, exclude=True, description="LLM should ignore, only used for vector search result's cosine similarity score e.g. confidence")
     created_at: Optional[datetime] = SQLField(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = SQLField(default_factory=datetime.utcnow)
 
@@ -130,7 +125,26 @@ class WeeklySummary(SQLModel, table=True):
     class Config:
         arbitrary_types_allowed = True
 
+class WeeklySummaryPublic(BaseModel):
+    """Public API response model for weekly summaries - excludes sensitive fields."""
+    id: Optional[int]
+    week_start: str
+    week_end: str
+    summary: str
+    stats: Dict[str, Any]
+    recommendations: List[str]
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+
 class SummaryResponse(BaseModel):
     """Response model for AI-generated summaries."""
     summary: str = Field(..., description="AI generated summary")
     recommendations: List[str] = Field(..., description="AI generated recommendations")
+
+class PaginatedTasksResponse(BaseModel):
+    """Paginated response model for tasks."""
+    tasks: List[Task]
+    total: int
+    limit: int
+    offset: int
+    has_more: bool

@@ -8,7 +8,7 @@ from sqlalchemy import text, func
 from sqlmodel import select
 import numpy as np
 
-from models.models import WeeklySummary
+from models.models import WeeklySummary, WeeklySummaryPublic
 
 class SummaryService:
     """Service for managing weekly summaries with AI-powered search and embeddings."""
@@ -52,7 +52,7 @@ class SummaryService:
         
         return text
     
-    async def create_weekly_summary(self, session: AsyncSession, summary_data: WeeklySummary) -> WeeklySummary:
+    async def create_weekly_summary(self, session: AsyncSession, summary_data: WeeklySummary) -> WeeklySummaryPublic:
         """Store weekly summary with vector embedding for RAG search."""
         summary_text_to_embed = f"""
         Week {summary_data.week_start} to {summary_data.week_end}
@@ -61,7 +61,7 @@ class SummaryService:
         """.strip()
 
         # Create WeeklySummary, exclude fields that should not be set directly or are auto-generated
-        summary_dict = summary_data.dict(exclude={'id', 'created_at', 'updated_at', 'embedding'}, exclude_none=True)
+        summary_dict = summary_data.model_dump(exclude={'id', 'created_at', 'updated_at', 'embedding'}, exclude_none=True)
         db_summary = WeeklySummary(**summary_dict)
         
         # Generate embedding and set it on the WeeklySummary
@@ -72,7 +72,7 @@ class SummaryService:
         await session.commit()
         await session.refresh(db_summary)
 
-        return db_summary
+        return WeeklySummaryPublic.model_validate(db_summary)
 
     async def get_weekly_summaries(
         self, session: AsyncSession,
@@ -80,7 +80,7 @@ class SummaryService:
         limit: int = 10,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None
-    ) -> List[WeeklySummary]:
+    ) -> List[WeeklySummaryPublic]:
         """Get weekly summaries with optional filtering by date range or search query.
         
         Parameters:
@@ -107,15 +107,16 @@ class SummaryService:
         sql_query_stmt = sql_query_stmt.offset(skip).limit(limit).order_by(WeeklySummary.week_start.desc())
         result = await session.execute(sql_query_stmt)
         summaries = result.scalars().all()
-        return summaries
+        return [WeeklySummaryPublic.model_validate(summary) for summary in summaries]
 
-    async def get_weekly_summary_by_id(self, session: AsyncSession, summary_id: int) -> Optional[WeeklySummary]:
+    async def get_weekly_summary_by_id(self, session: AsyncSession, summary_id: int) -> Optional[WeeklySummaryPublic]:
         """Get a weekly summary by ID."""
         query = select(WeeklySummary).where(WeeklySummary.id == summary_id)
         result = await session.execute(query)
-        return result.scalars().first()
+        summary = result.scalars().first()
+        return WeeklySummaryPublic.model_validate(summary) if summary else None
 
-    # No need to update weekly summaries, it's not done manually
+    # No need for a method to update weekly summaries. It's not done manually!
     # async def update_weekly_summary(self, session: AsyncSession, summary_id: int, summary_data: dict) -> Optional[WeeklySummary]:
 
     async def delete_weekly_summary(self, session: AsyncSession, summary_id: int) -> bool:
@@ -148,7 +149,7 @@ class SummaryService:
         query_text: str,
         limit: int = 5,
         similarity_threshold: float = 0
-    ) -> List[WeeklySummary]:
+    ) -> List[WeeklySummaryPublic]:
         """Search for similar weeks using vector similarity (RAG requirement)."""
         query_embedding = await self.generate_embedding(query_text)
 
@@ -164,8 +165,11 @@ class SummaryService:
             LIMIT :limit
         """)
 
+        # Convert embedding to proper vector format for pgvector
+        embedding_vector = f"[{','.join(map(str, query_embedding))}]"
+        
         result = await session.execute(sql_query, {
-            "embedding": str(query_embedding),
+            "embedding": embedding_vector,
             "similarity_threshold": similarity_threshold,
             "limit": limit
         })
@@ -180,8 +184,8 @@ class SummaryService:
             # Remove similarity score from dict (not needed for display)
             summary_dict.pop('similarity', 0.0)
 
-            # Create WeeklySummary object
-            summary_obj = WeeklySummary(**summary_dict)
+            # Create public WeeklySummary object (excludes embedding/similarity)
+            summary_obj = WeeklySummaryPublic(**summary_dict)
             
             summaries.append(summary_obj)
 

@@ -19,14 +19,38 @@ class SummaryService:
     async def generate_embedding(self, text: str) -> List[float]:
         """Generate embeddings for the given text using OpenAI's API."""
         try:
+            # Normalize text for consistent embeddings
+            normalized_text = self.normalize_text_for_embedding(text)
+            
             response = await self.client.embeddings.create(
-                input=text,
+                input=normalized_text,
                 model="text-embedding-3-small"
             )
             embedding = response.data[0].embedding
             return self.ensure_embedding_is_list(embedding)
         except Exception as e:
             raise
+    
+    def normalize_text_for_embedding(self, text: str) -> str:
+        """
+        Normalize text for consistent embedding generation.
+        
+        Args:
+            text: The text to normalize
+            
+        Returns:
+            Normalized text (lowercase, cleaned)
+        """
+        # Convert to lowercase
+        text = text.lower()
+        
+        # Remove extra whitespace
+        text = re.sub(r'\s+', ' ', text)
+        
+        # Remove leading/trailing whitespace
+        text = text.strip()
+        
+        return text
     
     async def create_weekly_summary(self, session: AsyncSession, summary_data: WeeklySummary) -> WeeklySummary:
         """Store weekly summary with vector embedding for RAG search."""
@@ -153,16 +177,15 @@ class SummaryService:
             # Convert row_data (which is a RowMapping) to a dict for WeeklySummary unpacking
             summary_dict = dict(row_data)
 
-            # Extract similarity score as relevance score
-            relevance_score = summary_dict.pop('similarity', 0.0)
+            # Remove similarity score from dict (not needed for display)
+            summary_dict.pop('similarity', 0.0)
 
             # Apply keyword highlighting to text fields
             summary_dict['summary'] = self.highlight_keywords(summary_dict['summary'], query_text)
             summary_dict['recommendations'] = self.highlight_keywords(summary_dict['recommendations'], query_text)
 
-            # Create WeeklySummary object and add relevance score as additional attribute
+            # Create WeeklySummary object
             summary_obj = WeeklySummary(**summary_dict)
-            summary_obj.relevance_score = relevance_score  # Add similarity as relevance score
             
             summaries.append(summary_obj)
 

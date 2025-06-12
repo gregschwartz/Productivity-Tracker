@@ -40,9 +40,12 @@ async def test_generate_summary_success(test_client, sample_tasks, sample_weekly
     # Use fixtures from conftest for AIService mock return value
     # sample_summary_response is a SummaryResponse Pydantic model
 
+    client = await test_client.__anext__()
+    tasks = await sample_tasks.__anext__()
+
     # Prepare the request payload for the endpoint
     # The endpoint expects a list of Task dicts, not Task objects directly in payload
-    tasks_for_payload = [t.model_dump() for t in sample_tasks]
+    tasks_for_payload = [t.model_dump() for t in tasks]
 
     summary_request_payload = {
         "tasks": tasks_for_payload,
@@ -69,7 +72,7 @@ async def test_generate_summary_success(test_client, sample_tasks, sample_weekly
             recommendations=sample_summary_response.recommendations
         )
 
-        response = await test_client.post("/api/summaries/", json=summary_request_payload)
+        response = await client.post("/api/summaries/", json=summary_request_payload)
 
         assert response.status_code == 200
         json_response = response.json()
@@ -93,6 +96,8 @@ async def test_generate_summary_success(test_client, sample_tasks, sample_weekly
 @pytest.mark.asyncio
 async def test_generate_summary_no_tasks(test_client):
     """Test POST /api/summaries/ with an empty task list."""
+    client = await test_client.__anext__()
+    
     summary_request_payload = {
         "tasks": [],
         "week_start": SAMPLE_WEEK_START,
@@ -100,13 +105,16 @@ async def test_generate_summary_no_tasks(test_client):
         "week_stats": SAMPLE_WEEKLY_STATS_PAYLOAD,
         "context_summaries": None
     }
-    response = await test_client.post("/api/summaries/", json=summary_request_payload)
+    response = await client.post("/api/summaries/", json=summary_request_payload)
     assert response.status_code == 422
 
 @pytest.mark.asyncio
 async def test_generate_summary_ai_failure(test_client, sample_tasks, sample_weekly_stats):
     """Test POST /api/summaries/ when AI service fails to generate a proper summary."""
-    tasks_for_payload = [t.model_dump() for t in sample_tasks]
+    client = await test_client.__anext__()
+    tasks = await sample_tasks.__anext__()
+    
+    tasks_for_payload = [t.model_dump() for t in tasks]
     summary_request_payload = {
         "tasks": tasks_for_payload,
         "week_start": SAMPLE_WEEK_START,
@@ -120,18 +128,20 @@ async def test_generate_summary_ai_failure(test_client, sample_tasks, sample_wee
     with patch.object(AIService, 'generate_weekly_summary', new_callable=AsyncMock) as mock_ai_generate:
         mock_ai_generate.return_value = empty_ai_response
 
-        response = await test_client.post("/api/summaries/", json=summary_request_payload)
+        response = await client.post("/api/summaries/", json=summary_request_payload)
         assert response.status_code == 500 # As per router logic for empty AI response
         assert "Failed to generate summary, AI response is empty" in response.json()["detail"]
 
 @pytest.mark.asyncio
 async def test_get_summaries_success(test_client):
     """Test GET /api/summaries/ for retrieving stored summaries."""
+    client = await test_client.__anext__()
+    
     mock_summaries_list = [STORED_SUMMARY_DB_MODEL.model_dump()] # Convert to dict for response matching
     with patch('services.summary_service.SummaryService.get_weekly_summaries', new_callable=AsyncMock) as mock_get_all_summaries:
         mock_get_all_summaries.return_value = [STORED_SUMMARY_DB_MODEL] # DB service returns list of DB models
 
-        response = await test_client.get("/api/summaries/")
+        response = await client.get("/api/summaries/")
         assert response.status_code == 200
         json_response = response.json()
         assert len(json_response) == 1
@@ -142,10 +152,12 @@ async def test_get_summaries_success(test_client):
 @pytest.mark.asyncio
 async def test_get_summary_by_id_success(test_client):
     """Test GET /api/summaries/{summary_id} for retrieving a single summary."""
+    client = await test_client.__anext__()
+    
     with patch('services.summary_service.SummaryService.get_weekly_summary_by_id', new_callable=AsyncMock) as mock_get_summary:
         mock_get_summary.return_value = STORED_SUMMARY_DB_MODEL
 
-        response = await test_client.get(f"/api/summaries/{STORED_SUMMARY_DB_MODEL.id}")
+        response = await client.get(f"/api/summaries/{STORED_SUMMARY_DB_MODEL.id}")
         assert response.status_code == 200
         assert response.json()["summary"] == STORED_SUMMARY_DB_MODEL.summary
         mock_get_summary.assert_called_once()
@@ -153,18 +165,22 @@ async def test_get_summary_by_id_success(test_client):
 @pytest.mark.asyncio
 async def test_get_summary_by_id_not_found(test_client):
     """Test GET /api/summaries/{summary_id} for a non-existent summary."""
+    client = await test_client.__anext__()
+    
     with patch('services.summary_service.SummaryService.get_weekly_summary_by_id', new_callable=AsyncMock) as mock_get_summary:
         mock_get_summary.return_value = None
-        response = await test_client.get("/api/summaries/999")
+        response = await client.get("/api/summaries/999")
         assert response.status_code == 404
         assert response.json()["detail"] == "Weekly summary not found"
 
 @pytest.mark.asyncio
 async def test_get_summary_count(test_client):
     """Test GET /api/summaries/stats/count for retrieving the total number of summaries."""
+    client = await test_client.__anext__()
+    
     with patch('services.summary_service.SummaryService.get_count_of_summaries', new_callable=AsyncMock) as mock_get_count:
         mock_get_count.return_value = 5 # Example count
-        response = await test_client.get("/api/summaries/stats/count")
+        response = await client.get("/api/summaries/stats/count")
         assert response.status_code == 200
         assert response.json() == {"total_summaries": 5}
         mock_get_count.assert_called_once()

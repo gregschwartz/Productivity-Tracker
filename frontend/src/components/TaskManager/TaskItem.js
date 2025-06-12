@@ -11,7 +11,6 @@ import { TaskHeader, TaskTitle, TaskActions, TaskMeta } from './TaskManager.styl
 function TaskItem({ 
   task, 
   editingTask, 
-  justUpdatedTaskId, 
   onEdit, 
   onDelete, 
   theme 
@@ -23,7 +22,7 @@ function TaskItem({
       initial={{ opacity: 0, scale: 0.8, y: 50 }}
       animate={{
         opacity: 1,
-        scale: editingTask?.id === task.id ? 1.03 : (justUpdatedTaskId === task.id ? [1, 1.02, 1] : 1),
+        scale: editingTask?.id === task.id ? 1.03 : 1,
         y: 0,
         transition: { type: 'spring', stiffness: 300, damping: 20, delay: editingTask?.id === task.id ? 0 : 0.1 }
       }}

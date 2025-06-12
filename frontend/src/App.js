@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component } from 'react';
 import { createGlobalStyle, ThemeProvider } from 'styled-components';
 import { BrowserRouter as Router } from 'react-router-dom';
 import ProductivityTracker from './pages/ProductivityTracker';
@@ -38,7 +38,60 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
+/**
+ * Error Boundary for graceful error handling
+ */
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
 
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          padding: '20px',
+          textAlign: 'center',
+          backgroundColor: '#f8fafc',
+          color: '#0f172a',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <h1>Something went wrong</h1>
+          <p>An error occurred while loading the application.</p>
+          <button 
+            onClick={() => window.location.reload()}
+            style={{
+              marginTop: '20px',
+              padding: '10px 20px',
+              backgroundColor: '#7c3aed',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            Reload Page
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 /**
  * Easter Egg Helper function to check if any task triggers Tron theme
@@ -190,18 +243,22 @@ function App() {
   };
 
   return (
-    <ThemeProvider theme={activeTheme}>
-      <GlobalStyle />
-      <div data-testid="app-container" data-theme={activeTheme}>
-        <Router>
-          <ProductivityTracker 
-            isDarkMode={isDarkMode}
-            onThemeToggle={handleThemeToggle}
-            tasksCount={tasksCount}
-          />
-        </Router>
-      </div>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider theme={activeTheme}>
+        <GlobalStyle />
+        <div data-testid="app-container" data-theme={activeTheme.name}>
+          <Router>
+            <ErrorBoundary>
+              <ProductivityTracker 
+                isDarkMode={isDarkMode}
+                onThemeToggle={handleThemeToggle}
+                tasksCount={tasksCount}
+              />
+            </ErrorBoundary>
+          </Router>
+        </div>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

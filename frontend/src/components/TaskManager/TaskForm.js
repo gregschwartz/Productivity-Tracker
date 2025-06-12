@@ -1,35 +1,102 @@
-import React, { useState, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Check, X } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import FocusSelector from '../FocusSelector';
 import { ActionButton, SecondaryButton } from '../buttons';
 import { ButtonGroup, InputGroup, Label, Input } from '../forms';
 import { AddTaskSection, TaskForm as StyledTaskForm, FormFields } from './TaskManager.styles';
 
 /**
+ * Input validation helpers
+ */
+const validateHours = (hours) => {
+  const num = Number(hours);
+  return num >= 0 && num <= 24;
+};
+
+const validateTaskName = (name) => {
+  if (!name || typeof name !== 'string') return false;
+  const trimmed = name.trim();
+  return trimmed.length > 0 && trimmed.length <= 200;
+};
+
+const sanitizeInput = (text) => {
+  if (!text || typeof text !== 'string') return '';
+  return DOMPurify.sanitize(text, { 
+    ALLOWED_TAGS: [],
+    ALLOWED_ATTR: []
+  });
+};
+
+/**
  * TaskForm component for adding and editing tasks
  */
-const TaskForm = forwardRef(({
+const TaskForm = ({
   addTask,
   updateTask,
   currentDateString,
-  theme
-}, ref) => {
+  theme,
+  editingTask,
+  onEditComplete,
+  resetTrigger
+}) => {
   const [formData, setFormData] = useState({
     name: '',
     timeSpent: '',
     focusLevel: 'medium'
   });
 
-  const [editingTask, setEditingTask] = useState(null);
   const [submitStatus, setSubmitStatus] = useState('idle'); // 'idle', 'submitting', 'success'
-  const [justUpdatedTaskId, setJustUpdatedTaskId] = useState(null);
+  const [validationErrors, setValidationErrors] = useState({});
+
+  // Handle editing task changes
+  useEffect(() => {
+    if (editingTask) {
+      setFormData({
+        name: editingTask.name,
+        timeSpent: editingTask.time_spent.toString(),
+        focusLevel: editingTask.focus_level
+      });
+      setValidationErrors({});
+    }
+  }, [editingTask]);
+
+  // Handle reset trigger
+  useEffect(() => {
+    if (resetTrigger) {
+      setFormData({ name: '', timeSpent: '', focusLevel: 'medium' });
+      setValidationErrors({});
+      setSubmitStatus('idle');
+    }
+  }, [resetTrigger]);
 
   /**
    * Handle form input changes
    */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Sanitize input
+    const sanitizedValue = sanitizeInput(value);
+    
+    // Validate input
+    const errors = { ...validationErrors };
+    if (name === 'name') {
+      if (!validateTaskName(sanitizedValue)) {
+        errors.name = 'Task name must be 1-200 characters';
+      } else {
+        delete errors.name;
+      }
+    } else if (name === 'timeSpent') {
+      if (sanitizedValue && !validateHours(sanitizedValue)) {
+        errors.timeSpent = 'Hours must be between 0 and 24';
+      } else {
+        delete errors.timeSpent;
+      }
+    }
+    
+    setValidationErrors(errors);
+    setFormData(prev => ({ ...prev, [name]: sanitizedValue }));
   };
 
   /**
@@ -40,23 +107,14 @@ const TaskForm = forwardRef(({
   };
 
   /**
-   * Start editing a task
-   */
-  const handleEditTask = (task) => {
-    setEditingTask(task);
-    setFormData({
-      name: task.name,
-      timeSpent: task.time_spent.toString(),
-      focusLevel: task.focus_level
-    });
-  };
-
-  /**
    * Cancel editing and return to create mode
    */
   const handleCancelEdit = () => {
-    setEditingTask(null);
+    if (onEditComplete) {
+      onEditComplete(null);
+    }
     setFormData({ name: '', timeSpent: '', focusLevel: 'medium' });
+    setValidationErrors({});
   };
 
   /**
@@ -64,24 +122,43 @@ const TaskForm = forwardRef(({
    */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.timeSpent || submitStatus === 'submitting') return;
+    
+    // Validate all inputs before submission
+    const errors = {};
+    if (!validateTaskName(formData.name)) {
+      errors.name = 'Task name must be 1-200 characters';
+    }
+    if (!formData.timeSpent || !validateHours(formData.timeSpent)) {
+      errors.timeSpent = 'Hours must be between 0 and 24';
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+    
+    if (submitStatus === 'submitting') return;
 
     setSubmitStatus('submitting');
     
     try {
+      // Sanitize data before sending
+      const sanitizedName = sanitizeInput(formData.name.trim());
+      const sanitizedTimeSpent = parseFloat(formData.timeSpent);
+      
       if (editingTask) {
         await updateTask(editingTask.id, {
-          name: formData.name.trim(),
-          time_spent: parseFloat(formData.timeSpent),
+          name: sanitizedName,
+          time_spent: sanitizedTimeSpent,
           focus_level: formData.focusLevel
         });
-        setJustUpdatedTaskId(editingTask.id); // Trigger update animation
-        setEditingTask(null);
-        setTimeout(() => setJustUpdatedTaskId(null), 1000); // Reset after animation duration
+        if (onEditComplete) {
+          onEditComplete(editingTask.id);
+        }
       } else {
         const taskPayload = { 
-          name: formData.name.trim(),
-          time_spent: parseFloat(formData.timeSpent),
+          name: sanitizedName,
+          time_spent: sanitizedTimeSpent,
           focus_level: formData.focusLevel,
           date_worked: currentDateString 
         };
@@ -91,19 +168,13 @@ const TaskForm = forwardRef(({
       // Only clear form and show success if operation succeeded
       setSubmitStatus('success');
       setFormData({ name: '', timeSpent: '', focusLevel: 'medium' });
+      setValidationErrors({});
       setTimeout(() => setSubmitStatus('idle'), 1500); // Revert button state
     } catch (error) {
       setSubmitStatus('idle'); // Reset button to allow retry
       // Don't clear form data - let user retry with same data
     }
   };
-
-  // Expose methods to parent components via ref
-  useImperativeHandle(ref, () => ({
-    handleEditTask,
-    editingTask,
-    justUpdatedTaskId
-  }));
 
   return (
     <AddTaskSection $theme={theme}>
@@ -121,8 +192,15 @@ const TaskForm = forwardRef(({
               autoFocus
               required
               tabIndex={1}
+              maxLength={200}
               $theme={theme}
+              style={{ borderColor: validationErrors.name ? '#dc2626' : undefined }}
             />
+            {validationErrors.name && (
+              <div style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                {validationErrors.name}
+              </div>
+            )}
           </InputGroup>
 
           <InputGroup>
@@ -140,7 +218,13 @@ const TaskForm = forwardRef(({
               required
               tabIndex={2}
               $theme={theme}
+              style={{ borderColor: validationErrors.timeSpent ? '#dc2626' : undefined }}
             />
+            {validationErrors.timeSpent && (
+              <div style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                {validationErrors.timeSpent}
+              </div>
+            )}
           </InputGroup>
 
           <InputGroup>
@@ -179,8 +263,6 @@ const TaskForm = forwardRef(({
       </StyledTaskForm>
     </AddTaskSection>
   );
-});
-
-TaskForm.displayName = 'TaskForm';
+};
 
 export default TaskForm;

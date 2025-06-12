@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.models import Task, WeeklySummary, SummaryRequest
 from services.summary_service import SummaryService
 from services.ai_service import AIService
+from services.search_service import SearchService
 from services.task_service import TaskService # Import TaskService
 from services.database import get_session # For session dependency
 
@@ -16,6 +17,7 @@ router = APIRouter(prefix="/summaries", tags=["summaries"])
 
 ai_service = AIService()
 summary_service = SummaryService()
+search_service = SearchService()
 task_service = TaskService() # Instantiate TaskService
 
 @router.post("/", response_model=WeeklySummary)
@@ -110,10 +112,28 @@ async def search_summaries_route(
     query: str,
     db: AsyncSession = Depends(get_session)
 ):
-    """Search for summaries using vector similarity."""
+    """Search for summaries using vector similarity with prompt injection protection and query improvement."""
     try:
-        summaries = await summary_service.vector_search_week_summaries(session=db, query_text=query, similarity_threshold=0.3)
+        # Check for prompt injection and improve query
+        improved_query = await search_service.improve_search_query(query)
+        
+        # If query was sanitized to empty or too short, return empty results
+        if not improved_query or len(improved_query.strip()) < 2:
+            raise HTTPException(
+                status_code=400,
+                detail="Search query is invalid or too short"
+            )
+        
+        # Perform vector search with improved query
+        summaries = await summary_service.vector_search_week_summaries(
+            session=db, 
+            query_text=improved_query, 
+            similarity_threshold=0.3
+        )
         return summaries
+        
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,

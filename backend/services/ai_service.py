@@ -140,3 +140,18 @@ class AIService:
                 summary="Unable to generate AI summary. Please try again later.",
                 recommendations=[]
             )
+    
+    @weave.op()
+    async def generate_text(self, prompt: str) -> str:
+        """Generate text using OpenAI for query improvement and other text tasks."""
+        try:
+            response = await self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,
+                max_tokens=150
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"Text generation error: {str(e)}")
+            return ""

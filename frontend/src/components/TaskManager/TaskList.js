@@ -12,7 +12,8 @@ function TaskList({
   tasks,
   isLoading,
   selectedDate,
-  taskFormRef,
+  editingTask,
+  onEditTask,
   onDeleteTask,
   theme
 }) {
@@ -30,9 +31,8 @@ function TaskList({
             <TaskItem
               key={task.id}
               task={task}
-              editingTask={taskFormRef?.current?.editingTask}
-              justUpdatedTaskId={taskFormRef?.current?.justUpdatedTaskId}
-              onEdit={taskFormRef?.current?.handleEditTask}
+              editingTask={editingTask}
+              onEdit={onEditTask}
               onDelete={onDeleteTask}
               theme={theme}
             />

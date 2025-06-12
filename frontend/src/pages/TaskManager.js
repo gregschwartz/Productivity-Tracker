@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useState } from 'react';
 import { useTheme } from 'styled-components';
 import { useTaskManagement } from '../hooks/taskManager/useTaskManagement';
 import { useDateNavigation } from '../hooks/taskManager/useDateNavigation';
@@ -15,7 +15,8 @@ function TaskManager({
 }) {
   const theme = useTheme();
   const currentTheme = theme.name || 'Ready';
-  const taskFormRef = useRef();
+  const [editingTask, setEditingTask] = useState(null);
+  const [resetTrigger, setResetTrigger] = useState(0);
 
   // Custom hooks for business logic
   const {
@@ -38,6 +39,17 @@ function TaskManager({
     handleToday,
     handleCalendarChange
   } = useDateNavigation(selectedDate, onDateChange, onClearDateFilter);
+
+  const handleEditComplete = (taskId) => {
+    setEditingTask(null);
+    if (taskId) {
+      // Task was updated, could trigger animation here if needed
+    }
+  };
+
+  const handleEditTask = (task) => {
+    setEditingTask(task);
+  };
 
   return (
     <TaskContainer>
@@ -62,18 +74,21 @@ function TaskManager({
       )}
       
       <TaskForm
-        ref={taskFormRef}
         addTask={addTask}
         updateTask={updateTask}
         currentDateString={currentDateString}
         theme={currentTheme}
+        editingTask={editingTask}
+        onEditComplete={handleEditComplete}
+        resetTrigger={resetTrigger}
       />
 
       <TaskList
         tasks={tasks}
         isLoading={isLoading}
         selectedDate={selectedDate}
-        taskFormRef={taskFormRef}
+        editingTask={editingTask}
+        onEditTask={handleEditTask}
         onDeleteTask={deleteTask}
         theme={currentTheme}
       />

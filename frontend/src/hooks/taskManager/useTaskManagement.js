@@ -5,7 +5,7 @@ import { getLocalToday, addDaysToDateString } from '../../utils/dateUtils';
 /**
  * Custom hook for managing task CRUD operations and state
  */
-export const useTaskManagement = (selectedDate, onTasksChange) => {
+export const useTaskManagement = (selectedDate) => {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,8 +23,7 @@ export const useTaskManagement = (selectedDate, onTasksChange) => {
       
       // Always apply a date filter - use selectedDate or today (local timezone)
       const targetDate = dateFilter || getLocalToday();
-      const nextDay = addDaysToDateString(targetDate, 1);
-      url += `?start_date=${targetDate}&end_date=${nextDay}`;
+      url += `?start_date=${targetDate}&end_date=${targetDate}`;
       
       const response = await fetch(url);
       if (!response.ok) {
@@ -32,7 +31,7 @@ export const useTaskManagement = (selectedDate, onTasksChange) => {
       }
       
       const data = await response.json();
-      setTasks(data);
+      setTasks(data.tasks || []);
     } catch (error) {
       setError('Failed to load tasks from server.');
     } finally {

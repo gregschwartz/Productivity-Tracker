@@ -28,7 +28,7 @@ const Content = styled.div.attrs({
 /**
  * Main ProductivityTracker component that orchestrates all functionality
  */
-function ProductivityTracker({ isDarkMode, onThemeToggle, onTasksUpdate }) {
+function ProductivityTracker({ isDarkMode, onThemeToggle }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -124,7 +124,6 @@ function ProductivityTracker({ isDarkMode, onThemeToggle, onTasksUpdate }) {
             selectedDate={selectedDate}
             onDateChange={handleNavigateToDate}
             onClearDateFilter={handleClearDateFilter}
-            onTasksUpdate={onTasksUpdate}
           />
         );
       case 'visualizations':

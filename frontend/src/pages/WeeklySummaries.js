@@ -46,6 +46,9 @@ function WeeklySummaries({ tasks = [], summaries = [], timeRange, onAddSummary =
    * Filter tasks for a specific week
    */
   const getTasksForWeek = (weekStart, weekEnd) => {
+    if (!Array.isArray(tasks)) {
+      return [];
+    }
     return tasks.filter(task => {
       const taskDate = new Date(task.date_worked);
       return taskDate >= weekStart && taskDate <= weekEnd;

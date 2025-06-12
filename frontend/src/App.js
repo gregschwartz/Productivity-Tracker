@@ -119,7 +119,6 @@ const TRON_STATE = {
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [tronState, setTronState] = useState(TRON_STATE.NEVER_TURNED_ON);
-  const [tasks, setTasks] = useState([]);
   const [tasksCount, setTasksCount] = useState(0);
 
   // Load initial tasks count for the navbar (simplified)
@@ -209,12 +208,7 @@ function App() {
     };
   }, []);
 
-  useEffect(() => {
-    // Check if any task should trigger TRON theme, only enable if state is NEVER_TURNED_ON
-    if (tronState === TRON_STATE.NEVER_TURNED_ON && shouldUseTronTheme(tasks)) {
-      setTronState(TRON_STATE.TURNED_ON);
-    }
-  }, [tasks, tronState]);
+  // TRON theme checking is now handled at component level where tasks are loaded
 
   // Determine which theme to use
   const getActiveTheme = () => {
@@ -253,11 +247,6 @@ function App() {
                 isDarkMode={isDarkMode}
                 onThemeToggle={handleThemeToggle}
                 tasksCount={tasksCount}
-                onTasksUpdate={(newTasks, isLoading) => {
-                  if (!isLoading && newTasks) {
-                    setTasks(newTasks);
-                  }
-                }}
               />
             </ErrorBoundary>
           </Router>

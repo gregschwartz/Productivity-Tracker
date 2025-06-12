@@ -78,6 +78,11 @@ export const useTimeRange = (tasks) => {
   const filteredTasks = useMemo(() => {
     const { startDate, endDate } = getDateRange;
     
+    // Ensure tasks is an array
+    if (!Array.isArray(tasks)) {
+      return [];
+    }
+    
     // If no date range (all time), return all tasks
     if (!startDate || !endDate) {
       return tasks;
@@ -135,7 +140,7 @@ export const useTimeRange = (tasks) => {
     
     // For "all time", generate heatmap from actual task dates
     if (!startDate || !endDate) {
-      if (tasks.length === 0) return [];
+      if (!Array.isArray(tasks) || tasks.length === 0) return [];
       
       const taskDates = tasks.map(task => new Date(task.date_worked));
       const earliest = new Date(Math.min(...taskDates));

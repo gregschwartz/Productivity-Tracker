@@ -66,7 +66,7 @@ function Visualizations({ onNavigateToDate, onAddSummary }) {
       }
       
       const data = await response.json();
-      setTasks(data);
+      setTasks(data.tasks || []);
     } catch (error) {
       setError('Failed to load tasks from server.');
     }

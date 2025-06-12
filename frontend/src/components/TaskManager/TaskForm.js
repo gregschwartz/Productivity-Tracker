@@ -88,7 +88,7 @@ const TaskForm = ({
         delete errors.name;
       }
     } else if (name === 'timeSpent') {
-      if (sanitizedValue && !validateHours(sanitizedValue)) {
+      if (!sanitizedValue || !validateHours(sanitizedValue)) {
         errors.timeSpent = 'Hours must be between 0 and 24';
       } else {
         delete errors.timeSpent;

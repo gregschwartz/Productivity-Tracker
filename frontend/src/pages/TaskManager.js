@@ -11,8 +11,7 @@ import { TaskContainer } from '../components/TaskManager/TaskManager.styles';
 function TaskManager({ 
   selectedDate = null,
   onDateChange = () => {},
-  onClearDateFilter = () => {},
-  onTasksUpdate = () => {}
+  onClearDateFilter = () => {}
 }) {
   const theme = useTheme();
   const currentTheme = theme.name || 'Ready';
@@ -26,7 +25,7 @@ function TaskManager({
     addTask,
     updateTask,
     deleteTask
-  } = useTaskManagement(selectedDate, onTasksUpdate);
+  } = useTaskManagement(selectedDate);
 
   const {
     currentDate,

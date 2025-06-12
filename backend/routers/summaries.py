@@ -6,7 +6,7 @@ from typing import List, Optional
 import weave
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.models import Task, WeeklySummary, WeeklySummaryPublic, SummaryRequest
+from models.models import Task, WeeklySummary, WeeklySummaryPublic, SummaryRequest, PaginatedSummariesResponse
 from services.summary_service import SummaryService
 from services.ai_service import AIService
 from services.search_service import SearchService
@@ -77,32 +77,53 @@ async def generate_summary_route(request: SummaryRequest, http_request: Request,
             detail=f"Failed to generate summary: {str(e)}"
         )
 
-@router.get("/", response_model=List[WeeklySummaryPublic])
+@router.get("/", response_model=PaginatedSummariesResponse)
 async def get_summaries_route(
-    skip: int = 0,
-    limit: int = 10,
+    offset: int = 0,
+    limit: int = 100,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     db: AsyncSession = Depends(get_session)
 ):
     """
-    Get weekly summaries with optional filtering:
-    - No params: paginated list
-    - start_date: get summary for specific week
-    - start_date + end_date: get summaries in date range
+    Get weekly summaries with pagination and optional filtering:
+    - No params: all summaries
+    - start_date: summary for specific week
+    - start_date + end_date: summaries in date range (inclusive)
     
     Note: For vector search, use the /search endpoint instead.
     """
     try:
+        # Validate pagination parameters
+        if limit <= 0 or limit > 100:
+            raise HTTPException(status_code=400, detail="Limit must be between 1 and 100")
+        if offset < 0:
+            raise HTTPException(status_code=400, detail="Offset must be a positive integer")
+        
+        # Get summaries and total count
         summaries = await summary_service.get_weekly_summaries(
             session=db,
-            skip=skip,
+            skip=offset,
             limit=limit,
             start_date=start_date,
             end_date=end_date
         )
-        return summaries
+        total = await summary_service.get_summaries_count(
+            session=db,
+            start_date=start_date,
+            end_date=end_date
+        )
         
+        return PaginatedSummariesResponse(
+            summaries=summaries,
+            total=total,
+            limit=limit,
+            offset=offset,
+            has_more=offset + len(summaries) < total
+        )
+        
+    except HTTPException:
+        raise  # Re-raise HTTPException as-is
     except Exception as e:
         raise HTTPException(
             status_code=500,

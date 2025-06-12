@@ -139,6 +139,26 @@ class SummaryService:
         count = result.scalar()
         return count if count is not None else 0
 
+    async def get_summaries_count(
+        self, 
+        session: AsyncSession, 
+        start_date: Optional[str] = None, 
+        end_date: Optional[str] = None
+    ) -> int:
+        """Get total count of summaries matching the filter criteria."""
+        query = select(func.count(WeeklySummary.id))
+        
+        if start_date and end_date:
+            query = query.where(
+                WeeklySummary.week_start >= start_date,
+                WeeklySummary.week_end <= end_date
+            )
+        elif start_date:
+            query = query.where(WeeklySummary.week_start == start_date)
+        
+        result = await session.execute(query)
+        return result.scalar() or 0
+
     def ensure_embedding_is_list(self, embedding: Union[List[float], np.ndarray]) -> List[float]:
         """Ensure embedding is a list, not numpy array. Postgres can't store numpy arrays."""
         return list(embedding) if hasattr(embedding, '__iter__') and not isinstance(embedding, str) else embedding

@@ -162,7 +162,7 @@ async def generate_sample_data(reference_date: datetime = None) -> tuple[List[Ta
             task_count = 3  # Ensure all focus levels are represented
         else:
             is_weekend = task_date.weekday() >= 5
-            task_count = random.randint(0, 2) if is_weekend else random.randint(1, 6)
+            task_count = random.randint(0, 2) if is_weekend else random.randint(1, 4)
         
         # Generate tasks for this day
         for i in range(task_count):

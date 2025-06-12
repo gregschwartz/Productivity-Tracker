@@ -60,7 +60,7 @@ TestSessionLocal = sessionmaker(
 )
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 async def test_db():
     """
     Provide a test database session with automatic transaction rollback.
@@ -74,6 +74,9 @@ async def test_db():
     """
     # Create connection and start transaction
     async with test_engine.connect() as connection:
+        # Ensure tables exist first
+        await connection.run_sync(SQLModel.metadata.create_all)
+        
         # Start transaction
         transaction = await connection.begin()
         
@@ -90,11 +93,9 @@ async def test_db():
             # Yield session to the test
             yield session
         finally:
-            # Cleanup: close session and rollback transaction
+            # Cleanup
             await session.close()
             await transaction.rollback()
-            
-            # Clear dependency overrides
             app.dependency_overrides.clear()
 
 @pytest.fixture

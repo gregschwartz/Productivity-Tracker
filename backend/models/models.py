@@ -148,3 +148,11 @@ class PaginatedTasksResponse(BaseModel):
     limit: int
     offset: int
     has_more: bool
+
+class PaginatedSummariesResponse(BaseModel):
+    """Paginated response model for summaries."""
+    summaries: List[WeeklySummaryPublic]
+    total: int
+    limit: int
+    offset: int
+    has_more: bool

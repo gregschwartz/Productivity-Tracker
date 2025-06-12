@@ -32,6 +32,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:quiet": "react-scripts test --silent",
+    "test:ci": "CI=true react-scripts test --silent --coverage=false",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

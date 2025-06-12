@@ -5,6 +5,20 @@
 import '@testing-library/jest-dom';
 import React from 'react';
 
+// Configure Testing Library to reduce verbose HTML output
+import { configure } from '@testing-library/react';
+
+configure({
+  // Reduce the amount of HTML printed on test failures
+  getElementError: (message, container) => {
+    const error = new Error(
+      [message, 'Tip: Use screen.debug() to see the DOM structure'].join('\n\n')
+    );
+    error.name = 'TestingLibraryElementError';
+    return error;
+  },
+});
+
 // Mock framer-motion globally
 jest.mock('framer-motion', () => {
   const React = require('react');
@@ -100,14 +114,45 @@ Object.defineProperty(global, 'performance', {
 const originalConsoleWarn = console.warn;
 const originalConsoleError = console.error;
 
+// Override Testing Library's default error formatting to reduce verbosity
+const originalError = console.error;
+beforeAll(() => {
+  // Intercept Testing Library's DOM output
+  console.error = (...args) => {
+    const errorString = args.join(' ');
+    
+    // Check if this is a Testing Library DOM output
+    if (errorString.includes('Ignored nodes: comments, script, style')) {
+      // Extract just the error message without the full DOM
+      const lines = errorString.split('\n');
+      const messageEndIndex = lines.findIndex(line => 
+        line.includes('Ignored nodes: comments, script, style')
+      );
+      
+      if (messageEndIndex > 0) {
+        // Print only the error message, not the DOM
+        const errorMessage = lines.slice(0, messageEndIndex).join('\n');
+        originalError(errorMessage);
+        originalError('\nTip: Use screen.debug() to see the DOM structure if needed.');
+        return;
+      }
+    }
+    
+    // For other errors, use the original console.error
+    originalError(...args);
+  };
+});
+
 beforeEach(() => {
   console.warn = jest.fn();
-  console.error = jest.fn();
 });
 
 afterEach(() => {
   console.warn = originalConsoleWarn;
-  console.error = originalConsoleError;
+});
+
+afterAll(() => {
+  console.error = originalError;
 });
 
 // Helper function to create mock localStorage

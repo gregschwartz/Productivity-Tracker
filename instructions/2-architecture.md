@@ -7,7 +7,7 @@ This document incorporates fixes to the Mermaid diagram, aligns the agent naming
 ## Functional Modules
 
 * **Task Management**: React functional components and hooks to input, edit, delete daily tasks (name, time spent, focus level).
-* **Storage Layer**: Backend REST API (Node.js on AWS Lambda) with PostgreSQL (in Docker). Optionally cache recent data in localStorage for offline use.
+* **Storage Layer**: Backend REST API (Node.js on AWS Lambda) with PostgreSQL (in Docker).
 * **Visualization**: React chart components (Recharts or Chart.js) for heatmaps and bar charts of productivity trends.
 * **Weekly Summary Service**:
 

@@ -2,6 +2,8 @@
 
 A modern productivity tracking application with AI-powered insights, built with React frontend and Python FastAPI backend.
 
+
+
 ## Features
 
 - 📝 **Task Management**: Track daily tasks with time spent and focus levels
@@ -64,7 +66,7 @@ A modern productivity tracking application with AI-powered insights, built with 
    cd ..
    ```
 
-2. Add your API keys to `.env`
+2. While that works, add your API keys to `.env`
 
 3. In terminal, generate sample data:
 
@@ -148,20 +150,32 @@ docker-compose exec backend pytest
 docker-compose exec backend pytest --cov=. --cov-report=html
 ```
 
-## Code Structure
+## Project Structure
 
 ```
-├── src/                    # React frontend
-│   ├── components/         # React components
-│   ├── themes/            # Theme definitions
-│   └── tests/             # Frontend tests
-├── backend/               # Python FastAPI backend
-│   ├── models/            # Pydantic models
-│   ├── services/          # Business logic services
-│   ├── routers/           # API route handlers
-│   └── main.py           # FastAPI app entry point
-├── Dockerfile             # Production build
-├── Dockerfile.frontend    # Frontend development
-├── Dockerfile.backend     # Backend development
-└── docker-compose.yml     # Development orchestration
+├── backend/              # Python FastAPI backend
+│   ├── alembic/          # Database migrations
+│   ├── config/           # Configuration files
+│   ├── models/           # Data models
+│   ├── routers/          # API endpoints
+│   ├── scripts/          # Scripts
+│   ├── services/         # Business logic
+│   ├── tests/            # Backend tests
+│   └── utils/            # Helper utilities
+├── frontend/             # React frontend
+│   ├── build/            # Production build output
+│   ├── public/           # Static assets
+│   └── src/              # Source code
+├── instructions/          # Documents instructing the AI on how and what to build 
+│   ├── 1-core_requirements.md # Core project requirements
+│   ├── 2-architecture.md      # Architecture documentation
+│   ├── 3-designs.md          # Design documentation
+├── CLAUDE.md             # Claude AI assistant documentation
+├── Dockerfile            # Production build
+├── Dockerfile.backend    # Backend development
+├── Dockerfile.frontend   # Frontend development
+├── docker-compose.yml    # Development orchestration
+├── README.md             # This file
+├── env.example           # Environment variables template
+└── nginx.conf            # Nginx configuration
 ```

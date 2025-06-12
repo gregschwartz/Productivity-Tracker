@@ -73,43 +73,6 @@ Here’s a functional brief for each module in your updated Productivity Tracker
 
 ---
 
-## Storage Layer (Offline Resilience)
-
-### Global Network Status Component
-
-#### Online State
-
-* Discreet green dot in app chrome (top‑nav right) with tooltip “Online” on hover
-
-#### Offline State
-
-* Dot switches to red; clicking opens banner slide‑down:
-
-  > “You’re offline. Your changes will save locally.”
-
-  * Dismiss “×” button
-  * Banner height animates from 0→48 px in 250 ms
-* **Offline Task Operations**
-
-  * Add/Edit/Delete still enabled; cards show small “📥” icon indicating local-only until sync
-* **Reconnection Sync**
-
-  * On reconnect: banner text → “Back online. Syncing…” with indeterminate progress bar
-  * When done: banner content → “All caught up.” auto‑dismisses after 3 s
-
-### Offline Sync Modal
-
-#### Syncing In‑Progress
-
-* Modal with progress bar, count of items syncing (“3 tasks…”)
-* Physics‑inspired loader icon rotates with easing
-
-#### Sync Error
-
-* Modal shows red warning icon, error message, and “Retry” / “Cancel” CTAs
-
----
-
 ## Visualization
 
 ### Productivity Dashboard Screen
@@ -238,60 +201,6 @@ Here’s a functional brief for each module in your updated Productivity Tracker
 #### Error
 
 * Inline banner “Search failed. Check connection.” with “Retry”
-
----
-
-## Admin / Developer Dashboard
-
-*(Covers GenAI Integration, Vector Storage, CI/CD, Hosting & Monitoring)*
-
-### Integrations & Config Screen
-
-#### API Keys & Rate Limits
-
-* **Default**: forms for OpenAI API Key, Chroma endpoint URL, rate‑limit numeric input
-* **Save**: CTA “Save Settings” (accent‑filled); on click shows spinner in button
-* **Success**: green toast “Settings updated.”
-* **Validation Error**: inline messages under fields
-
-#### Connection Tests
-
-* Buttons “Test ChatGPT API” / “Test Chroma Store”
-* On click: show loader, then green check or red error icon + message
-
-#### CI/CD Status
-
-* Section listing last GitHub Actions run: status badge (green/red/yellow), timestamp, “View Logs” link
-
-#### Hosting & Infra Health
-
-* Cards for each service (Frontend, Backend, Chroma):
-
-  * Status dot, service name, last health‑check time
-  * On hover, elevation increase; on click, drill‑in to metrics
-
-#### Alerts & Monitoring
-
-* List of active alerts (e.g. “High latency on /api/tasks”) with severity icons
-* Dismiss button per alert; auto‑refresh every minute with subtle fade loops
-
----
-
-## Summary & Vector Storage
-
-*(Mostly managed via Admin Dashboard)*
-
-### Data Management Screen
-
-#### Embedding Store Health
-
-* Gauge chart showing vector store usage vs capacity
-* “Reindex” button to rebuild embeddings (with confirm modal)
-
-#### Summary Store Overview
-
-* Table of summary count per week, storage size
-* “Purge Old Summaries” control with retention slider (1–52 weeks)
 
 ---
 

@@ -14,8 +14,9 @@ from routers.admin import regenerate_embeddings_route
 # Load environment variables
 load_dotenv()
 
-# Initialize Weave for experiment tracking
-weave.init("Productivity Tracker API")
+# Initialize Weave for experiment tracking (skip during tests)
+if not os.getenv("TESTING"):
+    weave.init("Productivity Tracker API")
 
 app = FastAPI(
     title="Productivity Tracker API",

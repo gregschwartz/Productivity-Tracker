@@ -5,6 +5,8 @@ Sets up test database and fixtures.
 import pytest
 import asyncio
 import os
+os.environ["TESTING"] = "1" # Disable Weave during testing
+
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession

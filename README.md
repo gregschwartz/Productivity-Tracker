@@ -90,17 +90,25 @@ This will start:
 ### Task Management
 - `GET /api/tasks` - Get all tasks
 - `POST /api/tasks` - Create a new task
+- `GET /api/tasks/{task_id}` - Get a specific task
 - `PUT /api/tasks/{task_id}` - Update a task
 - `DELETE /api/tasks/{task_id}` - Delete a task
+- `GET /api/tasks/stats/count` - Get total task count
+- `POST /api/tasks/stats/calculate` - Calculate task statistics
 
 ### Summary Management
 - `GET /api/summaries` - Get all summaries
 - `POST /api/summaries` - Create a new summary
+- `GET /api/summaries/{summary_id}` - Get a specific summary
 - `PUT /api/summaries/{summary_id}` - Update a summary
 - `DELETE /api/summaries/{summary_id}` - Delete a summary
+- `GET /api/summaries/search` - Search summaries using vector similarity
+- `GET /api/summaries/stats/count` - Get total summary count
 
 ### Admin
 - `POST /api/admin/generate-sample-data` - Generate sample data
+- `POST /api/admin/regenerate-embeddings` - Utility: Regenerate embeddings for summaries
+- `GET /api/admin/health` - Admin health check endpoint
 
 ### Utility
 - `GET /health` - Health check endpoint

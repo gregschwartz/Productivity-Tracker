@@ -10,6 +10,8 @@ This is a full-stack Productivity Tracker application with AI-powered insights. 
 - **AI Integration**: OpenAI GPT-4, Pydantic-AI, Weave for experiment tracking
 - **Infrastructure**: Docker Compose orchestration
 
+ALL TESTING AND EXECUTING MUST ALWAYS BE DONE IN DOCKER CONTAINERS!
+
 ## Development Commands
 
 ### Initial Setup
@@ -62,13 +64,13 @@ docker-compose exec backend ./run_tests.sh tests/test_task_router.py
 ### Database Operations
 ```bash
 # Create new migration
-cd backend && alembic revision --autogenerate -m "description" && cd ..
+docker-compose exec backend alembic revision --autogenerate -m "description"
 
 # Apply migrations
-cd backend && alembic upgrade head && cd ..
+docker-compose exec backend alembic upgrade head
 
 # Rollback migration
-cd backend && alembic downgrade -1 && cd ..
+docker-compose exec backend alembic downgrade -1
 ```
 
 ## Architecture Overview
@@ -99,14 +101,6 @@ cd backend && alembic downgrade -1 && cd ..
 - Include comments explaining non-obvious logic decisions
 - Never disable failing tests - fix them instead
 - Use Docker containers for all operations
-
-### Current Issues (from TODO.md)
-- Tests are failing and need fixes
-- Frontend pages are too long - need custom hooks for API calls
-- Loading all data at once - needs pagination for tasks/summaries
-- Analytics page needs navigation controls for different time periods
-- Need better loading screens with animations
-- RAG and summary services duplicate embedding generation code
 
 ### API Endpoints Structure
 - `/api/tasks` - Task CRUD operations

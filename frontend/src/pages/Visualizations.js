@@ -51,9 +51,14 @@ function Visualizations({ onNavigateToDate, onAddSummary }) {
   const loadTasks = async (startDate, endDate) => {
     try {
       const apiUrl = getApiUrl();
-      const startDateStr = format(startDate, 'yyyy-MM-dd');
-      const endDateStr = format(endDate, 'yyyy-MM-dd');
-      const url = `${apiUrl}/tasks/?start_date=${startDateStr}&end_date=${endDateStr}`;
+      let url = `${apiUrl}/tasks/`;
+      
+      // Only add date parameters if both dates are provided
+      if (startDate && endDate) {
+        const startDateStr = format(startDate, 'yyyy-MM-dd');
+        const endDateStr = format(endDate, 'yyyy-MM-dd');
+        url += `?start_date=${startDateStr}&end_date=${endDateStr}`;
+      }
       
       const response = await fetch(url);
       if (!response.ok) {

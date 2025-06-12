@@ -1,5 +1,5 @@
 from typing import List, Optional
-
+from datetime import datetime, date, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func
 from sqlmodel import select
@@ -7,11 +7,16 @@ from sqlmodel import select
 from models.models import Task
 
 
+def get_local_today() -> date:
+    """Get today's date in local timezone (system timezone)."""
+    return datetime.now().date()
+
+
 class TaskService:
     async def create_task(self, session: AsyncSession, task_data: Task) -> Task:
         """Create a new task that persists on refresh."""
         # Exclude fields that should not be set directly or are auto-generated
-        task_dict = task_data.dict(exclude={'id', 'created_at', 'updated_at'}, exclude_none=True)
+        task_dict = task_data.model_dump(exclude={'id', 'created_at', 'updated_at'}, exclude_none=True)
         # Date_worked can be cranky
         if isinstance(task_dict.get('date_worked'), str):
             from datetime import date
@@ -22,23 +27,54 @@ class TaskService:
         await session.refresh(task)
         return task
 
-    async def get_tasks(self, session: AsyncSession, start_date: Optional[str] = None, end_date: Optional[str] = None) -> List[Task]:
-        """Get tasks, optionally filtered by date range."""
-        from datetime import date
-        
+    async def get_tasks(
+        self, 
+        session: AsyncSession, 
+        start_date: Optional[str] = None, 
+        end_date: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0
+    ) -> List[Task]:
+        """Get tasks with pagination, optionally filtered by date range."""
         query = select(Task)
+        
         if start_date and end_date:
             start_date_obj = date.fromisoformat(start_date)
             end_date_obj = date.fromisoformat(end_date)
-            query = query.where(Task.date_worked >= start_date_obj, Task.date_worked < end_date_obj)
-        elif start_date:
-            start_date_obj = date.fromisoformat(start_date)
-            query = query.where(Task.date_worked >= start_date_obj)
-        elif end_date:
-            end_date_obj = date.fromisoformat(end_date)
-            query = query.where(Task.date_worked < end_date_obj)
-        result = await session.execute(query.order_by(Task.date_worked.desc()))
+            query = query.where(
+                Task.date_worked >= start_date_obj, 
+                Task.date_worked < end_date_obj
+            )
+        elif start_date or end_date:
+            raise ValueError("Both start_date and end_date must be provided together")
+        
+        # Apply pagination
+        query = query.order_by(Task.date_worked.desc()).limit(limit).offset(offset)
+        
+        result = await session.execute(query)
         return result.scalars().all()
+
+    async def get_tasks_count(
+        self, 
+        session: AsyncSession, 
+        start_date: Optional[str] = None, 
+        end_date: Optional[str] = None
+    ) -> int:
+        """Get total count of tasks matching the filter criteria."""
+        query = select(func.count(Task.id))
+        
+        if start_date and end_date:
+            start_date_obj = date.fromisoformat(start_date)
+            end_date_obj = date.fromisoformat(end_date)
+            query = query.where(
+                Task.date_worked >= start_date_obj, 
+                Task.date_worked < end_date_obj
+            )
+        elif start_date or end_date:
+            raise ValueError("Both start_date and end_date must be provided together")
+        
+        result = await session.execute(query)
+        return result.scalar() or 0
 
     async def get_task_by_id(self, session: AsyncSession, task_id: int) -> Optional[Task]:
         """Get a task by ID."""

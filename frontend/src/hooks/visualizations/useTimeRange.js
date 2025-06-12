@@ -57,15 +57,11 @@ export const useTimeRange = (tasks) => {
           days: Math.ceil((endOfWeek(now) - quarterStart) / (1000 * 60 * 60 * 24))
         };
       case 'all':
-        // Get the earliest task date or 6 months back, whichever is more recent
-        const earliestTask = tasks.length > 0 
-          ? new Date(Math.min(...tasks.map(task => new Date(task.date_worked))))
-          : subWeeks(now, 26); // 6 months back
-        const allStart = startOfWeek(earliestTask < subWeeks(now, 26) ? subWeeks(now, 26) : earliestTask);
+        // For all time, return null dates to indicate no filtering
         return {
-          startDate: allStart,
-          endDate: endOfWeek(now),
-          days: Math.ceil((endOfWeek(now) - allStart) / (1000 * 60 * 60 * 24))
+          startDate: null,
+          endDate: null,
+          days: null
         };
       default:
         return {
@@ -81,6 +77,12 @@ export const useTimeRange = (tasks) => {
    */
   const filteredTasks = useMemo(() => {
     const { startDate, endDate } = getDateRange;
+    
+    // If no date range (all time), return all tasks
+    if (!startDate || !endDate) {
+      return tasks;
+    }
+    
     return tasks.filter(task => {
       const taskDate = new Date(task.date_worked);
       return taskDate >= startDate && taskDate <= endDate;
@@ -130,14 +132,43 @@ export const useTimeRange = (tasks) => {
    */
   const heatmapData = useMemo(() => {
     const { startDate, endDate } = getDateRange;
+    
+    // For "all time", generate heatmap from actual task dates
+    if (!startDate || !endDate) {
+      if (tasks.length === 0) return [];
+      
+      const taskDates = tasks.map(task => new Date(task.date_worked));
+      const earliest = new Date(Math.min(...taskDates));
+      const latest = new Date(Math.max(...taskDates));
+      const days = eachDayOfInterval({ start: earliest, end: latest });
+      
+      return days.map((date) => {
+        const dateStr = format(date, 'yyyy-MM-dd');
+        const dayTasks = tasks.filter(task => task.date_worked === dateStr);
+        const totalHours = dayTasks.reduce((sum, task) => sum + task.time_spent, 0);
+        
+        const isFirstOfMonth = date.getDate() === 1;
+        const monthName = isFirstOfMonth ? format(date, 'MMM') : null;
+        
+        return {
+          date: dateStr,
+          day: format(date, 'dd'),
+          monthName,
+          isFirstOfMonth,
+          intensity: totalHours,
+          tasks: dayTasks.length
+        };
+      });
+    }
+    
+    // For specific date ranges
     const days = eachDayOfInterval({ start: startDate, end: endDate });
     
-    return days.map((date, index) => {
+    return days.map((date) => {
       const dateStr = format(date, 'yyyy-MM-dd');
       const dayTasks = filteredTasks.filter(task => task.date_worked === dateStr);
       const totalHours = dayTasks.reduce((sum, task) => sum + task.time_spent, 0);
       
-      // Check if this is the first day of the month
       const isFirstOfMonth = date.getDate() === 1;
       const monthName = isFirstOfMonth ? format(date, 'MMM') : null;
       
@@ -150,7 +181,7 @@ export const useTimeRange = (tasks) => {
         tasks: dayTasks.length
       };
     });
-  }, [filteredTasks, getDateRange]);
+  }, [filteredTasks, getDateRange, tasks]);
 
   /**
    * Get time range label for display

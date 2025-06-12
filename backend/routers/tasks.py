@@ -1,12 +1,13 @@
 """
 CRUD router for tasks (requirement: task persistence on refresh).
 """
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
-from models.models import Task
+from models.models import Task, PaginatedTasksResponse
 from services.task_service import TaskService
 from services.database import get_session # For session dependency
 
@@ -21,18 +22,50 @@ async def create_new_task_route(task_payload: Task, db: AsyncSession = Depends(g
     try:
         return await task_service.create_task(session=db, task_data=task_payload)
     except Exception as e:
-        logger.error("Failed to create task. Payload=%s", task_payload.dict(), exc_info=True)
+        logger.error("Failed to create task. Payload=%s", task_payload.model_dump(), exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to create task: {str(e)}")
 
-@router.get("/", response_model=List[Task])
+@router.get("/", response_model=PaginatedTasksResponse)
 async def list_tasks_route(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
     db: AsyncSession = Depends(get_session)
 ):
-    """Get all tasks, optionally filtered by date range."""
+    """Get tasks with pagination, optionally filtered by date range."""
     try:
-        return await task_service.get_tasks(session=db, start_date=start_date, end_date=end_date)
+        # Validate pagination parameters
+        if limit <= 0 or limit > 100:
+            raise HTTPException(status_code=400, detail="Limit must be between 1 and 100")
+        if offset < 0:
+            raise HTTPException(status_code=400, detail="Offset must be a positive integer")
+        
+        # Get tasks and total count
+        tasks = await task_service.get_tasks(
+            session=db, 
+            start_date=start_date, 
+            end_date=end_date,
+            limit=limit,
+            offset=offset
+        )
+        total = await task_service.get_tasks_count(
+            session=db,
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        return PaginatedTasksResponse(
+            tasks=tasks,
+            total=total,
+            limit=limit,
+            offset=offset,
+            has_more=offset + len(tasks) < total
+        )
+    except HTTPException:
+        raise  # Re-raise HTTPException as-is
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get tasks: {str(e)}")
 

@@ -13,3 +13,5 @@ psycopg2-binary==2.9.9
 pgvector==0.2.3
 asyncpg==0.29.0
 alembic==1.13.1 
+slowapi
+pytz==2024.1

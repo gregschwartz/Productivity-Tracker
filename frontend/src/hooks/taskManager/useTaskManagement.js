@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getApiUrl } from '../../utils/api';
+import { getLocalToday, addDaysToDateString } from '../../utils/dateUtils';
 
 /**
  * Custom hook for managing task CRUD operations and state
@@ -12,20 +13,18 @@ export const useTaskManagement = (selectedDate, onTasksChange) => {
   /**
    * Load tasks from the backend API for current date
    */
-  const loadTasks = async (dateFilter = null) => {
+  const loadTasks = useCallback(async (dateFilter = null) => {
     try {
       setIsLoading(true);
       setError(null);
-      onTasksChange?.(tasks, true);
       
       const apiUrl = getApiUrl();
       let url = `${apiUrl}/tasks/`;
       
-      // Always apply a date filter - use selectedDate or today
-      const targetDate = dateFilter || new Date().toISOString().split('T')[0];
-      const nextDay = new Date(targetDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      url += `?start_date=${targetDate}&end_date=${nextDay.toISOString().split('T')[0]}`;
+      // Always apply a date filter - use selectedDate or today (local timezone)
+      const targetDate = dateFilter || getLocalToday();
+      const nextDay = addDaysToDateString(targetDate, 1);
+      url += `?start_date=${targetDate}&end_date=${nextDay}`;
       
       const response = await fetch(url);
       if (!response.ok) {
@@ -34,13 +33,12 @@ export const useTaskManagement = (selectedDate, onTasksChange) => {
       
       const data = await response.json();
       setTasks(data);
-      onTasksChange?.(data, false);
     } catch (error) {
       setError('Failed to load tasks from server.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   /**
    * Add a new task to the backend and local state
@@ -51,7 +49,7 @@ export const useTaskManagement = (selectedDate, onTasksChange) => {
       // Already a full datetime string
       dateToUse = task.date_worked;
     } else {
-      dateToUse = targetDate || task.date_worked || selectedDate || new Date().toISOString().split('T')[0];
+      dateToUse = targetDate || task.date_worked || selectedDate || getLocalToday();
     }
     const newTask = {
       ...task,
@@ -76,7 +74,6 @@ export const useTaskManagement = (selectedDate, onTasksChange) => {
       const createdTask = await response.json();
       const newTasks = Array.isArray(tasks) ? [...tasks, createdTask] : [createdTask];
       setTasks(newTasks);
-      onTasksChange?.(newTasks, false);
     } catch (error) {
       setError('Failed to save task to server. Please try again.');
       throw error; // Re-throw so calling code knows the operation failed
@@ -106,7 +103,6 @@ export const useTaskManagement = (selectedDate, onTasksChange) => {
         task.id === taskId ? updatedTaskFromServer : task
       );
       setTasks(updatedTasks);
-      onTasksChange?.(updatedTasks, false);
     } catch (error) {
       setError('Failed to update task on server. Please try again.');
       throw error; // Re-throw so calling code knows the operation failed
@@ -129,7 +125,6 @@ export const useTaskManagement = (selectedDate, onTasksChange) => {
 
       const filteredTasks = tasks.filter(task => task.id !== taskId);
       setTasks(filteredTasks);
-      onTasksChange?.(filteredTasks, false);
     } catch (error) {
       setError('Failed to delete task on server. Please try again.');
       throw error; // Re-throw so calling code knows the operation failed
@@ -139,7 +134,7 @@ export const useTaskManagement = (selectedDate, onTasksChange) => {
   // Load tasks when selectedDate changes
   useEffect(() => {
     loadTasks(selectedDate);
-  }, [selectedDate]);
+  }, [selectedDate, loadTasks]);
 
   // Sort tasks by date
   const sortedTasks = Array.isArray(tasks) ? tasks.sort((a, b) => new Date(b.date_worked) - new Date(a.date_worked)) : [];

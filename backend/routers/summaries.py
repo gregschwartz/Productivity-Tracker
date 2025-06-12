@@ -74,7 +74,6 @@ async def generate_summary_route(request: SummaryRequest, db: AsyncSession = Dep
         )
 
 @router.get("/", response_model=List[WeeklySummary])
-@weave.op()
 async def get_summaries_route(
     skip: int = 0,
     limit: int = 10,
@@ -108,6 +107,7 @@ async def get_summaries_route(
 
 @router.get("/search", response_model=List[WeeklySummary])
 @weave.op()
+@limiter.limit("10/minute")
 async def search_summaries_route(
     query: str,
     db: AsyncSession = Depends(get_session)
@@ -140,8 +140,7 @@ async def search_summaries_route(
             detail=f"Failed to search summaries: {str(e)}"
         )
 
-@router.get("/stats/count", response_model=dict) # Adjusted response_model
-@weave.op()
+@router.get("/stats/count", response_model=dict)
 async def get_summary_count_route(db: AsyncSession = Depends(get_session)):
     """Get total count of weekly summaries."""
     try:
@@ -151,7 +150,6 @@ async def get_summary_count_route(db: AsyncSession = Depends(get_session)):
         raise HTTPException(status_code=500, detail=f"Failed to get summary count: {str(e)}")
 
 @router.get("/{summary_id}", response_model=WeeklySummary)
-@weave.op()
 async def get_summary_by_id_route(summary_id: int, db: AsyncSession = Depends(get_session)):
     """Get a specific weekly summary by ID."""
     try:
@@ -165,7 +163,6 @@ async def get_summary_by_id_route(summary_id: int, db: AsyncSession = Depends(ge
         raise HTTPException(status_code=500, detail=f"Failed to get summary: {str(e)}")
 
 @router.put("/{summary_id}", response_model=WeeklySummary)
-@weave.op()
 async def update_summary_route(summary_id: int, summary_data: dict, db: AsyncSession = Depends(get_session)):
     """Update a weekly summary (regenerates embedding if content changed)."""
     try:
@@ -179,7 +176,6 @@ async def update_summary_route(summary_id: int, summary_data: dict, db: AsyncSes
         raise HTTPException(status_code=500, detail=f"Failed to update summary: {str(e)}")
 
 @router.delete("/{summary_id}")
-@weave.op()
 async def delete_summary_route(summary_id: int, db: AsyncSession = Depends(get_session)):
     """Delete a weekly summary."""
     try:

@@ -3,7 +3,6 @@ CRUD router for tasks (requirement: task persistence on refresh).
 """
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
-import weave
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
@@ -17,7 +16,6 @@ task_service = TaskService()
 logger = logging.getLogger(__name__)
 
 @router.post("/", response_model=Task)
-@weave.op()
 async def create_new_task_route(task_payload: Task, db: AsyncSession = Depends(get_session)):
     """Create a new task that persists on page refresh."""
     try:
@@ -27,7 +25,6 @@ async def create_new_task_route(task_payload: Task, db: AsyncSession = Depends(g
         raise HTTPException(status_code=500, detail=f"Failed to create task: {str(e)}")
 
 @router.get("/", response_model=List[Task])
-@weave.op()
 async def list_tasks_route(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
@@ -40,7 +37,6 @@ async def list_tasks_route(
         raise HTTPException(status_code=500, detail=f"Failed to get tasks: {str(e)}")
 
 @router.get("/{task_id}", response_model=Task)
-@weave.op()
 async def get_task_route(task_id: int, db: AsyncSession = Depends(get_session)):
     """Get a specific task by ID."""
     try:
@@ -54,7 +50,6 @@ async def get_task_route(task_id: int, db: AsyncSession = Depends(get_session)):
         raise HTTPException(status_code=500, detail=f"Failed to get task: {str(e)}")
 
 @router.put("/{task_id}", response_model=Task)
-@weave.op()
 async def update_existing_task_route(task_id: int, task_data: dict, db: AsyncSession = Depends(get_session)):
     """Update a task."""
     try:
@@ -68,7 +63,6 @@ async def update_existing_task_route(task_id: int, task_data: dict, db: AsyncSes
         raise HTTPException(status_code=500, detail=f"Failed to update task: {str(e)}")
 
 @router.delete("/{task_id}")
-@weave.op()
 async def delete_existing_task_route(task_id: int, db: AsyncSession = Depends(get_session)):
     """Delete a task."""
     try:
@@ -82,7 +76,6 @@ async def delete_existing_task_route(task_id: int, db: AsyncSession = Depends(ge
         raise HTTPException(status_code=500, detail=f"Failed to delete task: {str(e)}")
 
 @router.get("/stats/count", response_model=dict)
-@weave.op()
 async def get_task_count_route(db: AsyncSession = Depends(get_session)):
     """Get the count of tasks."""
     try:
@@ -93,7 +86,6 @@ async def get_task_count_route(db: AsyncSession = Depends(get_session)):
 
 
 @router.post("/stats/calculate", response_model=dict)
-@weave.op()
 async def calculate_task_statistics_route(
     tasks: List[Task]
 ):

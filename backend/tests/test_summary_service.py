@@ -222,6 +222,8 @@ class TestSummaryService:
             call_args = mock_execute.call_args
             sql_params = call_args[0][1]  # Second argument contains the parameters
             
-            assert sql_params['embedding'] == str(list(mock_embedding))
+            # Check that embedding is formatted as pgvector array format
+            expected_embedding = f"[{','.join(map(str, mock_embedding))}]"
+            assert sql_params['embedding'] == expected_embedding
             assert sql_params['similarity_threshold'] == 0.8
             assert sql_params['limit'] == 3 

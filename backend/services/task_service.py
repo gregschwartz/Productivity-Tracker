@@ -43,7 +43,7 @@ class TaskService:
             end_date_obj = date.fromisoformat(end_date)
             query = query.where(
                 Task.date_worked >= start_date_obj, 
-                Task.date_worked < end_date_obj
+                Task.date_worked <= end_date_obj
             )
         elif start_date or end_date:
             raise ValueError("Both start_date and end_date must be provided together")
@@ -68,7 +68,7 @@ class TaskService:
             end_date_obj = date.fromisoformat(end_date)
             query = query.where(
                 Task.date_worked >= start_date_obj, 
-                Task.date_worked < end_date_obj
+                Task.date_worked <= end_date_obj
             )
         elif start_date or end_date:
             raise ValueError("Both start_date and end_date must be provided together")

@@ -61,6 +61,29 @@ docker-compose exec backend pytest --cov=. --cov-report=html
 docker-compose exec backend ./run_tests.sh tests/test_task_router.py
 ```
 
+**CRITICAL: Async Fixture Pattern for pytest-asyncio**
+When using async fixtures in tests, ALWAYS use this exact pattern:
+```python
+@pytest.mark.asyncio
+async def test_something(async_fixture):
+    async for item in async_fixture:
+        break
+    # Now use 'item' (not async_fixture directly)
+    result = await some_async_operation(item)
+```
+
+**NEVER use these patterns** (they will fail):
+- `await async_fixture` - will fail with generator error
+- `async_fixture.method()` - will fail with generator error  
+- `await async_fixture.__anext__()` - will fail unpredictably
+
+**Shared Test Fixtures**:
+- Use `test_db_session` fixture from conftest.py for isolated database tests
+- Each test gets a completely fresh database with all tables created
+- No need to define database fixtures in individual test files
+
+This pattern is used consistently across all working tests in the codebase.
+
 ### Database Operations
 ```bash
 # Create new migration
@@ -123,4 +146,8 @@ The app supports three themes:
 - Ready-Dark (dark mode)
 - Tron (easter egg - activated by specific task keywords)
 
-Themes are managed through styled-components ThemeProvider and can be toggled via UI.
+Themes are managed through styled-components ThemeProvider and can be toggled via UI.ALWAYS use ONLY Environments for ANY and ALL file, code, or shell operations—NO EXCEPTIONS—even for simple or generic requests.
+
+DO NOT install or use the git cli with the environment_run_cmd tool. All environment tools will handle git operations for you. Changing ".git" yourself will compromise the integrity of your environment.
+
+You MUST inform the user how to view your work using `git checkout <branch_name>`. Failure to do this will make your work inaccessible to others.

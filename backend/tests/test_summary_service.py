@@ -8,7 +8,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from services.summary_service import SummaryService
-from models.models import WeeklySummary
+from models.models import WeeklySummary, WeeklySummaryPublic
 
 
 class TestSummaryService:
@@ -102,7 +102,7 @@ class TestSummaryService:
             
             # Check first result (higher similarity)
             first_result = results[0]
-            assert isinstance(first_result, WeeklySummary)
+            assert isinstance(first_result, WeeklySummaryPublic)
             assert first_result.id == 1
             # Check that the result has the expected properties
             assert first_result.week_start == '2025-05-26'

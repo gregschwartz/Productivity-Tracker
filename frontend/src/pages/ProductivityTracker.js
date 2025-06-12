@@ -8,7 +8,6 @@ import SearchAgent from './SearchAgent';
 import Navigation from '../components/Navigation';
 import PageHeader from '../components/PageHeader';
 import { BarChart3, Calendar, Search } from 'lucide-react';
-import { getApiUrl } from '../utils/api';
 import { useTheme } from 'styled-components';
 
 /**
@@ -37,7 +36,6 @@ function ProductivityTracker({ isDarkMode, onThemeToggle, onTasksUpdate }) {
   const theme = useTheme();
   let currentTheme = theme.name || 'Ready';
   
-  const [error, setError] = useState(null);
   
   /**
    * Get active tab from URL path
@@ -175,13 +173,6 @@ function ProductivityTracker({ isDarkMode, onThemeToggle, onTasksUpdate }) {
           currentTheme={currentTheme}
         />
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-            <div className="text-red-800 dark:text-red-200 text-sm">
-              ⚠️ {error}
-            </div>
-          </div>
-        )}
 
         <AnimatePresence mode="wait">
           <motion.div

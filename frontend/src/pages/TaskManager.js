@@ -17,7 +17,6 @@ function TaskManager({
   const theme = useTheme();
   const currentTheme = theme.name || 'Ready';
   const [editingTask, setEditingTask] = useState(null);
-  const [resetTrigger, setResetTrigger] = useState(0);
 
   // Custom hooks for business logic
   const {
@@ -81,7 +80,6 @@ function TaskManager({
         theme={currentTheme}
         editingTask={editingTask}
         onEditComplete={handleEditComplete}
-        resetTrigger={resetTrigger}
       />
 
       <TaskList

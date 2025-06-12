@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useTheme } from 'styled-components';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp } from 'lucide-react';
@@ -6,7 +6,7 @@ import CustomTooltip from '../CustomTooltip';
 import { TimeRangeButton } from '../buttons';
 import { ChartContainer, ChartLegend, ChartSection, ChartViewToggle } from '../chart';
 import { SectionDescription, SectionHeader, SectionHeaderWithControls, SectionTitle } from '../sections';
-import { generateLegendData, LegendItem, LegendColorBox } from '../heatmap/HeatmapLegend';
+import { LegendItem, LegendColorBox } from '../heatmap/HeatmapLegend';
 
 /**
  * ProductivityChart component for displaying daily productivity trends

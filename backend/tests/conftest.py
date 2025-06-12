@@ -8,8 +8,12 @@ import os
 import warnings
 import sys
 from httpx import AsyncClient
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+
+# Set testing environment variable to disable Weave during testing
+os.environ["TESTING"] = "1"
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -155,3 +159,85 @@ def sample_summary_response():
         summary="Great week with high focus!",
         recommendations=["Keep your focus by touching grass."]
     )
+
+# Legacy fixtures from backend/conftest.py - kept for backward compatibility
+@pytest.fixture
+def sample_tasks_legacy():
+    """Create sample tasks for testing (legacy version with static data)."""
+    from datetime import date
+    tasks = [
+        Task(
+            id=1,
+            name="Sample Task 1", 
+            time_spent=2.0,
+            focus_level=FocusLevel.high,
+            date_worked=date(2024, 3, 5)
+        ),
+        Task(
+            id=2,
+            name="Sample Task 2",
+            time_spent=1.5,
+            focus_level=FocusLevel.medium,
+            date_worked=date(2024, 3, 6)
+        )
+    ]
+    return tasks
+
+@pytest.fixture(scope="function")
+async def test_db_session():
+    """Create completely isolated test database session for each test."""
+    import time
+    config = get_database_config()
+    test_db_name = f"test_isolated_{int(time.time() * 1000000)}"
+    
+    # Create test database
+    from sqlalchemy import create_engine, text
+    admin_url = f"postgresql+psycopg2://{config['user']}:{config['password']}@{config['host']}:{config['port']}/postgres"
+    admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
+    
+    try:
+        with admin_engine.connect() as conn:
+            conn.execute(text(f"DROP DATABASE IF EXISTS {test_db_name}"))
+            conn.execute(text(f"CREATE DATABASE {test_db_name}"))
+    finally:
+        admin_engine.dispose()
+    
+    # Install pgvector extension
+    test_admin_url = f"postgresql+psycopg2://{config['user']}:{config['password']}@{config['host']}:{config['port']}/{test_db_name}"
+    test_admin_engine = create_engine(test_admin_url)
+    try:
+        with test_admin_engine.connect() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            conn.commit()
+    finally:
+        test_admin_engine.dispose()
+    
+    # Create async engine for test database
+    test_url = f"postgresql+asyncpg://{config['user']}:{config['password']}@{config['host']}:{config['port']}/{test_db_name}"
+    engine = create_async_engine(test_url, echo=False)
+    
+    try:
+        # Create all tables
+        async with engine.begin() as conn:
+            await conn.run_sync(SQLModel.metadata.create_all)
+        
+        # Create session
+        async_session_maker = sessionmaker(
+            engine,
+            class_=AsyncSession,
+            expire_on_commit=False,
+        )
+        
+        async with async_session_maker() as session:
+            yield session
+            
+    finally:
+        await engine.dispose()
+        
+        # Drop test database
+        admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
+        try:
+            with admin_engine.connect() as conn:
+                conn.execute(text(f"DROP DATABASE IF EXISTS {test_db_name}"))
+        finally:
+            admin_engine.dispose()

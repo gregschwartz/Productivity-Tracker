@@ -226,4 +226,55 @@ class TestSummaryService:
             expected_embedding = f"[{','.join(map(str, mock_embedding))}]"
             assert sql_params['embedding'] == expected_embedding
             assert sql_params['similarity_threshold'] == 0.8
-            assert sql_params['limit'] == 3 
+            assert sql_params['limit'] == 3
+
+    @pytest.mark.asyncio
+    async def test_get_summaries_count_no_filter(self, summary_service):
+        """Test get_summaries_count method without filters."""
+        mock_session = AsyncMock()
+        
+        # Mock the SQL result
+        mock_result = MagicMock()
+        mock_result.scalar.return_value = 10
+        
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        
+        count = await summary_service.get_summaries_count(session=mock_session)
+        
+        assert count == 10
+        mock_session.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_summaries_count_with_date_filter(self, summary_service):
+        """Test get_summaries_count method with date filters."""
+        mock_session = AsyncMock()
+        
+        # Mock the SQL result
+        mock_result = MagicMock()
+        mock_result.scalar.return_value = 3
+        
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        
+        count = await summary_service.get_summaries_count(
+            session=mock_session,
+            start_date="2024-01-01",
+            end_date="2024-01-31"
+        )
+        
+        assert count == 3
+        mock_session.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_summaries_count_returns_zero(self, summary_service):
+        """Test get_summaries_count returns 0 when no summaries exist."""
+        mock_session = AsyncMock()
+        
+        # Mock the SQL result returning None
+        mock_result = MagicMock()
+        mock_result.scalar.return_value = None
+        
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        
+        count = await summary_service.get_summaries_count(session=mock_session)
+        
+        assert count == 0 

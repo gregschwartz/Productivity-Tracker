@@ -24,13 +24,16 @@ AI_GENERATED_SUMMARY = SummaryResponse(
 )
 
 # This is what the endpoint will store and return (database model)
+from datetime import datetime
 STORED_SUMMARY_DB_MODEL = WeeklySummary(
     id=1, # Example ID from DB
     week_start=SAMPLE_WEEK_START,
     week_end=SAMPLE_WEEK_END,
     summary=AI_GENERATED_SUMMARY.summary,
     stats={"total_tasks": 2, "total_hours": "8.0", "avg_focus": "medium"}, # Stored as dict in DB model
-    recommendations=AI_GENERATED_SUMMARY.recommendations
+    recommendations=AI_GENERATED_SUMMARY.recommendations,
+    created_at=datetime.utcnow(),
+    updated_at=datetime.utcnow()
 )
 
 
@@ -148,20 +151,159 @@ async def test_generate_summary_ai_failure(test_db_session):
 
 @pytest.mark.asyncio
 async def test_get_summaries_success(test_client):
-    """Test GET /api/summaries/ for retrieving stored summaries."""
+    """Test GET /api/summaries/ for retrieving stored summaries with pagination."""
     async for client in test_client:
         break
     
-    with patch('routers.summaries.summary_service.get_weekly_summaries', new_callable=AsyncMock) as mock_get_all_summaries:
-        mock_get_all_summaries.return_value = [STORED_SUMMARY_DB_MODEL] # DB service returns list of DB models
+    with patch('routers.summaries.summary_service.get_weekly_summaries', new_callable=AsyncMock) as mock_get_all_summaries, \
+         patch('routers.summaries.summary_service.get_summaries_count', new_callable=AsyncMock) as mock_get_count:
+        
+        # Convert DB model to public model for the mock
+        from models.models import WeeklySummaryPublic
+        public_summary = WeeklySummaryPublic(
+            id=STORED_SUMMARY_DB_MODEL.id,
+            week_start=STORED_SUMMARY_DB_MODEL.week_start,
+            week_end=STORED_SUMMARY_DB_MODEL.week_end,
+            summary=STORED_SUMMARY_DB_MODEL.summary,
+            stats=STORED_SUMMARY_DB_MODEL.stats,
+            recommendations=STORED_SUMMARY_DB_MODEL.recommendations,
+            created_at=STORED_SUMMARY_DB_MODEL.created_at,
+            updated_at=STORED_SUMMARY_DB_MODEL.updated_at
+        )
+        
+        mock_get_all_summaries.return_value = [public_summary]
+        mock_get_count.return_value = 1
 
         response = await client.get("/api/summaries/")
         assert response.status_code == 200
         json_response = response.json()
-        assert len(json_response) == 1
-        assert json_response[0]["summary"] == STORED_SUMMARY_DB_MODEL.summary
-        assert json_response[0]["id"] == STORED_SUMMARY_DB_MODEL.id
+        
+        # Check paginated response structure
+        assert "summaries" in json_response
+        assert "total" in json_response
+        assert "limit" in json_response
+        assert "offset" in json_response
+        assert "has_more" in json_response
+        
+        assert json_response["total"] == 1
+        assert json_response["limit"] == 100
+        assert json_response["offset"] == 0
+        assert json_response["has_more"] is False
+        assert len(json_response["summaries"]) == 1
+        assert json_response["summaries"][0]["summary"] == STORED_SUMMARY_DB_MODEL.summary
+        assert json_response["summaries"][0]["id"] == STORED_SUMMARY_DB_MODEL.id
+        
         mock_get_all_summaries.assert_called_once()
+        mock_get_count.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_get_summaries_with_pagination_params(test_client):
+    """Test GET /api/summaries/ with pagination parameters."""
+    async for client in test_client:
+        break
+    
+    with patch('routers.summaries.summary_service.get_weekly_summaries', new_callable=AsyncMock) as mock_get_all_summaries, \
+         patch('routers.summaries.summary_service.get_summaries_count', new_callable=AsyncMock) as mock_get_count:
+        
+        # Mock data
+        from models.models import WeeklySummaryPublic
+        from datetime import datetime
+        summaries = []
+        for i in range(5):
+            summary = WeeklySummaryPublic(
+                id=i+1,
+                week_start=f"2024-01-{(i+1)*7:02d}",
+                week_end=f"2024-01-{(i+1)*7+6:02d}",
+                summary=f"Summary {i+1}",
+                stats={"total_tasks": i+1},
+                recommendations=[f"Recommendation {i+1}"],
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+            summaries.append(summary)
+        
+        # Return only 2 summaries (offset=1, limit=2)
+        mock_get_all_summaries.return_value = summaries[1:3]
+        mock_get_count.return_value = 5
+
+        response = await client.get("/api/summaries/?offset=1&limit=2")
+        assert response.status_code == 200
+        json_response = response.json()
+        
+        assert json_response["total"] == 5
+        assert json_response["limit"] == 2
+        assert json_response["offset"] == 1
+        assert json_response["has_more"] is True  # offset(1) + len(2) < total(5)
+        assert len(json_response["summaries"]) == 2
+        assert json_response["summaries"][0]["id"] == 2
+        assert json_response["summaries"][1]["id"] == 3
+        
+        # Verify service was called with correct params
+        mock_get_all_summaries.assert_called_once_with(
+            session=mock_get_all_summaries.call_args[1]["session"],
+            skip=1,
+            limit=2,
+            start_date=None,
+            end_date=None
+        )
+
+@pytest.mark.asyncio
+async def test_get_summaries_invalid_pagination_params(test_client):
+    """Test GET /api/summaries/ with invalid pagination parameters."""
+    async for client in test_client:
+        break
+    
+    # Test invalid limit
+    response = await client.get("/api/summaries/?limit=0")
+    assert response.status_code == 400
+    assert "Limit must be between 1 and 100" in response.json()["detail"]
+    
+    response = await client.get("/api/summaries/?limit=101")
+    assert response.status_code == 400
+    assert "Limit must be between 1 and 100" in response.json()["detail"]
+    
+    # Test invalid offset
+    response = await client.get("/api/summaries/?offset=-1")
+    assert response.status_code == 400
+    assert "Offset must be a positive integer" in response.json()["detail"]
+
+@pytest.mark.asyncio
+async def test_get_summaries_with_date_filter(test_client):
+    """Test GET /api/summaries/ with date filtering."""
+    async for client in test_client:
+        break
+    
+    with patch('routers.summaries.summary_service.get_weekly_summaries', new_callable=AsyncMock) as mock_get_all_summaries, \
+         patch('routers.summaries.summary_service.get_summaries_count', new_callable=AsyncMock) as mock_get_count:
+        
+        from models.models import WeeklySummaryPublic
+        from datetime import datetime
+        public_summary = WeeklySummaryPublic(
+            id=1,
+            week_start="2024-03-04",
+            week_end="2024-03-10",
+            summary="March summary",
+            stats={"total_tasks": 5},
+            recommendations=["Keep going"],
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        mock_get_all_summaries.return_value = [public_summary]
+        mock_get_count.return_value = 1
+
+        # Test with both start and end date
+        response = await client.get("/api/summaries/?start_date=2024-03-01&end_date=2024-03-31")
+        assert response.status_code == 200
+        
+        # Verify service was called with date params
+        mock_get_all_summaries.assert_called_once_with(
+            session=mock_get_all_summaries.call_args[1]["session"],
+            skip=0,
+            limit=100,
+            start_date="2024-03-01",
+            end_date="2024-03-31"
+        )
 
 @pytest.mark.asyncio
 async def test_get_summary_by_id_success(test_client):

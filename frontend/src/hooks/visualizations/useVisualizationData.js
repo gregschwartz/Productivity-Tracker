@@ -23,17 +23,35 @@ export const useVisualizationData = (timeRange, getDateRange) => {
   const loadTasks = async (startDate, endDate) => {
     try {
       const apiUrl = getApiUrl();
-      const startDateStr = format(startDate, 'yyyy-MM-dd');
-      const endDateStr = format(endDate, 'yyyy-MM-dd');
-      const url = `${apiUrl}/tasks/?start_date=${startDateStr}&end_date=${endDateStr}`;
       
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Failed to load tasks: ${response.status} ${response.statusText}`);
+      // Load all tasks by fetching all pages
+      let allTasks = [];
+      let offset = 0;
+      const limit = 100;
+      let hasMore = true;
+      
+      while (hasMore) {
+        let url = `${apiUrl}/tasks/?limit=${limit}&offset=${offset}`;
+        
+        // Only add date parameters if both dates are provided
+        if (startDate && endDate) {
+          const startDateStr = format(startDate, 'yyyy-MM-dd');
+          const endDateStr = format(endDate, 'yyyy-MM-dd');
+          url += `&start_date=${startDateStr}&end_date=${endDateStr}`;
+        }
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Failed to load tasks: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        allTasks = allTasks.concat(data.tasks || []);
+        hasMore = data.has_more || false;
+        offset += limit;
       }
       
-      const data = await response.json();
-      setTasks(data.tasks || []);
+      setTasks(allTasks);
     } catch (error) {
       setError('Failed to load tasks from server.');
     }

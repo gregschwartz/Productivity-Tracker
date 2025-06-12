@@ -6,6 +6,7 @@ import TimeRangeSelector from '../components/TimeRangeSelector';
 import { SectionSummary } from '../components/sections';
 import { SkeletonStatCard, SkeletonChart } from '../components/loading';
 import { useTimeRange } from '../hooks/visualizations/useTimeRange';
+import { useVisualizationData } from '../hooks/visualizations/useVisualizationData';
 import { 
   StatsCards, 
   ProductivityChart, 
@@ -16,24 +17,14 @@ import {
   FocusStatsRow
 } from '../components/Visualizations';
 import AllStatsWrapper from '../components/AllStatsWrapper';
-import { getApiUrl } from '../utils/api';
-import { format } from 'date-fns';
 
 /**
  * Visualizations tab showing productivity analytics
  */
 function Visualizations({ onNavigateToDate, onAddSummary }) {
-  const [tasks, setTasks] = useState([]);
-  const [summaries, setSummaries] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [stats, setStats] = useState({
-    total_tasks: 0,
-    total_hours: 0,
-    average_hours_per_task: 0,
-    focus_hours: {}
-  });
-
+  // Initialize tasks state first
+  const [initialTasks, setInitialTasks] = useState([]);
+  
   // Use time range hook with tasks
   const {
     timeRange,
@@ -43,102 +34,23 @@ function Visualizations({ onNavigateToDate, onAddSummary }) {
     dailyData,
     heatmapData,
     getTimeRangeLabel
-  } = useTimeRange(tasks);
+  } = useTimeRange(initialTasks);
 
-  /**
-   * Load tasks from the backend API for selected time range
-   */
-  const loadTasks = async (startDate, endDate) => {
-    try {
-      const apiUrl = getApiUrl();
-      let url = `${apiUrl}/tasks/`;
-      
-      // Only add date parameters if both dates are provided
-      if (startDate && endDate) {
-        const startDateStr = format(startDate, 'yyyy-MM-dd');
-        const endDateStr = format(endDate, 'yyyy-MM-dd');
-        url += `?start_date=${startDateStr}&end_date=${endDateStr}`;
-      }
-      
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Failed to load tasks: ${response.status} ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      setTasks(data.tasks || []);
-    } catch (error) {
-      setError('Failed to load tasks from server.');
-    }
-  };
+  // Use visualization data hook for all data management
+  const {
+    tasks,
+    summaries,
+    isLoading,
+    error,
+    stats,
+    updateStats
+  } = useVisualizationData(timeRange, getDateRange);
 
-  /**
-   * Load summaries from the backend API
-   */
-  const loadSummaries = async () => {
-    try {
-      const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/summaries/`);
-      if (!response.ok) {
-        throw new Error(`Failed to load summaries: ${response.status} ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      setSummaries(data);
-    } catch (error) {
-      setError('Failed to load summaries from server.');
-    }
-  };
 
-  /**
-   * Update statistics when filtered tasks change
-   */
-  const updateStats = async (filteredTasksData) => {
-    if (filteredTasksData.length === 0) {
-      setStats({ total_tasks: 0, total_hours: 0, average_hours_per_task: 0, focus_hours: {} });
-      return;
-    }
-
-    try {
-      const { calculateTaskStatistics } = await import('../utils/api');
-      const backendStats = await calculateTaskStatistics(filteredTasksData);
-      setStats(backendStats);
-    } catch (error) {
-      // Simple fallback
-      const totalTasks = filteredTasksData.length;
-      const totalHours = filteredTasksData.reduce((sum, task) => sum + task.time_spent, 0);
-      setStats({
-        total_tasks: totalTasks,
-        total_hours: totalHours,
-        average_hours_per_task: totalTasks > 0 ? totalHours / totalTasks : 0,
-        focus_hours: {}
-      });
-    }
-  };
-
-  /**
-   * Load data when component mounts or time range changes
-   */
+  // Sync tasks from visualization hook to time range hook
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        const { startDate, endDate } = getDateRange;
-        await Promise.all([
-          loadTasks(startDate, endDate),
-          loadSummaries()
-        ]);
-      } catch (error) {
-        // Error handling is done in individual functions
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    loadData();
-  }, [timeRange]);
+    setInitialTasks(tasks);
+  }, [tasks]);
 
   // Update stats when filtered tasks change
   useEffect(() => {

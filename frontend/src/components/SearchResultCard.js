@@ -113,15 +113,15 @@ function SearchResultCard({ result, index = 0, className = "" }) {
       <ResultHeader>
         <ResultTitle>{result.weekRange}</ResultTitle>
         <ResultMeta>
-          <MetaItem size="xs" gap="1" iconSize="12px">
+          <MetaItem size="xs" gap="1" $iconSize="12px">
             <TrendingUp />
             {result.stats.totalTasks} tasks
           </MetaItem>
-          <MetaItem size="xs" gap="1" iconSize="12px">
+          <MetaItem size="xs" gap="1" $iconSize="12px">
             <Clock />
             {result.stats.totalHours}h total
           </MetaItem>
-          <MetaItem size="xs" gap="1" iconSize="12px">
+          <MetaItem size="xs" gap="1" $iconSize="12px">
             <Focus />
             {result.stats.avgFocus} focus
           </MetaItem>

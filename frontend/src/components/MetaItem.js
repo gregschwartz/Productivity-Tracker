@@ -14,8 +14,8 @@ const StyledMetaItem = styled.div.attrs((props) => ({
   `}
 
   svg {
-    width: ${props => props.iconSize || '14px'};
-    height: ${props => props.iconSize || '14px'};
+    width: ${props => props.$iconSize || '14px'};
+    height: ${props => props.$iconSize || '14px'};
     flex-shrink: 0;
   }
 `;
@@ -41,7 +41,7 @@ function MetaItem({
     <StyledMetaItem 
       size={size}
       gap={gap}
-      iconSize={iconSize}
+      $iconSize={iconSize}
       className={className}
       {...props}
     >

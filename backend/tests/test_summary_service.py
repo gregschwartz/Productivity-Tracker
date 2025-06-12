@@ -143,8 +143,8 @@ class TestSummaryService:
         assert "<mark>in</mark>" not in result
 
     @pytest.mark.asyncio
-    async def test_vector_search_week_summaries_with_relevance_score(self, summary_service):
-        """Test vector_search_week_summaries method adds relevance scores from similarity."""
+    async def test_vector_search_week_summaries_returns_results(self, summary_service):
+        """Test vector_search_week_summaries method returns expected results."""
         # Mock the database session
         mock_session = AsyncMock()
         
@@ -155,24 +155,24 @@ class TestSummaryService:
         mock_row_data = [
             {
                 'id': 1,
-                'week_start': '2024-01-08',
-                'week_end': '2024-01-14', 
+                'week_start': '2025-05-26',
+                'week_end': '2025-06-01',
                 'summary': 'Coding work with high focus',
                 'recommendations': ['Keep coding', 'Focus more'],
                 'stats': {'total_tasks': 5},
-                'created_at': '2024-01-08T00:00:00',
-                'updated_at': '2024-01-08T00:00:00',
+                'created_at': '2025-05-26T00:00:00',
+                'updated_at': '2025-05-26T00:00:00',
                 'similarity': 0.92  # High similarity score
             },
             {
                 'id': 2,
-                'week_start': '2024-01-15',
-                'week_end': '2024-01-21',
+                'week_start': '2025-06-02',
+                'week_end': '2025-06-08', 
                 'summary': 'Meeting discussions and planning',
                 'recommendations': ['Reduce meetings'],
                 'stats': {'total_tasks': 3},
-                'created_at': '2024-01-15T00:00:00',
-                'updated_at': '2024-01-15T00:00:00',
+                'created_at': '2025-06-02T00:00:00',
+                'updated_at': '2025-06-02T00:00:00',
                 'similarity': 0.75  # Lower similarity score
             }
         ]
@@ -187,8 +187,7 @@ class TestSummaryService:
             results = await summary_service.vector_search_week_summaries(
                 session=mock_session,
                 query_text="coding focus",
-                limit=5,
-                similarity_threshold=0.7
+                limit=5
             )
             
             # Verify results
@@ -198,12 +197,12 @@ class TestSummaryService:
             first_result = results[0]
             assert isinstance(first_result, WeeklySummary)
             assert first_result.id == 1
-            assert hasattr(first_result, 'relevance_score')
-            assert first_result.relevance_score == 0.92
+            # Check that the result has the expected properties
+            assert first_result.week_start == '2025-05-26'
             
-            # Check second result (lower similarity)
+            # Check second result
             second_result = results[1]
-            assert second_result.relevance_score == 0.75
+            assert second_result.week_start == '2025-06-02'
             
             # Verify highlighting was applied
             assert '<mark>' in first_result.summary or first_result.summary == 'Coding work with high focus'
@@ -217,13 +216,13 @@ class TestSummaryService:
         
         mock_row_data = [{
             'id': 1,
-            'week_start': '2024-01-08',
-            'week_end': '2024-01-14', 
+            'week_start': '2025-05-26',
+            'week_end': '2025-06-01', 
             'summary': 'Coding work with excellent focus on programming tasks',
             'recommendations': ['Continue coding practices', 'Maintain focus levels'],
             'stats': {'total_tasks': 5},
-            'created_at': '2024-01-08T00:00:00',
-            'updated_at': '2024-01-08T00:00:00',
+            'created_at': '2025-05-26T00:00:00',
+            'updated_at': '2025-05-26T00:00:00',
             'similarity': 0.88
         }]
         

@@ -41,21 +41,6 @@ const ResultTitle = styled.h3.attrs(() => ({
   `}
 `;
 
-/**
- * Result relevance score
- */
-const RelevanceScore = styled.div.attrs(() => ({
-  className: 'px-2 py-1 rounded text-xs font-medium'
-}))`
-  background: ${props => props.theme.colors.primary}20;
-  color: ${props => props.theme.colors.primary};
-  
-  ${props => props.theme.name === 'tron' && `
-    background: ${props.theme.colors.primary}30;
-    border: 1px solid ${props.theme.colors.primary};
-    font-family: ${props.theme.fonts.mono};
-  `}
-`;
 
 /**
  * Result meta information
@@ -127,25 +112,21 @@ function SearchResultCard({ result, index = 0, className = "" }) {
     >
       <ResultHeader>
         <ResultTitle>{result.weekRange}</ResultTitle>
-        <RelevanceScore>
-          {Math.round((result.relevanceScore / 5) * 100)}% match
-        </RelevanceScore>
+        <ResultMeta>
+          <MetaItem size="xs" gap="1" iconSize="12px">
+            <TrendingUp />
+            {result.stats.totalTasks} tasks
+          </MetaItem>
+          <MetaItem size="xs" gap="1" iconSize="12px">
+            <Clock />
+            {result.stats.totalHours}h total
+          </MetaItem>
+          <MetaItem size="xs" gap="1" iconSize="12px">
+            <Focus />
+            {result.stats.avgFocus} focus
+          </MetaItem>
+        </ResultMeta>
       </ResultHeader>
-
-      <ResultMeta>
-        <MetaItem size="xs" gap="1" iconSize="12px">
-          <TrendingUp />
-          {result.stats.totalTasks} tasks
-        </MetaItem>
-        <MetaItem size="xs" gap="1" iconSize="12px">
-          <Clock />
-          {result.stats.totalHours}h total
-        </MetaItem>
-        <MetaItem size="xs" gap="1" iconSize="12px">
-          <Focus />
-          {result.stats.avgFocus} focus
-        </MetaItem>
-      </ResultMeta>
 
       <SummaryResultSnippet
         dangerouslySetInnerHTML={{

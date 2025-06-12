@@ -89,7 +89,6 @@ class SummaryRequest(BaseModel):
 class SearchResult(BaseModel):
     content: str
     source: str
-    relevance_score: float
     metadata: Optional[Dict[str, Any]] = None
 
 class WeeklySummary(SQLModel, table=True):
@@ -130,7 +129,6 @@ class WeeklySummary(SQLModel, table=True):
 
     class Config:
         arbitrary_types_allowed = True
-        extra = "allow"  # Allow additional fields like relevance_score
 
 class SummaryResponse(BaseModel):
     """Response model for AI-generated summaries."""

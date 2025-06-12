@@ -142,7 +142,7 @@ const performSemanticSearch = (query, summaries) => {
  */
 function SearchAgent({ summaries = [] }) {
   const [query, setQuery] = useState('');
-  const [sortBy, setSortBy] = useState('relevance');
+  const [sortBy, setSortBy] = useState('date');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [searchError, setSearchError] = useState(null);
@@ -216,8 +216,8 @@ function SearchAgent({ summaries = [] }) {
           const bHours = parseFloat(b.stats?.total_hours || b.stats?.totalHours || 0);
           const aHours = parseFloat(a.stats?.total_hours || a.stats?.totalHours || 0);
           return bHours - aHours;
-        default: // relevance
-          return b.relevanceScore - a.relevanceScore;
+        default: // date (fallback)
+          return new Date(b.week_start || b.timestamp) - new Date(a.week_start || a.timestamp);
       }
     });
     
@@ -264,7 +264,6 @@ function SearchAgent({ summaries = [] }) {
           <ResultsHeader>
               <ResultsCount>{`${searchResults.length} results found`}</ResultsCount>
             <SortSelect value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-              <option value="relevance">Sort by Relevance</option>
               <option value="date">Sort by Date</option>
               <option value="tasks">Sort by Tasks</option>
               <option value="hours">Sort by Hours</option>

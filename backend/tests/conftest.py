@@ -44,6 +44,11 @@ def get_test_database_url():
 test_engine = create_async_engine(
     get_test_database_url(),
     echo=False,  # Set to True for SQL debugging
+    connect_args={
+        # turn off asyncpg's client-side cache
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
+    },
     pool_pre_ping=True
 )
 

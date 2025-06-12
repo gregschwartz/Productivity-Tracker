@@ -135,12 +135,12 @@ function SearchAgent({ summaries = [] }) {
   }, [query]);
 
   /**
-   * Re-sort search results when sort option changes
+   * Sort search results based on selected sort option
    */
-  useEffect(() => {
-    if (searchResults.length === 0) return;
+  const sortedResults = React.useMemo(() => {
+    if (searchResults.length === 0) return searchResults;
 
-    const sortedResults = [...searchResults].sort((a, b) => {
+    return [...searchResults].sort((a, b) => {
       switch (sortBy) {
         case 'date':
           return new Date(b.week_start || b.timestamp) - new Date(a.week_start || a.timestamp);
@@ -154,9 +154,7 @@ function SearchAgent({ summaries = [] }) {
           return new Date(b.week_start || b.timestamp) - new Date(a.week_start || a.timestamp);
       }
     });
-    
-    setSearchResults(sortedResults);
-  }, [sortBy]);
+  }, [searchResults, sortBy]);
 
   /**
    * Handle suggestion chip click
@@ -191,12 +189,12 @@ function SearchAgent({ summaries = [] }) {
       </SearchSection>
 
       {query.trim() && (
-        <SearchResults>
+        <SearchResults data-testid="search-results">
           {isSearching ? (
             <SearchProgressBar />
           ) : !searchError && (
             <ResultsHeader>
-              <ResultsCount>{`${searchResults.length} results found`}</ResultsCount>
+              <ResultsCount>{`${sortedResults.length} results found`}</ResultsCount>
               <SortSelect value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
                 <option value="date">Sort by Date</option>
                 <option value="tasks">Sort by Tasks</option>
@@ -217,7 +215,7 @@ function SearchAgent({ summaries = [] }) {
                 description="Try different keywords or check your spelling."
               />
             ) : (
-              searchResults.map((result, index) => (
+              sortedResults.map((result, index) => (
                 <SearchResultCard
                   key={result.id}
                   result={result}

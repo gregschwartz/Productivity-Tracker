@@ -30,8 +30,8 @@ const BarBackground = styled.div`
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
-const IndeterminateBar = styled(motion.div)`
-  width: 30%;
+const ProgressBar = styled(motion.div)`
+  width: 0%;
   height: 100%;
   background: linear-gradient(
     90deg,
@@ -79,25 +79,26 @@ const SearchProgressBar = () => {
   return (
     <ProgressBarContainer>
       <BarBackground>
-        <IndeterminateBar
-          initial={{ x: '-100%' }}
-          animate={{ x: '370%' }}
+        <ProgressBar
+          initial={{ width: '0%' }}
+          animate={{ width: '99%' }}
           transition={{
-            repeat: Infinity,
-            duration: 3,
-            ease: 'easeInOut',
+            duration: 30,
+            ease: [0.25, 0.1, 0.25, 1], // fast start, slow end
           }}
         />
       </BarBackground>
       <AnimatePresence mode="wait">
         <motion.div
           key={messages[currentMessageIndex]}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.8 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
         >
-          {messages[currentMessageIndex]}
+          <MessagesContainer>
+            {messages[currentMessageIndex]}
+          </MessagesContainer>
         </motion.div>
       </AnimatePresence>
     </ProgressBarContainer>

@@ -26,7 +26,6 @@ const mockSearchApiResponse = [
     summary: "High focus on code reviews resulted in better quality",
     stats: { total_tasks: 5, total_hours: "40.0", avg_focus: "high" },
     recommendations: ["Continue high focus approach"],
-    relevance_score: 0.95
   },
   {
     id: 2,
@@ -35,7 +34,6 @@ const mockSearchApiResponse = [
     summary: "Medium focus tasks took longer than expected",
     stats: { total_tasks: 3, total_hours: "35.0", avg_focus: "medium" },
     recommendations: ["Try to improve focus level"],
-    relevance_score: 0.82
   }
 ];
 

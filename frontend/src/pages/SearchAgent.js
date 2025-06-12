@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
@@ -162,10 +162,18 @@ function SearchAgent({ summaries = [] }) {
       setIsSearching(true);
       setSearchError(null);
       
+      const timeoutId = setTimeout(() => {
+        setSearchError('Search timed out after 30 seconds. Please try again.');
+        setSearchResults([]);
+        setIsSearching(false);
+      }, 30000);
+      
       try {
         const apiUrl = getApiUrl();
         const encodedQuery = encodeURIComponent(query);
         const response = await fetch(`${apiUrl}/summaries/search?query=${encodedQuery}`);
+        
+        clearTimeout(timeoutId);
         
         if (!response.ok) {
           throw new Error(`Search failed: ${response.status} ${response.statusText}`);
@@ -174,9 +182,8 @@ function SearchAgent({ summaries = [] }) {
         const results = await response.json();
         
         // Transform backend results to match frontend expectations
-        const transformedResults = results.map((result, index) => ({
+        const transformedResults = results.map((result) => ({
           ...result,
-          relevanceScore: result.relevance_score || 0,
           summary: result.summary,
           recommendations: result.recommendations || [],
           weekRange: formatWeekRange(result.week_start, result.week_end),
@@ -189,6 +196,7 @@ function SearchAgent({ summaries = [] }) {
         
         setSearchResults(transformedResults);
       } catch (error) {
+        clearTimeout(timeoutId);
         setSearchError('Error performing search. Please try again.');
         setSearchResults([]);
       } finally {
@@ -232,12 +240,12 @@ function SearchAgent({ summaries = [] }) {
   };
 
   const suggestions = [
-    'coding tasks',
-    'high focus',
+    'frontend',
     'meetings',
-    'design work',
-    'productive weeks',
-    'low productivity'
+    'testing',
+    'security',
+    'AI',
+    'documentation',
   ];
 
   return (
@@ -260,15 +268,15 @@ function SearchAgent({ summaries = [] }) {
         <SearchResults>
           {isSearching ? (
             <SearchProgressBar />
-          ) : (
-          <ResultsHeader>
+          ) : !searchError && (
+            <ResultsHeader>
               <ResultsCount>{`${searchResults.length} results found`}</ResultsCount>
-            <SortSelect value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-              <option value="date">Sort by Date</option>
-              <option value="tasks">Sort by Tasks</option>
-              <option value="hours">Sort by Hours</option>
-            </SortSelect>
-          </ResultsHeader>
+              <SortSelect value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                <option value="date">Sort by Date</option>
+                <option value="tasks">Sort by Tasks</option>
+                <option value="hours">Sort by Hours</option>
+              </SortSelect>
+            </ResultsHeader>
           )}
 
           <AnimatePresence>

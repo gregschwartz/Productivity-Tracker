@@ -185,3 +185,7 @@ Wrote up my reasoning in the [choices.md](choices.md) file.
 ├── env.example                # Environment variables template
 └── nginx.conf                 # Nginx configuration
 ```
+
+
+
+This project is in response to https://github.com/ready/builders-challenge/issues/49

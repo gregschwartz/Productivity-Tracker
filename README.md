@@ -66,7 +66,7 @@ A modern productivity tracking application with AI-powered insights, built with 
    cd ..
    ```
 
-2. While that works, add your API keys to `.env`
+2. While that works, add your API keys to `.env`. I used an API key of my own. I imagine you have a few available, but if not, I can send you one :) 
 
 3. In terminal, generate sample data:
 
@@ -151,32 +151,37 @@ docker-compose exec backend pytest
 docker-compose exec backend pytest --cov=. --cov-report=html
 ```
 
+## Justifying Selections of Libraries, Models, and Other Components
+
+Wrote up my reasoning in the [choices.md](choices.md) file.
+
 ## Project Structure
 
 ```
-├── backend/              # Python FastAPI backend
-│   ├── alembic/          # Database migrations
-│   ├── config/           # Configuration files
-│   ├── models/           # Data models
-│   ├── routers/          # API endpoints
-│   ├── scripts/          # Scripts
-│   ├── services/         # Business logic
-│   ├── tests/            # Backend tests
-│   └── utils/            # Helper utilities
-├── frontend/             # React frontend
-│   ├── build/            # Production build output
-│   ├── public/           # Static assets
-│   └── src/              # Source code
-├── instructions/          # Documents instructing the AI on how and what to build 
+├── backend/                   # Python FastAPI backend
+│   ├── alembic/               # Database migrations
+│   ├── config/                # Configuration files
+│   ├── models/                # Data models
+│   ├── routers/               # API endpoints
+│   ├── scripts/               # Scripts
+│   ├── services/              # Business logic
+│   ├── tests/                 # Backend tests
+│   └── utils/                 # Helper utilities
+├── frontend/                  # React frontend
+│   ├── build/                 # Production build output
+│   ├── public/                # Static assets
+│   └── src/                   # Source code
+├── instructions/              # Documents instructing the AI on how and what to build 
 │   ├── 1-core_requirements.md # Core project requirements
 │   ├── 2-architecture.md      # Architecture documentation
-│   ├── 3-designs.md          # Design documentation
-├── CLAUDE.md             # Claude AI assistant documentation
-├── Dockerfile            # Production build
-├── Dockerfile.backend    # Backend development
-├── Dockerfile.frontend   # Frontend development
-├── docker-compose.yml    # Development orchestration
-├── README.md             # This file
-├── env.example           # Environment variables template
-└── nginx.conf            # Nginx configuration
+│   └── 3-designs.md           # Design documentation
+├── CLAUDE.md                  # Claude AI assistant documentation
+├── Dockerfile                 # Production build
+├── Dockerfile.backend         # Backend development
+├── Dockerfile.frontend        # Frontend development
+├── docker-compose.yml         # Development orchestration
+├── README.md                  # This file
+├── choices.md                 # Justification of library, model, and other component selections
+├── env.example                # Environment variables template
+└── nginx.conf                 # Nginx configuration
 ```

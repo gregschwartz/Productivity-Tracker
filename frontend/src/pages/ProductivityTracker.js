@@ -127,7 +127,7 @@ function ProductivityTracker({ isDarkMode, onThemeToggle }) {
           />
         );
       case 'visualizations':
-        return <Visualizations onNavigateToDate={handleNavigateToDate} onAddSummary={(summary) => {}} />;
+        return <Visualizations onNavigateToDate={handleNavigateToDate} />;
       case 'search':
         return <SearchAgent />;
       default:

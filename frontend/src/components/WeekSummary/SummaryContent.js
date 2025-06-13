@@ -10,7 +10,7 @@ const StyledSummaryContent = styled.div.attrs(() => ({
   color: ${(props) => props.theme.colors.text.primary};
 
   h4 {
-    color: ${(props) => props.theme.colors.primary};
+    color: ${(props) => props.theme.colors.text.muted};
     margin: 16px 0 8px 0;
     font-size: 14px;
     font-weight: 600;

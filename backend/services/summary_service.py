@@ -72,7 +72,7 @@ class SummaryService:
         await session.commit()
         await session.refresh(db_summary)
 
-        return WeeklySummaryPublic.model_validate(db_summary)
+        return WeeklySummaryPublic.model_validate(db_summary.model_dump())
 
     async def get_weekly_summaries(
         self, session: AsyncSession,
@@ -106,14 +106,14 @@ class SummaryService:
         sql_query_stmt = sql_query_stmt.offset(skip).limit(limit).order_by(WeeklySummary.week_start.desc())
         result = await session.execute(sql_query_stmt)
         summaries = result.scalars().all()
-        return [WeeklySummaryPublic.model_validate(summary) for summary in summaries]
+        return [WeeklySummaryPublic.model_validate(summary.model_dump()) for summary in summaries]
 
     async def get_weekly_summary_by_id(self, session: AsyncSession, summary_id: int) -> Optional[WeeklySummaryPublic]:
         """Get a weekly summary by ID."""
         query = select(WeeklySummary).where(WeeklySummary.id == summary_id)
         result = await session.execute(query)
         summary = result.scalars().first()
-        return WeeklySummaryPublic.model_validate(summary) if summary else None
+        return WeeklySummaryPublic.model_validate(summary.model_dump()) if summary else None
 
     # No need for a method to update weekly summaries. It's not done manually!
     # async def update_weekly_summary(self, session: AsyncSession, summary_id: int, summary_data: dict) -> Optional[WeeklySummary]:

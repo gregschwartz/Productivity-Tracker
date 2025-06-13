@@ -98,7 +98,7 @@ class SearchService:
         # First check for prompt injection
         if self.detect_prompt_injection(query):
             # Return a safe, generic search term
-            return "work"
+            return "highfocus"
         
         # Sanitize the query
         sanitized_query = self.sanitize_query(query)
@@ -107,9 +107,8 @@ class SearchService:
         if len(sanitized_query.strip()) < 3:
             return sanitized_query.lower()
         
-        # Use AI to improve the query
-        improvement_prompt = f"""
-Convert this natural language search query into optimal keywords for semantic search of productivity summaries.
+        # Use AI to improve the query, which will also do some prompt injection protection 
+        improvement_prompt = f"""Convert this natural language search query into optimal keywords for semantic search of productivity summaries.
 
 Rules:
 1. Extract only the most relevant keywords and concepts

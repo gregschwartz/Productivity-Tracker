@@ -197,7 +197,6 @@ const summaryExistsForWeek = (summaries, weekStart) => {
 const WeeklySummary = ({
   tasks = [],
   summaries = [],
-  // onAddSummary, // Not directly used if onGenerateSummary handles adding to parent state
   isLoading = false,
   error = null,
   onGenerateSummary,
@@ -216,8 +215,6 @@ const WeeklySummary = ({
 
   const handleGenerateSummary = async () => {
     if (!onGenerateSummary || currentWeekTasks.length === 0 || isCurrentWeekSummaryGenerated) return;
-    // onGenerateSummary is expected to handle API call, loading states, and error states.
-    // It should also call onAddSummary internally or update parent state.
     await onGenerateSummary(currentWeekTasks, currentWeek.start, currentWeek.end);
   };
 

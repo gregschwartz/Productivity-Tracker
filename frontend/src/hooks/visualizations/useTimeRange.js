@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, subDays, eachDayOfInterval, format } from 'date-fns';
+import { startOfWeek, endOfWeek, subDays, eachDayOfInterval, format } from 'date-fns';
 
 /**
  * Custom hook for managing time range selection and calculations
@@ -13,46 +13,29 @@ export const useTimeRange = (tasks) => {
   const getDateRange = useMemo(() => {
     console.log('getDateRange called with timeRange:', timeRange);
     const now = new Date();
+    const endDate = endOfWeek(now);
     switch (timeRange) {
       case 'week':
         // Current week (Sunday to Saturday)
         return {
           startDate: startOfWeek(now),
-          endDate: endOfWeek(now),
+          endDate: endDate,
           days: 7
         };
       case 'month':
-        // Show complete weeks for the current month
-        const monthStartDate = startOfMonth(now);
-        const monthEndDate = endOfMonth(now);
-        
-        // Start from the beginning of the first week that contains the start of the month
-        const monthStartWeek = startOfWeek(monthStartDate);
-        
-        // Find the last Sunday that falls within the month
-        let lastSundayInMonth = monthStartDate;
-        let currentSunday = startOfWeek(monthStartDate);
-        
-        // Iterate through Sundays in the month
-        while (currentSunday <= monthEndDate) {
-          if (currentSunday >= monthStartDate && currentSunday <= monthEndDate) {
-            lastSundayInMonth = currentSunday;
-          }
-          currentSunday = addDays(currentSunday, 7);
-        }
-        
-        // End at the last day of the week that starts with the last Sunday in the month
-        const monthEndWeek = endOfWeek(lastSundayInMonth);
+        // Show exactly 4 complete weeks ending with current week
+        const currentWeekStart = startOfWeek(now);
+        const startDate = subDays(currentWeekStart, 21); // 3 weeks back (3 * 7 = 21 days)
         
         return {
-          startDate: monthStartWeek,
-          endDate: monthEndWeek,
-          days: Math.ceil((monthEndWeek - monthStartWeek) / (1000 * 60 * 60 * 24))
+          startDate: startDate,
+          endDate: endDate,
+          days: 28
         };
       default:
         return {
           startDate: startOfWeek(now),
-          endDate: endOfWeek(now),
+          endDate: endDate,
           days: 7
         };
     }
@@ -79,11 +62,12 @@ export const useTimeRange = (tasks) => {
    * Prepare daily productivity data for charts
    */
   const dailyData = useMemo(() => {
-    const { days } = getDateRange;
-    const displayDays = Math.min(days, timeRange === 'week' ? 7 : 30);
+    const { startDate, endDate } = getDateRange;
     
-    return Array.from({ length: displayDays }, (_, i) => {
-      const date = subDays(new Date(), displayDays - 1 - i);
+    // Generate data for each day in the date range
+    const days = eachDayOfInterval({ start: startDate, end: endDate });
+    
+    return days.map((date) => {
       const dateStr = format(date, 'yyyy-MM-dd');
       const dayTasks = filteredTasks.filter(task => task.date_worked === dateStr);
       
@@ -147,7 +131,7 @@ export const useTimeRange = (tasks) => {
   const getTimeRangeLabel = () => {
     switch (timeRange) {
       case 'week': return 'the last 7 days';
-      case 'month': return 'the last 30 days';
+      case 'month': return 'the last 4 weeks';
       default: return 'the last 7 days';
     }
   };

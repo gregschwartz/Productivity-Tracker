@@ -62,7 +62,7 @@ const readyDarkTheme = {
   colors: {
     primary: '#a855f7',
     primaryText: '#ffffff',
-    secondary: '#38bdf8',
+    secondary: '#384c6e',
     background: '#0f172a',
     backgroundHover: '#1e293b',
     surface: '#1e293b',

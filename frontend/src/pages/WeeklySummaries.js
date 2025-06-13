@@ -38,7 +38,13 @@ const getWeeksInRange = (startDate, endDate) => {
 /**
  * WeeklySummaries component - manages summaries for 1+ weeks
  */
-function WeeklySummaries({ tasks = [], summaries = [], timeRange, onAddSummary = () => {} }) {
+function WeeklySummaries({ 
+  tasks = [], 
+  summaries = [], 
+  timeRange, 
+  onAddSummary = () => {}, 
+  onUpdateSummary = () => {}
+}) {
   const { startDate, endDate } = timeRange;
   const weeks = getWeeksInRange(startDate, endDate);
 
@@ -83,6 +89,7 @@ function WeeklySummaries({ tasks = [], summaries = [], timeRange, onAddSummary =
             tasks={weekTasks}
             timeRange={weekTimeRange}
             onAddSummary={onAddSummary}
+            onUpdateSummary={(oldSummary, newSummary) => onUpdateSummary(oldSummary, newSummary)}
           />
         );
       })}

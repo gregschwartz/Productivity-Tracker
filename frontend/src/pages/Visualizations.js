@@ -21,7 +21,7 @@ import AllStatsWrapper from '../components/AllStatsWrapper';
 /**
  * Visualizations tab showing productivity analytics
  */
-function Visualizations({ onNavigateToDate, onAddSummary }) {
+function Visualizations({ onNavigateToDate }) {
   // Initialize tasks state first
   const [initialTasks, setInitialTasks] = useState([]);
   
@@ -43,7 +43,9 @@ function Visualizations({ onNavigateToDate, onAddSummary }) {
     isLoading,
     error,
     stats,
-    updateStats
+    updateStats,
+    addSummary,
+    updateSummary
   } = useVisualizationData(timeRange, getDateRange);
 
   const timeRangeOptions = [
@@ -137,10 +139,11 @@ function Visualizations({ onNavigateToDate, onAddSummary }) {
             <SectionSummary title="Summary" />
             
             <WeeklySummaries 
-              tasks={tasks} 
+              tasks={filteredTasks} 
               summaries={summaries} 
               timeRange={getDateRange}
-              onAddSummary={onAddSummary}
+              onAddSummary={addSummary}
+              onUpdateSummary={updateSummary}
             />
           </ChartSection>
 

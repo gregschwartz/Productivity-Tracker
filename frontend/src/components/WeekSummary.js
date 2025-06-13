@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import styled from "styled-components";
-import { Calendar, Clock } from "lucide-react";
+import { Calendar, Clock, RotateCcw } from "lucide-react";
 import { format, getWeek, getYear } from "date-fns";
-import { getApiUrl } from "../utils/api";
+import { motion, AnimatePresence } from "framer-motion";
+import { apiPost, apiDelete } from "../utils/api";
+import { SearchProgressBar } from "../components/loading";
 import GenerateButton from "./WeekSummary/GenerateButton";
 import SummaryCard from "./WeekSummary/SummaryCard";
 import SummaryContent from "./WeekSummary/SummaryContent";
@@ -57,6 +59,41 @@ const SummaryMeta = styled.div.attrs(() => ({
 }))``;
 
 /**
+ * Regenerate button for existing summaries
+ */
+const RegenerateButton = styled.button.attrs(() => ({
+  className: "flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-medium transition-all duration-200 mt-3 ml-auto",
+}))`
+  background-color: ${(props) => props.theme.colors?.secondary || '#f9fafb'};
+  border-color: ${(props) => props.theme.colors?.border || '#d1d5db'};
+  color: ${(props) => props.theme.colors?.text?.secondary || '#6b7280'};
+  
+  &:hover {
+    ${(props) => props.theme.name === 'dark' ? `
+      background-color: ${props.theme.colors?.border || '#374151'};
+      border-color: ${props.theme.colors?.text?.secondary || '#9ca3af'};
+      color: ${props.theme.colors?.text?.primary || '#f3f4f6'};
+    ` : `
+      background-color: #fef2f2;
+      border-color: #fca5a5;
+      color: #dc2626;
+    `}
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+`;
+
+
+
+/**
  * Display AI-generated productivity insights from a single week
  */
 function WeekSummary({
@@ -64,6 +101,7 @@ function WeekSummary({
   summary = null,
   timeRange,
   onAddSummary = () => {},
+  onUpdateSummary = () => {},
 }) {
   const { startDate, endDate } = timeRange;
   const [generating, setGenerating] = useState(false);
@@ -104,7 +142,7 @@ function WeekSummary({
   /**
    * Summarize the week and provide recommendations to improve the next week
    */
-  const handleGenerateSummary = async () => {
+  const handleGenerateSummary = async (oldSummaryIfRegenerating = null) => {
     if (tasks.length === 0) return;
 
     setGenerating(true);
@@ -114,14 +152,14 @@ function WeekSummary({
       // Prepare task data for AI analysis
       const taskData = tasks.map((task) => ({
         name: task.name,
-        timeSpent: task.timeSpent,
-        focusLevel: task.focusLevel,
-        date: task.date,
+        time_spent: task.time_spent || task.timeSpent || 0,
+        focus_level: task.focus_level || task.focusLevel || 'medium',
+        date_worked: task.date_worked || task.date,
       }));
 
       // Calculate average focus score
       const avgFocusScoreRaw =
-        tasks.reduce((sum, task) => sum + focusValues[task.focusLevel], 0) /
+        tasks.reduce((sum, task) => sum + focusValues[task.focus_level || task.focusLevel || 'medium'], 0) /
         tasks.length;
       const avgFocusScore = Math.round(avgFocusScoreRaw);
       const avgFocusLabel = Object.keys(focusValues).find(
@@ -129,37 +167,23 @@ function WeekSummary({
       );
 
       const weekStats = {
-        totalTasks: tasks.length,
-        totalHours: tasks
-          .reduce((sum, task) => sum + task.timeSpent, 0)
+        total_tasks: tasks.length,
+        total_hours: tasks
+          .reduce((sum, task) => sum + (task.time_spent || task.timeSpent || 0), 0)
           .toFixed(1),
-        avgFocus: avgFocusLabel,
+        avg_focus: avgFocusLabel,
       };
 
       // Call backend API
-      const apiUrl = getApiUrl();
-      const response = await fetch(
-        `${apiUrl}/summaries/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            tasks: taskData,
-            week_start: startDate.toISOString().split("T")[0],
-            week_end: endDate.toISOString().split("T")[0],
-            week_stats: weekStats,
-            context_summaries: null,
-          }),
-        }
-      );
+      const summaryData = {
+        tasks: taskData,
+        week_start: startDate.toISOString().split("T")[0],
+        week_end: endDate.toISOString().split("T")[0],
+        week_stats: weekStats,
+        context_summaries: null,
+      };
 
-      if (!response.ok) {
-        throw new Error("Failed to generate AI summary");
-      }
-
-      const aiResult = await response.json();
+      const aiResult = await apiPost("/summaries/", summaryData);
 
       // The backend already saved the summary, so we use the returned data
       const generatedSummary = {
@@ -175,11 +199,37 @@ function WeekSummary({
         timestamp: new Date().toISOString(),
       };
 
-      onAddSummary(generatedSummary);
+      if (oldSummaryIfRegenerating) {
+        onUpdateSummary(oldSummaryIfRegenerating, generatedSummary);
+      } else {
+        onAddSummary(generatedSummary);
+      }
     } catch (error) {
       console.error("Error generating AI summary:", error);
       setError("Failed to generate summary. Please try again.");
     } finally {
+      setGenerating(false);
+    }
+  };
+
+  /**
+   * Regenerate summary by deleting current one and generating new
+   */
+  const handleRegenerateSummary = async () => {
+    if (!summary || generating) return;
+
+    const oldSummary = summary;
+
+    try {
+      setGenerating(true);
+      setError(null);
+
+      await apiDelete(`/summaries/${summary.id}`);
+
+      await handleGenerateSummary(oldSummary);
+    } catch (error) {
+      console.error("Error regenerating summary:", error);
+      setError("Failed to regenerate summary. Please try again.");
       setGenerating(false);
     }
   };
@@ -203,10 +253,10 @@ function WeekSummary({
                     height: "14px",
                   }}
                 />
-                {summary
-                  ? summary.weekRange
-                  : `${format(startDate, "MMM dd")} - ${format(
-                      endDate,
+                {`${format(
+                  (summary ? new Date(summary.week_start) : startDate), 
+                  "MMM dd")} - ${format(
+                      (summary ? new Date(summary.week_end) : endDate),
                       "MMM dd, yyyy"
                     )}`}
               </SummaryWeekRange>
@@ -222,7 +272,42 @@ function WeekSummary({
           </SummaryHeader>
 
           {summary ? (
-            <SummaryContent summary={summary} />
+            <>
+              <AnimatePresence mode="wait">
+                {generating ? (
+                  <motion.div
+                    key="loading"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <SearchProgressBar 
+                      duration={8}
+                      maxProgress={99}
+                      variant="regenerate"
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="content"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <SummaryContent summary={summary} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <RegenerateButton
+                onClick={handleRegenerateSummary}
+                disabled={generating}
+              >
+                <RotateCcw size={12} />
+                {generating ? "Regenerating..." : "Regenerate Summary"}
+              </RegenerateButton>
+            </>
           ) : (
             <GenerationSection>
               {!summary && tasks.length > 0 ? (
@@ -243,11 +328,12 @@ function WeekSummary({
                         height: "14px",
                       }}
                     />
-                    {tasks.length} tasks •{" "}
                     {tasks
-                      .reduce((sum, task) => sum + task.timeSpent, 0)
-                      .toFixed(1)}
-                    h total
+                      .reduce((sum, task) => sum + (task.time_spent || task.timeSpent || 0), 0)
+                      .toFixed(0)}
+                    {" "}
+                    hours •{" "}
+                    {tasks.length} tasks
                   </WeekInfo>
                 </WeekSelector>
               ) : (

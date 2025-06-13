@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getApiUrl, apiGet } from '../../utils/api';
+import { apiGet } from '../../utils/api';
 import { format } from 'date-fns';
 
 /**
@@ -38,7 +38,9 @@ export const useVisualizationData = (timeRange, getDateRange) => {
           endpoint += `&start_date=${startDateStr}&end_date=${endDateStr}`;
         }
         
+        console.log('Loading tasks from endpoint:', endpoint);
         const data = await apiGet(endpoint);
+        console.log('Received tasks data:', data);
         allTasks = allTasks.concat(data.tasks || []);
         hasMore = data.has_more || false;
         offset += limit;
@@ -54,7 +56,7 @@ export const useVisualizationData = (timeRange, getDateRange) => {
   /**
    * Load summaries from the backend API
    */
-  const loadSummaries = async () => {
+  const loadSummaries = async (startDate, endDate) => {
     try {
       // Load all summaries by fetching all pages
       let allSummaries = [];
@@ -63,7 +65,15 @@ export const useVisualizationData = (timeRange, getDateRange) => {
       let hasMore = true;
       
       while (hasMore) {
-        const endpoint = `/summaries/?limit=${limit}&offset=${offset}`;
+        let endpoint = `/summaries/?limit=${limit}&offset=${offset}`;
+        
+        // Only add date parameters if both dates are provided
+        if (startDate && endDate) {
+          const startDateStr = format(startDate, 'yyyy-MM-dd');
+          const endDateStr = format(endDate, 'yyyy-MM-dd');
+          endpoint += `&start_date=${startDateStr}&end_date=${endDateStr}`;
+        }
+        
         const data = await apiGet(endpoint);
         allSummaries = allSummaries.concat(data.summaries || []);
         hasMore = data.has_more || false;
@@ -116,7 +126,7 @@ export const useVisualizationData = (timeRange, getDateRange) => {
         console.log('Loading data with date range:', { startDate, endDate, timeRange });
         await Promise.all([
           loadTasks(startDate, endDate),
-          loadSummaries()
+          loadSummaries(startDate, endDate)
         ]);
       } catch (error) {
         console.error('Error in loadData:', error);
@@ -128,12 +138,32 @@ export const useVisualizationData = (timeRange, getDateRange) => {
     loadData();
   }, [timeRange]); // React to time range changes only
 
+  /**
+   * Add a new summary to the summaries array
+   */
+  const addSummary = (newSummary) => {
+    setSummaries(prevSummaries => [...prevSummaries, newSummary]);
+  };
+
+  /**
+   * Update/replace a summary in the summaries array
+   */
+  const updateSummary = (oldSummary, newSummary) => {
+    setSummaries(prevSummaries => 
+      prevSummaries.map(summary => 
+        summary.id === oldSummary.id ? newSummary : summary
+      )
+    );
+  };
+
   return {
     tasks,
     summaries,
     isLoading,
     error,
     stats,
-    updateStats
+    updateStats,
+    addSummary,
+    updateSummary
   };
 };

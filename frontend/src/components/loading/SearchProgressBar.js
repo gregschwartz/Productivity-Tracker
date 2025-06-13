@@ -65,7 +65,11 @@ const messages = [
   "📊 Gathering results..."
 ];
 
-const SearchProgressBar = () => {
+
+const SearchProgressBar = ({ 
+  duration = 30, 
+  maxProgress = 99, 
+}) => {
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
   useEffect(() => {
@@ -81,9 +85,9 @@ const SearchProgressBar = () => {
       <BarBackground>
         <ProgressBar
           initial={{ width: '0%' }}
-          animate={{ width: '99%' }}
+          animate={{ width: `${maxProgress}%` }}
           transition={{
-            duration: 30,
+            duration: duration,
             ease: [0.25, 0.1, 0.25, 1], // fast start, slow end
           }}
         />

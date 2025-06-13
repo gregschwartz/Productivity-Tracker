@@ -50,13 +50,18 @@ class AIService:
 
         # Calculate average focus level
         focus_values = {"low": 1, "medium": 2, "high": 3}
-        avg_focus_numeric = sum(focus_values[task.focus_level.value] for task in tasks) / total_tasks
-        if avg_focus_numeric < 1.5:
-            avg_focus = "low"
-        elif avg_focus_numeric < 2.5:
-            avg_focus = "medium"
-        else:
-            avg_focus = "high"
+        try:
+            avg_focus_numeric = sum(focus_values[task.focus_level.value if hasattr(task.focus_level, 'value') else task.focus_level] for task in tasks) / total_tasks
+            if avg_focus_numeric < 1.5:
+                avg_focus = "low"
+            elif avg_focus_numeric < 2.5:
+                avg_focus = "medium"
+            else:
+                avg_focus = "high"
+        except Exception as e:
+            print(f"ERROR in calculate_weekly_stats: {e}")
+            print(f"ERROR details: {type(e).__name__}: {str(e)}")
+            raise
         
         return WeeklyStats(total_tasks=total_tasks, total_hours=total_hours, avg_focus=avg_focus)
     
@@ -76,10 +81,15 @@ class AIService:
             )
         
         # Create task summary
-        task_summary = "\n".join([
-            f"- {task.name} ({task.time_spent}h, {task.focus_level.value} focus)"
-            for task in tasks
-        ])
+        try:
+            task_summary = "\n".join([
+                f"- {task.name} ({task.time_spent}h, {task.focus_level.value if hasattr(task.focus_level, 'value') else task.focus_level} focus)"
+                for task in tasks
+            ])
+        except Exception as e:
+            print(f"ERROR creating task_summary: {e}")
+            print(f"ERROR details: {type(e).__name__}: {str(e)}")
+            raise
         
         # Build context section from surrounding summaries
         adjacent_week_summaries = ""

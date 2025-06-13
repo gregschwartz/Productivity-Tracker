@@ -26,7 +26,7 @@ task_service = TaskService()
 @router.post("/", response_model=WeeklySummaryPublic)
 @weave.op()
 @limiter.limit("10/minute")
-async def generate_summary_route(summary_request: SummaryRequest, request, db: AsyncSession = Depends(get_session)):
+async def generate_summary_route(summary_request: SummaryRequest, request: Request, db: AsyncSession = Depends(get_session)):
     """Generate a weekly productivity summary using AI and store in vector database."""
     try:
         if not summary_request.tasks:

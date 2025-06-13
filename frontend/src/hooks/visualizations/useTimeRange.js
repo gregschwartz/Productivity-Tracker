@@ -39,7 +39,7 @@ export const useTimeRange = (tasks) => {
           days: 7
         };
     }
-  }, [timeRange, tasks]);
+  }, [timeRange]);
 
   /**
    * Filter tasks based on selected time range
@@ -123,7 +123,7 @@ export const useTimeRange = (tasks) => {
         tasks: dayTasks.length
       };
     });
-  }, [filteredTasks, getDateRange, tasks]);
+  }, [filteredTasks, getDateRange]);
 
   /**
    * Get time range label for display

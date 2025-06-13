@@ -1,9 +1,8 @@
 import os
-import json
 from typing import List, Optional
 from openai import AsyncOpenAI
 import weave
-from models.models import Task, FocusLevel, WeeklyStats
+from models.models import Task, WeeklyStats
 from pydantic import BaseModel
 from pydantic_ai import Agent
 

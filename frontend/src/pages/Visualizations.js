@@ -61,7 +61,7 @@ function Visualizations({ onNavigateToDate }) {
   // Update stats when filtered tasks change
   useEffect(() => {
     updateStats(filteredTasks);
-  }, [filteredTasks]);
+  }, [filteredTasks, updateStats]);
 
   return (
     <VisualizationContainer>

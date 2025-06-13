@@ -136,7 +136,7 @@ export const useVisualizationData = (timeRange, getDateRange) => {
     };
     
     loadData();
-  }, [timeRange]); // React to time range changes only
+  }, [timeRange, getDateRange]);
 
   /**
    * Add a new summary to the summaries array

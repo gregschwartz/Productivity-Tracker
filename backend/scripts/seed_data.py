@@ -135,9 +135,7 @@ async def generate_sample_data(reference_date: datetime = None) -> tuple[List[Ta
 
     sample_tasks = []
     sample_summaries = []
-    current_week_tasks = []
-    current_week_start = None
-    current_week_end = None
+    weeks_data = {}  # Dictionary to store tasks by week
 
     # Generate tasks for the last 60 days (going backwards from reference date)
     for day_offset in range(60):
@@ -145,17 +143,15 @@ async def generate_sample_data(reference_date: datetime = None) -> tuple[List[Ta
         
         # Calculate week boundaries (Sunday to Saturday)
         week_start, week_end = get_week_boundaries(task_date)
+        week_key = week_start.strftime('%Y-%m-%d')
         
-        # If we've moved to a new week and have tasks from previous week, generate summary
-        if current_week_start is not None and week_start != current_week_start and current_week_tasks:
-            summary = await generate_week_summary(ai_service, current_week_tasks, current_week_start, current_week_end)
-            if summary:
-                sample_summaries.append(summary)
-            current_week_tasks = []
-        
-        # Update current week tracking
-        current_week_start = week_start
-        current_week_end = week_end
+        # Initialize week data if not exists
+        if week_key not in weeks_data:
+            weeks_data[week_key] = {
+                'tasks': [],
+                'start': week_start,
+                'end': week_end
+            }
         
         # Determine number of tasks for this day
         if day_offset == 0:
@@ -187,13 +183,23 @@ async def generate_sample_data(reference_date: datetime = None) -> tuple[List[Ta
             )
             
             sample_tasks.append(task)
-            current_week_tasks.append(task)
+            weeks_data[week_key]['tasks'].append(task)
 
-    # Generate summary for the last week if it has tasks
-    if current_week_tasks:
-        summary = await generate_week_summary(ai_service, current_week_tasks, current_week_start, current_week_end)
-        if summary:
-            sample_summaries.append(summary)
+    # Get current week boundaries to exclude it from summary generation
+    current_week_start, current_week_end = get_week_boundaries(reference_date.date())
+    current_week_key = current_week_start.strftime('%Y-%m-%d')
+    
+    # Generate summaries for all weeks that have tasks, except the current week
+    for week_key in sorted(weeks_data.keys()):
+        # Skip the current week
+        if week_key == current_week_key:
+            continue
+            
+        week_info = weeks_data[week_key]
+        if week_info['tasks']:
+            summary = await generate_week_summary(ai_service, week_info['tasks'], week_info['start'], week_info['end'])
+            if summary:
+                sample_summaries.append(summary)
 
     return sample_tasks, sample_summaries
 

@@ -40,8 +40,10 @@ async def health_check():
 async def regenerate_embeddings_route(db: AsyncSession = Depends(get_session)):
     """Generate all summaries for available task data, and embeddings for existing summaries missing them. Particularly useful after changing the summary generation prompt."""
     try:
-        # Step 1: Get all existing weeks with summaries
-        existing_summaries = await summary_service.get_weekly_summaries(session=db, limit=1000)
+        # Step 1: Get all existing weeks with summaries - use direct DB query to get full objects
+        existing_summaries_query = select(WeeklySummary)
+        result = await db.execute(existing_summaries_query)
+        existing_summaries = result.scalars().all()
         existing_weeks = {summary.week_start for summary in existing_summaries}
         
         # Step 2: Get all tasks and group by week
@@ -61,9 +63,8 @@ async def regenerate_embeddings_route(db: AsyncSession = Depends(get_session)):
         
         # Step 4: Generate embeddings for existing summaries that don't have them
         embeddings_updated = 0
-        all_summaries = await summary_service.get_weekly_summaries(session=db, limit=1000)
         
-        for summary in all_summaries:
+        for summary in existing_summaries:
             if summary.embedding is None:
                 # Generate embedding text using the same format as create_weekly_summary
                 summary_text_to_embed = f"""

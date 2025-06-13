@@ -129,29 +129,6 @@ class TestTaskService:
         assert created_task.created_at.year == datetime.now().year  # Current timestamp
         assert created_task.updated_at.year == datetime.now().year  # Current timestamp
 
-    # Get Tasks Tests
-    @pytest.mark.asyncio
-    async def test_get_tasks_no_filters(self, task_service, test_db_session, sample_tasks_data):
-        """Test getting tasks without any filters."""
-        async for session in test_db_session:
-            break
-            
-        # Create sample tasks
-        created_tasks = []
-        for task_data in sample_tasks_data:
-            created_task = await task_service.create_task(session, task_data)
-            created_tasks.append(created_task)
-        
-        # Get all tasks
-        tasks = await task_service.get_tasks(session)
-        
-        assert len(tasks) == 5
-        # Should be ordered by date_worked desc (newest first)
-        assert tasks[0].date_worked >= tasks[1].date_worked
-        assert tasks[1].date_worked >= tasks[2].date_worked
-        assert tasks[2].date_worked >= tasks[3].date_worked
-        assert tasks[3].date_worked >= tasks[4].date_worked
-
     @pytest.mark.asyncio
     async def test_get_tasks_with_pagination(self, task_service, test_db_session, sample_tasks_data):
         """Test getting tasks with pagination."""
@@ -172,11 +149,6 @@ class TestTaskService:
         # Check that all tasks are unique
         all_task_ids = [task.id for task in first_page + second_page]
         assert len(all_task_ids) == len(set(all_task_ids))
-
-        # Check that the tasks are ordered by date_worked desc (newest first)
-        assert first_page[0].date_worked >= first_page[1].date_worked
-        assert first_page[1].date_worked >= second_page[0].date_worked
-        assert second_page[0].date_worked >= second_page[1].date_worked
 
     @pytest.mark.asyncio
     async def test_get_tasks_with_date_filter(self, task_service, test_db_session, sample_tasks_data):

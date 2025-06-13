@@ -46,6 +46,10 @@ function Visualizations({ onNavigateToDate, onAddSummary }) {
     updateStats
   } = useVisualizationData(timeRange, getDateRange);
 
+  const timeRangeOptions = [
+    { value: 'week', label: 'Week' },
+    { value: 'month', label: 'Month' }
+  ];
 
   // Sync tasks from visualization hook to time range hook
   useEffect(() => {
@@ -62,11 +66,7 @@ function Visualizations({ onNavigateToDate, onAddSummary }) {
       {isLoading ? (
         <>
           <TimeRangeSelector>
-            {[
-              { value: 'week', label: 'Week' },
-              { value: 'month', label: 'Month' },
-              { value: 'all', label: 'All Time' }
-            ].map(option => (
+            {timeRangeOptions.map(option => (
               <TimeRangeButton
                 key={option.value}
                 $active={timeRange === option.value}
@@ -77,6 +77,15 @@ function Visualizations({ onNavigateToDate, onAddSummary }) {
               </TimeRangeButton>
             ))}
           </TimeRangeSelector>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <div className="text-red-800 dark:text-red-200 text-sm">
+                ⚠️ {error}
+              </div>
+            </div>
+          )}
+
           <AllStatsWrapper>
             <OverviewStatsRow>
               <SkeletonStatCard />
@@ -95,6 +104,19 @@ function Visualizations({ onNavigateToDate, onAddSummary }) {
         </>
       ) : (
         <>
+          {/* Time Range Selector */}
+          <TimeRangeSelector>
+            {timeRangeOptions.map(option => (
+              <TimeRangeButton
+              key={option.value}
+              $active={timeRange === option.value}
+              onClick={() => setTimeRange(option.value)}
+              >
+                {option.label}
+              </TimeRangeButton>
+            ))}
+          </TimeRangeSelector>
+
           {error && (
             <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <div className="text-red-800 dark:text-red-200 text-sm">
@@ -103,23 +125,6 @@ function Visualizations({ onNavigateToDate, onAddSummary }) {
             </div>
           )}
           
-          {/* Time Range Selector */}
-          <TimeRangeSelector>
-            {[
-              { value: 'week', label: 'Week' },
-              { value: 'month', label: 'Month' },
-              { value: 'all', label: 'All Time' }
-            ].map(option => (
-              <TimeRangeButton
-                key={option.value}
-                $active={timeRange === option.value}
-                onClick={() => setTimeRange(option.value)}
-              >
-                {option.label}
-              </TimeRangeButton>
-            ))}
-          </TimeRangeSelector>
-
           {/* Overview Stats */}
           <StatsCards stats={stats} isLoading={isLoading} />
 

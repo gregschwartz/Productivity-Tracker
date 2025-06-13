@@ -41,7 +41,7 @@ const StatCardTitle = styled.div`
 const StatsContainer = styled.div`
   display: flex;
   justify-content: space-around;
-  gap: 16px;
+  gap: 0px;
 `;
 
 /**

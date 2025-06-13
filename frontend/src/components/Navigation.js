@@ -10,6 +10,11 @@ const NavigationContainer = styled.nav`
   justify-content: center;
   margin-bottom: 40px;
   padding: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 `;
 
 /**

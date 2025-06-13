@@ -1,16 +1,17 @@
 import { useState, useMemo } from 'react';
-import { startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, addDays, subDays, eachDayOfInterval, format } from 'date-fns';
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, subDays, eachDayOfInterval, format } from 'date-fns';
 
 /**
  * Custom hook for managing time range selection and calculations
  */
 export const useTimeRange = (tasks) => {
-  const [timeRange, setTimeRange] = useState('week'); // week, month, quarter, all
+  const [timeRange, setTimeRange] = useState('week'); // week, month
 
   /**
    * Get date range based on selected time range
    */
   const getDateRange = useMemo(() => {
+    console.log('getDateRange called with timeRange:', timeRange);
     const now = new Date();
     switch (timeRange) {
       case 'week':
@@ -48,21 +49,6 @@ export const useTimeRange = (tasks) => {
           endDate: monthEndWeek,
           days: Math.ceil((monthEndWeek - monthStartWeek) / (1000 * 60 * 60 * 24))
         };
-      case 'quarter':
-        // Last 12-13 complete weeks (about a quarter)
-        const quarterStart = startOfWeek(subWeeks(now, 12));
-        return {
-          startDate: quarterStart,
-          endDate: endOfWeek(now),
-          days: Math.ceil((endOfWeek(now) - quarterStart) / (1000 * 60 * 60 * 24))
-        };
-      case 'all':
-        // For all time, return null dates to indicate no filtering
-        return {
-          startDate: null,
-          endDate: null,
-          days: null
-        };
       default:
         return {
           startDate: startOfWeek(now),
@@ -83,11 +69,6 @@ export const useTimeRange = (tasks) => {
       return [];
     }
     
-    // If no date range (all time), return all tasks
-    if (!startDate || !endDate) {
-      return tasks;
-    }
-    
     return tasks.filter(task => {
       const taskDate = new Date(task.date_worked);
       return taskDate >= startDate && taskDate <= endDate;
@@ -99,7 +80,7 @@ export const useTimeRange = (tasks) => {
    */
   const dailyData = useMemo(() => {
     const { days } = getDateRange;
-    const displayDays = Math.min(days, timeRange === 'week' ? 7 : timeRange === 'month' ? 30 : 14); // Limit display for readability
+    const displayDays = Math.min(days, timeRange === 'week' ? 7 : 30);
     
     return Array.from({ length: displayDays }, (_, i) => {
       const date = subDays(new Date(), displayDays - 1 - i);
@@ -138,34 +119,6 @@ export const useTimeRange = (tasks) => {
   const heatmapData = useMemo(() => {
     const { startDate, endDate } = getDateRange;
     
-    // For "all time", generate heatmap from actual task dates
-    if (!startDate || !endDate) {
-      if (!Array.isArray(tasks) || tasks.length === 0) return [];
-      
-      const taskDates = tasks.map(task => new Date(task.date_worked));
-      const earliest = new Date(Math.min(...taskDates));
-      const latest = new Date(Math.max(...taskDates));
-      const days = eachDayOfInterval({ start: earliest, end: latest });
-      
-      return days.map((date) => {
-        const dateStr = format(date, 'yyyy-MM-dd');
-        const dayTasks = tasks.filter(task => task.date_worked === dateStr);
-        const totalHours = dayTasks.reduce((sum, task) => sum + task.time_spent, 0);
-        
-        const isFirstOfMonth = date.getDate() === 1;
-        const monthName = isFirstOfMonth ? format(date, 'MMM') : null;
-        
-        return {
-          date: dateStr,
-          day: format(date, 'dd'),
-          monthName,
-          isFirstOfMonth,
-          intensity: totalHours,
-          tasks: dayTasks.length
-        };
-      });
-    }
-    
     // For specific date ranges
     const days = eachDayOfInterval({ start: startDate, end: endDate });
     
@@ -195,7 +148,6 @@ export const useTimeRange = (tasks) => {
     switch (timeRange) {
       case 'week': return 'the last 7 days';
       case 'month': return 'the last 30 days';
-      case 'all': return 'all time';
       default: return 'the last 7 days';
     }
   };

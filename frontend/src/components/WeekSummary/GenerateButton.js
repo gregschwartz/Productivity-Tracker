@@ -46,7 +46,7 @@ const StyledGenerateButton = styled.button.attrs((props) => ({
     height: 16px;
 
     ${(props) =>
-      props.generating &&
+      props.$generating &&
       `
       animation: spin 1s linear infinite;
     `}
@@ -65,21 +65,21 @@ const StyledGenerateButton = styled.button.attrs((props) => ({
 /**
  * Button component for generating AI summaries
  * @param {Object} props - Component props
- * @param {boolean} props.generating - Whether summary is currently being generated
+ * @param {boolean} props.$generating - Whether summary is currently being generated
  * @param {boolean} props.disabled - Whether button is disabled
  * @param {Function} props.onClick - Click handler
  * @param {boolean} props.hasSummary - Whether summary already exists
  * @param {number} props.taskCount - Number of tasks for the week
  */
 function GenerateButton({ 
-  generating = false, 
+  $generating = false, 
   disabled = false, 
   onClick, 
   hasSummary = false, 
   taskCount = 0 
 }) {
   const getButtonText = () => {
-    if (generating) return "Generating...";
+    if ($generating) return "Generating...";
     if (hasSummary) return "Summary Already Generated";
     if (taskCount === 0) return "No Tasks This Week";
     return "Generate AI Summary";
@@ -89,9 +89,9 @@ function GenerateButton({
     <StyledGenerateButton
       onClick={onClick}
       disabled={disabled}
-      generating={generating}
+      $generating={$generating}
     >
-      {generating ? <RefreshCw /> : <Sparkles />}
+      {$generating ? <RefreshCw /> : <Sparkles />}
       {getButtonText()}
     </StyledGenerateButton>
   );

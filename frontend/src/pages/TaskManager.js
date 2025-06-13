@@ -22,6 +22,8 @@ function TaskManager({
     tasks,
     isLoading,
     error,
+    pagination,
+    loadMoreTasks,
     addTask,
     updateTask,
     deleteTask
@@ -89,6 +91,9 @@ function TaskManager({
         onEditTask={handleEditTask}
         onDeleteTask={deleteTask}
         theme={currentTheme}
+        pagination={pagination}
+        onLoadMore={loadMoreTasks}
+        data-testid="taskList"
       />
     </TaskContainer>
   );

@@ -68,7 +68,7 @@ function WeeklySummaries({ tasks = [], summaries = [], timeRange, onAddSummary =
 
   return (
     <WeeklySummariesContainer>
-      {weeks.map((week, index) => {
+      {weeks.reverse().map((week, index) => {
         const weekTasks = getTasksForWeek(week.startDate, week.endDate);
         const weekSummary = getSummaryForWeek(week.startDate, week.endDate);
         const weekTimeRange = {

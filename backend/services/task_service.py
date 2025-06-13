@@ -48,8 +48,7 @@ class TaskService:
         elif start_date or end_date:
             raise ValueError("Both start_date and end_date must be provided together")
         
-        # Apply pagination
-        query = query.order_by(Task.date_worked.desc()).limit(limit).offset(offset)
+        query = query.order_by(Task.created_at.desc()).limit(limit).offset(offset)
         
         result = await session.execute(query)
         return result.scalars().all()

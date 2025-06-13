@@ -184,12 +184,14 @@ const TaskForm = ({
             <Label htmlFor="taskName" $theme={theme}>Describe the Task</Label>
             <Input
               id="taskName"
+              data-testid="taskName"
               name="name"
               type="text"
               value={formData.name}
               onChange={handleInputChange}
               placeholder="What did you work on?"
               autoFocus
+              autoComplete="off"
               required
               tabIndex={1}
               maxLength={200}
@@ -207,6 +209,7 @@ const TaskForm = ({
             <Label htmlFor="timeSpent" $theme={theme}>Hours Spent</Label>
             <Input
               id="timeSpent"
+              data-testid="timeSpent"
               name="timeSpent"
               type="number"
               min="0.25"
@@ -238,9 +241,10 @@ const TaskForm = ({
         </FormFields>
 
         <ButtonGroup>
-          <ActionButton
+            <ActionButton
             type="submit"
             tabIndex={4}
+            data-testid="submitButton"
             disabled={submitStatus === 'submitting'}
             loading={submitStatus === 'submitting'}
             icon={submitStatus === 'success' ? <Check size={20} /> : (editingTask ? <Check /> : <Plus />)}

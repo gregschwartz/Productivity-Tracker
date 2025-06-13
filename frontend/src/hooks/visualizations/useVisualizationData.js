@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getApiUrl } from '../../utils/api';
+import { getApiUrl, apiGet } from '../../utils/api';
 import { format } from 'date-fns';
 
 /**
@@ -22,8 +22,6 @@ export const useVisualizationData = (timeRange, getDateRange) => {
    */
   const loadTasks = async (startDate, endDate) => {
     try {
-      const apiUrl = getApiUrl();
-      
       // Load all tasks by fetching all pages
       let allTasks = [];
       let offset = 0;
@@ -31,21 +29,16 @@ export const useVisualizationData = (timeRange, getDateRange) => {
       let hasMore = true;
       
       while (hasMore) {
-        let url = `${apiUrl}/tasks/?limit=${limit}&offset=${offset}`;
+        let endpoint = `/tasks/?limit=${limit}&offset=${offset}`;
         
         // Only add date parameters if both dates are provided
         if (startDate && endDate) {
           const startDateStr = format(startDate, 'yyyy-MM-dd');
           const endDateStr = format(endDate, 'yyyy-MM-dd');
-          url += `&start_date=${startDateStr}&end_date=${endDateStr}`;
+          endpoint += `&start_date=${startDateStr}&end_date=${endDateStr}`;
         }
         
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`Failed to load tasks: ${response.status} ${response.statusText}`);
-        }
-        
-        const data = await response.json();
+        const data = await apiGet(endpoint);
         allTasks = allTasks.concat(data.tasks || []);
         hasMore = data.has_more || false;
         offset += limit;
@@ -53,6 +46,7 @@ export const useVisualizationData = (timeRange, getDateRange) => {
       
       setTasks(allTasks);
     } catch (error) {
+      console.error('Failed to load tasks:', error);
       setError('Failed to load tasks from server.');
     }
   };
@@ -62,15 +56,23 @@ export const useVisualizationData = (timeRange, getDateRange) => {
    */
   const loadSummaries = async () => {
     try {
-      const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/summaries/`);
-      if (!response.ok) {
-        throw new Error(`Failed to load summaries: ${response.status} ${response.statusText}`);
+      // Load all summaries by fetching all pages
+      let allSummaries = [];
+      let offset = 0;
+      const limit = 100;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const endpoint = `/summaries/?limit=${limit}&offset=${offset}`;
+        const data = await apiGet(endpoint);
+        allSummaries = allSummaries.concat(data.summaries || []);
+        hasMore = data.has_more || false;
+        offset += limit;
       }
       
-      const data = await response.json();
-      setSummaries(data);
+      setSummaries(allSummaries);
     } catch (error) {
+      console.error('Failed to load summaries:', error);
       setError('Failed to load summaries from server.');
     }
   };
@@ -111,19 +113,20 @@ export const useVisualizationData = (timeRange, getDateRange) => {
       
       try {
         const { startDate, endDate } = getDateRange;
+        console.log('Loading data with date range:', { startDate, endDate, timeRange });
         await Promise.all([
           loadTasks(startDate, endDate),
           loadSummaries()
         ]);
       } catch (error) {
-        // Error is already handled in individual functions
+        console.error('Error in loadData:', error);
       } finally {
         setIsLoading(false);
       }
     };
     
     loadData();
-  }, [timeRange]); // Remove getDateRange from dependencies to prevent infinite loop
+  }, [timeRange]); // React to time range changes only
 
   return {
     tasks,

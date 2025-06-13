@@ -230,7 +230,7 @@ function WeekSummary({
                   <GenerateButton
                     onClick={handleGenerateSummary}
                     disabled={generating || tasks.length === 0 || summary}
-                    generating={generating}
+                    $generating={generating}
                     hasSummary={summary}
                     taskCount={tasks.length}
                   />

@@ -103,7 +103,6 @@ class SummaryService:
         elif end_date: # Added this condition, was missing in original get_weekly_summaries
             sql_query_stmt = sql_query_stmt.where(WeeklySummary.week_start <= end_date)
 
-
         sql_query_stmt = sql_query_stmt.offset(skip).limit(limit).order_by(WeeklySummary.week_start.desc())
         result = await session.execute(sql_query_stmt)
         summaries = result.scalars().all()

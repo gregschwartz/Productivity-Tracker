@@ -139,17 +139,10 @@ This will start:
 - Smooth animations with Framer Motion
 - Accessible keyboard navigation
 
-## Running Tests
+## Running Backend Tests
 
 Since this is a Docker-based application, tests should be run inside the containers:
 
-**Frontend tests:**
-```bash
-# Run tests in the frontend container
-docker-compose exec frontend npm test
-```
-
-**Backend tests:**
 ```bash
 # Run tests in the backend container
 docker-compose exec backend pytest

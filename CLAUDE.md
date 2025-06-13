@@ -46,11 +46,8 @@ docker-compose logs -f backend
 docker-compose logs -f frontend
 ```
 
-### Testing
+### Backend Testing
 ```bash
-# Frontend tests - run inside container
-docker-compose exec frontend npm test
-
 # Backend tests - run inside container
 docker-compose exec backend pytest
 

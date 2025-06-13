@@ -43,7 +43,7 @@ export const CurrentDateDisplay = styled.h2.attrs(props => ({
  * Date navigation controls
  */
 export const DateNavControls = styled.div.attrs({
-  className: 'flex gap-3 items-center md:flex-row flex-col md:gap-3 gap-2 md:items-center items-stretch'
+  className: 'flex gap-3 items-center'
 })``;
 
 /**

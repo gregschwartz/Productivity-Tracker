@@ -40,7 +40,8 @@ I've used OpenAI quite a bit, as well as Anthropic models. It changes a little b
 
 I've Been using Cursor for months, so I used it for some of the code. 
 
-However, I wanted to explore running multiple agents at once after seeing a talk at the AI Engineer World's Fair on https://github.com/dagger/container-use/ from the creator of Docker and Dagger. So I got a subscription to Claude Pro and have been experimenting with Claude Code in this project as well.
+However, I wanted to explore running multiple agents at once after seeing a talk at the AI Engineer World's Fair on https://github.com/dagger/container-use from the creator of Docker and Dagger. 
 
-## Other Components
+So I got a subscription to Claude Pro and have been experimenting with Claude Code in this project as well.
 
+I also tried out Google's new tool [Jules](https://jules.google.com) and was very disappointed in it. Poor code, but worse, it cannot execute tests in Docker containers! 
